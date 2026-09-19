@@ -137,17 +137,27 @@ export class TouchControls {
       this.mineBtn.setScale(1.0);
     });
 
-    // 5. Arena Direct Aim: Tap/drag anywhere in combat arena (y < 615) aims toward point
+    // 5. Arena Direct Aim: Tap/drag anywhere in combat arena (y <= 615) aims and fires
+    this.arenaPointerId = null;
+
     this.scene.input.on('pointerdown', (pointer) => {
       if (pointer.y <= 615) {
+        this.arenaPointerId = pointer.id;
         this.updateAimToPoint(pointer.x, pointer.y);
         this.isFiring = true;
       }
     });
 
     this.scene.input.on('pointermove', (pointer) => {
-      if (pointer.y <= 615 && pointer.isDown) {
+      if (pointer.y <= 615) {
         this.updateAimToPoint(pointer.x, pointer.y);
+      }
+    });
+
+    this.scene.input.on('pointerup', (pointer) => {
+      if (pointer.id === this.arenaPointerId) {
+        this.arenaPointerId = null;
+        this.isFiring = false;
       }
     });
   }

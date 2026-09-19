@@ -105,8 +105,8 @@ export class VictoryScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Motorcycle victory cruise
-    const bike = this.add.sprite(width / 2, height * 0.68, 'motorcycle').setScale(1.8);
-    this.add.sprite(width / 2, height * 0.68, 'turret').setScale(1.8);
+    const bike = this.add.sprite(width / 2, height * 0.66, 'motorcycle').setScale(1.7);
+    this.add.sprite(width / 2, height * 0.66, 'turret').setScale(1.7);
     this.tweens.add({
       targets: bike,
       x: { from: width / 2 - 15, to: width / 2 + 15 },
@@ -116,11 +116,25 @@ export class VictoryScene extends Phaser.Scene {
       ease: 'Sine.easeInOut'
     });
 
-    // 6. Play Again Button
+    // 6. Campaign Stats Card
+    const statsCard = this.add.graphics();
+    statsCard.fillStyle(0x0f172a, 0.85);
+    statsCard.fillRoundedRect(width / 2 - 140, height * 0.73 - 16, 280, 32, 12);
+    statsCard.lineStyle(1.5, 0x38bdf8, 0.8);
+    statsCard.strokeRoundedRect(width / 2 - 140, height * 0.73 - 16, 280, 32, 12);
+
+    this.add.text(width / 2, height * 0.73, `★ Tanks Defeated: ${this.tanksDefeated} • 70/70 Levels ★`, {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: 'bold',
+      color: '#38bdf8'
+    }).setOrigin(0.5);
+
+    // 7. Play Again Button
     const btnWidth = 240;
-    const btnHeight = 56;
+    const btnHeight = 54;
     const btnX = width / 2;
-    const btnY = height * 0.81;
+    const btnY = height * 0.83;
 
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0x22c55e, 1);

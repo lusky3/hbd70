@@ -36,6 +36,12 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
   }
 
   onWallBounce() {
+    const now = Date.now();
+    if (this.lastBounceTime && now - this.lastBounceTime < 60) {
+      return; // Debounce multi-tile seam collisions in the same frame
+    }
+    this.lastBounceTime = now;
+
     this.bouncesRemaining--;
     audio.playBounce();
 

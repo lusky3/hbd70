@@ -83,7 +83,12 @@ export class PlayerTank extends Phaser.Physics.Arcade.Sprite {
 
     this.lastMineTime = time;
 
-    const mine = new Mine(this.scene, this.x, this.y, 'player');
+    // Drop mine behind the motorcycle based on its body heading
+    const behindAngle = this.rotation + Math.PI;
+    const dropX = this.x + Math.cos(behindAngle) * 20;
+    const dropY = this.y + Math.sin(behindAngle) * 20;
+
+    const mine = new Mine(this.scene, dropX, dropY, 'player');
     this.scene.playerMines.add(mine);
   }
 

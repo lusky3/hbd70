@@ -39,6 +39,7 @@ export class GameScene extends Phaser.Scene {
     this.confettiEmitter.setDepth(50);
 
     // 2. Physics Groups
+    this.playerGroup = this.physics.add.group();
     this.playerBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
     this.playerMines = this.physics.add.group({ classType: Mine });
@@ -52,6 +53,7 @@ export class GameScene extends Phaser.Scene {
     // 4. Spawn Player Tank
     const pStart = this.terrain.toWorld(this.levelData.playerStart.x, this.levelData.playerStart.y);
     this.player = new PlayerTank(this, pStart.x, pStart.y);
+    this.playerGroup.add(this.player);
 
     // 5. Spawn Enemies
     this.levelData.enemies.forEach((enemyDef) => {
@@ -114,7 +116,7 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    this.physics.add.overlap(this.enemyBullets, this.player, (bullet) => {
+    this.physics.add.overlap(this.enemyBullets, this.playerGroup, (bullet) => {
       if (!this.isPlayerInvulnerable) {
         bullet.explode();
         this.onPlayerHit();
@@ -135,26 +137,28 @@ export class GameScene extends Phaser.Scene {
     const tankMineOverlap = (tank, mine) => {
       if (mine.isArmed) mine.explode();
     };
-    this.physics.add.overlap(this.player, this.playerMines, tankMineOverlap);
-    this.physics.add.overlap(this.player, this.enemyMines, tankMineOverlap);
+    this.physics.add.overlap(this.playerGroup, this.playerMines, tankMineOverlap);
+    this.physics.add.overlap(this.playerGroup, this.enemyMines, tankMineOverlap);
     this.physics.add.overlap(this.enemies, this.playerMines, tankMineOverlap);
     this.physics.add.overlap(this.enemies, this.enemyMines, tankMineOverlap);
 
     // Enemies vs Obstacles & Each Other
     this.physics.add.collider(this.enemies, this.terrain.wallsGroup);
     this.physics.add.collider(this.enemies, this.terrain.blocksGroup);
-    this.physics.add.collider(this.enemies, this.terrain.waterGroup);
+    // Boat tanks are restricted to water channels / can navigate water
+    this.physics.add.collider(this.enemies, this.terrain.waterGroup, null, (enemy) => enemy.type !== 'boat');
     this.physics.add.collider(this.enemies, this.enemies);
 
-    this.setupPlayerColliders();
-  }
-
-  setupPlayerColliders() {
-    if (!this.player) return;
-    this.playerWallCollider = this.physics.add.collider(this.player, this.terrain.wallsGroup);
-    this.playerBlockCollider = this.physics.add.collider(this.player, this.terrain.blocksGroup);
-    this.playerWaterCollider = this.physics.add.collider(this.player, this.terrain.waterGroup);
-    this.playerEnemyCollider = this.physics.add.collider(this.player, this.enemies, () => {
+    // Player vs Obstacles & Enemies
+    this.physics.add.collider(this.playerGroup, this.terrain.wallsGroup);
+    this.physics.add.collider(this.playerGroup, this.terrain.blocksGroup);
+    // Water hazard causes instant life loss if driven into (AC-6)
+    this.physics.add.collider(this.playerGroup, this.terrain.waterGroup, () => {
+      if (!this.isPlayerInvulnerable) {
+        this.onPlayerHit();
+      }
+    });
+    this.physics.add.collider(this.playerGroup, this.enemies, () => {
       if (!this.isPlayerInvulnerable) {
         this.onPlayerHit();
       }
@@ -218,8 +222,9 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    // Check destructible blocks proximity
-    this.terrain.blocksGroup.getChildren().forEach((block) => {
+    // Check destructible blocks proximity (cloned array to prevent mutation during iteration)
+    const blocks = [...this.terrain.blocksGroup.getChildren()];
+    blocks.forEach((block) => {
       if (block.active) {
         const bDist = Phaser.Math.Distance.Between(x, y, block.x, block.y);
         if (bDist <= radius) {
@@ -262,7 +267,7 @@ export class GameScene extends Phaser.Scene {
 
     const pStart = this.terrain.toWorld(this.levelData.playerStart.x, this.levelData.playerStart.y);
     this.player = new PlayerTank(this, pStart.x, pStart.y);
-    this.setupPlayerColliders();
+    this.playerGroup.add(this.player);
 
     // 1.5s invulnerability flash
     this.isPlayerInvulnerable = true;
