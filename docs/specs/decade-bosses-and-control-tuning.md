@@ -1,5 +1,5 @@
 ---
-status: frozen
+status: shipped
 title: Decade Bosses & Control Usability Tuning
 source: internal
 source_doc: user_request

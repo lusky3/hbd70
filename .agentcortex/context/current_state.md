@@ -17,12 +17,13 @@
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
 - **Last Updated**: 2026-09-19
 - **Last Verified**: 2026-09-19
-- **Update Sequence**: 0
+- **Update Sequence**: 1
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
 - **Spec Index** (project specs at `docs/specs/`):
   - docs/specs/birthday-tanks-core.md: Birthday Tanks! — Allan Lusk's 70th Birthday Edition [status: shipped] [Updated: 2026-09-19]
+  - docs/specs/decade-bosses-and-control-tuning.md: Decade Bosses & Control Usability Tuning [status: shipped] [Updated: 2026-09-19]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -67,6 +68,10 @@
 (none yet)
 
 ## Ship History
+
+### Ship-main-2026-09-19-bosses
+- Feature shipped: Decade Bosses & Control Usability Tuning — 7 unique decade climax bosses (Levels 10, 20, 30, 40, 50, 60, 70), forward-locked motorcycle firing with tap-to-aim arena targeting, 3.8s LevelCard pacing with tap-to-skip prompt, untruncated 2-row top HUD header, and player turret anchor fix upon level completion.
+- Tests: Pass (19/19 node tests + Playwright headless browser E2E 10/10 assertions + ACX validator 113 PASS)
 
 ### Ship-main-2026-09-19
 - Feature shipped: Birthday Tanks! — 70-level retro arcade mobile browser tribute for Allan Lusk's 70th Birthday. Procedural Canvas vector sprites, Web Audio synthesizer with continuous 32-step chiptune BGM and HUD mute toggle, 7 decade worlds (1956-2026), 7 enemy archetypes, dual touch and desktop controls, GitHub Pages live deployment.
