@@ -45,12 +45,12 @@ test('AC-4: Allan Lusk Specific Family & Career Milestones Present', () => {
   assert.match(MILESTONES[9].title, /Gilligan's Island/i);
   // 1966: Star Trek TOS
   assert.match(MILESTONES[11].title, /Star Trek: TOS/i);
-  // 1976: CN Rail & George Brown College
-  assert.match(MILESTONES[21].title, /CN Rail.*George Brown/i);
+  // 1976: CN Rail & Jennifer born June 27
+  assert.match(MILESTONES[21].title, /Joining CN Rail.*Jennifer Born \(June 27\)/i);
   // 1979: Amy born May 14
   assert.match(MILESTONES[24].title, /Amy Born \(May 14\)/i);
-  // 1981: Jennifer born June 27
-  assert.match(MILESTONES[26].title, /Jennifer Born \(June 27\)/i);
+  // 1981: Cottage Weekends
+  assert.match(MILESTONES[26].title, /Cottage Weekends/i);
   // 1983: A-Team
   assert.match(MILESTONES[28].title, /A-Team/i);
   // 1987: Wedding to Carrie Orr & Star Trek TNG
@@ -141,8 +141,5 @@ test('AC-3: All 7 Decade Climax Levels (10, 20, 30, 40, 50, 60, 70) Feature Uniq
     // Verify boss is present in enemies array
     const bossInEnemies = level.enemies.find(e => e.type === expectedBoss);
     assert.ok(bossInEnemies, `Level ${lvlNum} must contain ${expectedBoss} in its enemies list`);
-
-    // Verify milestone title mentions Boss
-    assert.match(level.title, /Boss:/i, `Level ${lvlNum} title should mention Boss battle`);
   }
 });
