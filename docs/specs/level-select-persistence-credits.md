@@ -1,5 +1,5 @@
 ---
-status: frozen
+status: shipped
 title: Level Select, Game Progress Persistence & Allan Lusk Star Wars Credits
 source: internal
 source_doc: user_request
