@@ -11,6 +11,12 @@ export function generateTextures(scene) {
   generateSnowmobileTexture(scene);
   generateBikerTexture(scene);
   generateBossTexture(scene);
+  generateBossCandleTexture(scene);
+  generateBossGolfTexture(scene);
+  generateBossPuckTexture(scene);
+  generateBossBoatTexture(scene);
+  generateBossSnowmobileTexture(scene);
+  generateBossBikerTexture(scene);
   generateBulletTexture(scene);
   generateMineTexture(scene);
   generateWallTexture(scene);
@@ -269,6 +275,333 @@ function generateBossTexture(scene) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('70', 27, 28);
+
+  canvas.refresh();
+
+  // Also register alias 'boss_70'
+  if (!scene.textures.exists('boss_70')) {
+    const canvas70 = scene.textures.createCanvas('boss_70', 54, 54);
+    const ctx70 = canvas70.getContext();
+    ctx70.drawImage(canvas.getCanvas(), 0, 0);
+    canvas70.refresh();
+  }
+}
+
+function generateBossCandleTexture(scene) {
+  if (scene.textures.exists('boss_candle')) return;
+  const canvas = scene.textures.createCanvas('boss_candle', 44, 44);
+  const ctx = canvas.getContext();
+
+  // Mega Candle Base Plate
+  ctx.fillStyle = '#b45309';
+  ctx.beginPath();
+  ctx.ellipse(22, 38, 16, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#fde047';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Candle Body (Crimson & Gold Striped Wax Column)
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(10, 14, 24, 24);
+  // Gold diagonal stripes
+  ctx.fillStyle = '#fbbf24';
+  ctx.beginPath();
+  ctx.moveTo(10, 20); ctx.lineTo(22, 14); ctx.lineTo(26, 14); ctx.lineTo(10, 24); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(10, 30); ctx.lineTo(34, 18); ctx.lineTo(34, 22); ctx.lineTo(10, 34); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(18, 38); ctx.lineTo(34, 30); ctx.lineTo(34, 34); ctx.lineTo(26, 38); ctx.closePath(); ctx.fill();
+
+  // Wax drips on rim
+  ctx.fillStyle = '#fef08a';
+  ctx.beginPath();
+  ctx.ellipse(22, 14, 12, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Wick
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(22, 14);
+  ctx.lineTo(22, 9);
+  ctx.stroke();
+
+  // Radiant Glowing Multi-layer Flame
+  ctx.fillStyle = 'rgba(251, 191, 36, 0.4)';
+  ctx.beginPath();
+  ctx.arc(22, 8, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#f97316';
+  ctx.beginPath();
+  ctx.moveTo(22, 1);
+  ctx.quadraticCurveTo(28, 7, 24, 10);
+  ctx.quadraticCurveTo(22, 11, 20, 10);
+  ctx.quadraticCurveTo(16, 7, 22, 1);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(22, 7, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  canvas.refresh();
+}
+
+function generateBossGolfTexture(scene) {
+  if (scene.textures.exists('boss_golf')) return;
+  const canvas = scene.textures.createCanvas('boss_golf', 44, 44);
+  const ctx = canvas.getContext();
+
+  // The Golf Dreadnought — Heavy Armored Cart
+  // 4 Chunky Off-road Wheels
+  ctx.fillStyle = '#18181b';
+  ctx.fillRect(4, 5, 8, 10);
+  ctx.fillRect(32, 5, 8, 10);
+  ctx.fillRect(4, 29, 8, 10);
+  ctx.fillRect(32, 29, 8, 10);
+
+  // Armored Chassis
+  ctx.fillStyle = '#064e3b';
+  ctx.fillRect(10, 8, 24, 28);
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(10, 8, 24, 28);
+
+  // Striped Canopy
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(12, 12, 20, 20);
+  ctx.fillStyle = '#047857';
+  ctx.fillRect(15, 12, 4, 20);
+  ctx.fillRect(23, 12, 4, 20);
+
+  // Twin Mortar Launchers
+  ctx.fillStyle = '#d97706';
+  ctx.fillRect(14, 2, 4, 8);
+  ctx.fillRect(26, 2, 4, 8);
+  ctx.strokeStyle = '#fde68a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(14, 2, 4, 8);
+  ctx.strokeRect(26, 2, 4, 8);
+
+  // Center Emblem: Golf Ball
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(22, 22, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#94a3b8';
+  ctx.beginPath();
+  ctx.arc(21, 21, 1, 0, Math.PI * 2);
+  ctx.arc(23, 21, 1, 0, Math.PI * 2);
+  ctx.arc(22, 23, 1, 0, Math.PI * 2);
+  ctx.fill();
+
+  canvas.refresh();
+}
+
+function generateBossPuckTexture(scene) {
+  if (scene.textures.exists('boss_puck')) return;
+  const canvas = scene.textures.createCanvas('boss_puck', 46, 46);
+  const ctx = canvas.getContext();
+
+  // The Zamboni Juggernaut
+  // Heavy Steel Body
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(8, 8, 30, 30);
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(8, 8, 30, 30);
+
+  // Front Rotating Ice Scraper Cylinder / Blade
+  ctx.fillStyle = '#64748b';
+  ctx.fillRect(6, 4, 34, 6);
+  ctx.fillStyle = '#38bdf8';
+  for (let x = 8; x <= 36; x += 6) {
+    ctx.fillRect(x, 4, 3, 6);
+  }
+
+  // Enclosed Cab with Cyan Tint
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(13, 14, 20, 12);
+  ctx.fillStyle = '#bae6fd';
+  ctx.fillRect(15, 16, 16, 4);
+
+  // Twin Heavy Puck Cannons
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(11, 2, 5, 8);
+  ctx.fillRect(30, 2, 5, 8);
+
+  // Rear Water Conditioner Tank & Red Warning Lights
+  ctx.fillStyle = '#e11d48';
+  ctx.fillRect(10, 34, 4, 4);
+  ctx.fillRect(32, 34, 4, 4);
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(16, 30, 14, 7);
+
+  canvas.refresh();
+}
+
+function generateBossBoatTexture(scene) {
+  if (scene.textures.exists('boss_boat')) return;
+  const canvas = scene.textures.createCanvas('boss_boat', 46, 46);
+  const ctx = canvas.getContext();
+
+  // The Iron Cruiser — Catamaran Naval Gunboat
+  // Left Pontoon
+  ctx.fillStyle = '#1e3a8a';
+  ctx.beginPath();
+  ctx.moveTo(11, 4);
+  ctx.lineTo(16, 12);
+  ctx.lineTo(16, 38);
+  ctx.lineTo(6, 38);
+  ctx.lineTo(6, 12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Right Pontoon
+  ctx.beginPath();
+  ctx.moveTo(35, 4);
+  ctx.lineTo(40, 12);
+  ctx.lineTo(40, 38);
+  ctx.lineTo(30, 38);
+  ctx.lineTo(30, 12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Central Armored Bridge Deck
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(14, 14, 18, 20);
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(14, 14, 18, 20);
+
+  // Twin Naval Cannons (Front)
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(8, 2, 4, 10);
+  ctx.fillRect(34, 2, 4, 10);
+
+  // Radar Mast / Antennas
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(23, 22, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Twin Turbine Exhausts
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(8, 38, 6, 4);
+  ctx.fillRect(32, 38, 6, 4);
+
+  canvas.refresh();
+}
+
+function generateBossSnowmobileTexture(scene) {
+  if (scene.textures.exists('boss_snowmobile')) return;
+  const canvas = scene.textures.createCanvas('boss_snowmobile', 46, 46);
+  const ctx = canvas.getContext();
+
+  // The Blizzard Snowcat
+  // Heavy Dual Spiked Snow Treads
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(4, 8, 8, 32);
+  ctx.fillRect(34, 8, 8, 32);
+  // Tread Cleats
+  ctx.fillStyle = '#94a3b8';
+  for (let y = 10; y <= 36; y += 5) {
+    ctx.fillRect(4, y, 8, 2);
+    ctx.fillRect(34, y, 8, 2);
+  }
+
+  // Front V-Plow Blade
+  ctx.fillStyle = '#0284c7';
+  ctx.beginPath();
+  ctx.moveTo(23, 2);
+  ctx.lineTo(42, 10);
+  ctx.lineTo(4, 10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#e0f2fe';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Armored Cabin
+  ctx.fillStyle = '#047857';
+  ctx.fillRect(12, 12, 22, 24);
+  ctx.strokeStyle = '#34d399';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(12, 12, 22, 24);
+
+  // Windshield & Light Bar
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillRect(15, 14, 16, 6);
+  ctx.fillStyle = '#fde047';
+  ctx.fillRect(17, 10, 12, 3);
+
+  // Twin Ice-Shard Missile Launchers
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(13, 24, 6, 10);
+  ctx.fillRect(27, 24, 6, 10);
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillRect(14, 22, 4, 3);
+  ctx.fillRect(28, 22, 4, 3);
+
+  canvas.refresh();
+}
+
+function generateBossBikerTexture(scene) {
+  if (scene.textures.exists('boss_biker')) return;
+  const canvas = scene.textures.createCanvas('boss_biker', 48, 48);
+  const ctx = canvas.getContext();
+
+  // The Chopper Warlord — Heavy Touring Trike
+  // Massive Rear Drag Wheels
+  ctx.fillStyle = '#09090b';
+  ctx.fillRect(4, 26, 10, 16);
+  ctx.fillRect(34, 26, 10, 16);
+  ctx.fillStyle = '#71717a';
+  ctx.fillRect(6, 32, 6, 4);
+  ctx.fillRect(36, 32, 6, 4);
+
+  // Front Fork & Front Wheel
+  ctx.fillStyle = '#09090b';
+  ctx.fillRect(20, 4, 8, 12);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(20, 4, 8, 12);
+
+  // Ape Hanger Chrome Handlebars
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(12, 10, 24, 3);
+  ctx.fillRect(12, 7, 3, 5);
+  ctx.fillRect(33, 7, 3, 5);
+
+  // Flame Red/Orange Teardrop Body / Fuel Tank
+  ctx.fillStyle = '#ea580c';
+  ctx.beginPath();
+  ctx.ellipse(24, 24, 10, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fbbf24';
+  ctx.beginPath();
+  ctx.ellipse(24, 24, 6, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Exposed Chrome V-Twin Engine
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillRect(16, 22, 5, 8);
+  ctx.fillRect(27, 22, 5, 8);
+
+  // Twin Heavy Upswept Exhaust Pipes with Flame Tips
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(8, 18, 4, 18);
+  ctx.fillRect(36, 18, 4, 18);
+  // Flame tips
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(8, 15, 4, 3);
+  ctx.fillRect(36, 15, 4, 3);
 
   canvas.refresh();
 }

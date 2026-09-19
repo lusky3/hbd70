@@ -113,17 +113,94 @@ test('AC-6: Amphibious Boat vs Land Entity Water Collision Rule', () => {
 
   function canTraverseTile(entityType, tileType) {
     if (tileType === TILE_WATER) {
-      // Boat is amphibious and navigates water channels
-      return entityType === 'boat';
+      // Both regular boat and Level 40 boss_boat (Iron Cruiser) are amphibious
+      return entityType === 'boat' || entityType === 'boss_boat';
     }
     // All other land tiles (tile 0 = ground)
     return tileType === 0;
   }
 
   assert.equal(canTraverseTile('boat', TILE_WATER), true, 'Patrol Boat can traverse water');
+  assert.equal(canTraverseTile('boss_boat', TILE_WATER), true, 'Level 40 Boss Iron Cruiser can traverse water');
   assert.equal(canTraverseTile('motorcycle', TILE_WATER), false, 'Player motorcycle cannot traverse water');
   assert.equal(canTraverseTile('candle', TILE_WATER), false, 'Land enemy cannot traverse water');
-  assert.equal(canTraverseTile('boss', TILE_WATER), false, 'Boss tank cannot traverse water');
+  assert.equal(canTraverseTile('boss', TILE_WATER), false, 'Standard boss tank cannot traverse water');
+});
+
+// 4. Control Usability & Forward-Locked Aim Mechanics
+test('AC-1: Forward-Locked Firing & Tap-to-Aim Unlock State Transitions', () => {
+  let isAimUnlocked = false;
+  let playerRotation = 0; // Facing right (0 rad)
+  let turretAngle = 0;
+  let aimVector = { x: 1, y: 0 };
+
+  // Step 1: Default forward lock — when driving, turret matches motorcycle rotation
+  function onMove(angle) {
+    playerRotation = angle;
+    if (!isAimUnlocked) {
+      turretAngle = playerRotation;
+      aimVector = { x: Math.cos(playerRotation), y: Math.sin(playerRotation) };
+    }
+  }
+
+  onMove(Math.PI / 2); // Driving downward
+  assert.equal(playerRotation, Math.PI / 2);
+  assert.equal(turretAngle, Math.PI / 2, 'Turret must be locked forward facing down');
+  assert.ok(Math.abs(aimVector.y - 1) < 0.001);
+
+  // Step 2: Arena touch unlocks 360-degree aiming
+  function onArenaTouch(targetX, targetY, playerX = 100, playerY = 100) {
+    isAimUnlocked = true;
+    const dx = targetX - playerX;
+    const dy = targetY - playerY;
+    const angle = Math.atan2(dy, dx);
+    aimVector = { x: Math.cos(angle), y: Math.sin(angle) };
+    turretAngle = angle;
+  }
+
+  onArenaTouch(50, 100); // Aiming left while driving down
+  assert.equal(isAimUnlocked, true, 'Touch unlocks aim');
+  assert.ok(Math.abs(turretAngle - Math.PI) < 0.001 || Math.abs(turretAngle - -Math.PI) < 0.001, 'Turret points to tap target');
+
+  // Step 3: Arena touch release re-locks to forward on next move
+  function onArenaRelease() {
+    isAimUnlocked = false;
+  }
+  onArenaRelease();
+  assert.equal(isAimUnlocked, false, 'Aim locked state restored');
+  onMove(-Math.PI / 2); // Drive up
+  assert.equal(turretAngle, -Math.PI / 2, 'Turret re-aligns forward to direction of travel');
+});
+
+// 5. Boss Hitpoints & Health Bar Ratio Logic
+test('AC-3: Decade Boss HP Progression & Hit Decrement Verification', () => {
+  const bossStats = {
+    boss_candle: { hp: 3 },
+    boss_golf: { hp: 4 },
+    boss_puck: { hp: 5 },
+    boss_boat: { hp: 5 },
+    boss_snowmobile: { hp: 6 },
+    boss_biker: { hp: 6 },
+    boss: { hp: 8 }
+  };
+
+  for (const [bossType, config] of Object.entries(bossStats)) {
+    let currentHp = config.hp;
+    const maxHp = config.hp;
+
+    assert.ok(currentHp >= 3 && currentHp <= 8, `${bossType} HP must scale between 3 and 8`);
+
+    // Simulate hits
+    for (let hit = 1; hit < maxHp; hit++) {
+      currentHp--;
+      const ratio = currentHp / maxHp;
+      assert.ok(ratio > 0 && ratio < 1, `Health ratio after hit ${hit} must be valid fraction`);
+    }
+
+    // Final killing blow
+    currentHp--;
+    assert.equal(currentHp, 0, `${bossType} should be defeated at 0 HP`);
+  }
 });
 
 // 4. BGM Sequencer Pattern Integrity

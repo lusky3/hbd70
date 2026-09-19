@@ -110,6 +110,97 @@ def run_e2e():
             }""")
             assert audio_state_2["muteText"] == "🔊", f"Expected unmuted icon 🔊, got {audio_state_2['muteText']}"
 
+            # 7. Verify Forward-Locked Aim & Tap-to-Aim Unlock in Gameplay
+            control_state = page.evaluate("""() => {
+                const gameScene = window.game.scene.getScene('Game');
+                const controls = gameScene.controls;
+                const initialLocked = !controls.isAimUnlocked;
+
+                // Simulate arena tap at (200, 300) [y <= 615]
+                gameScene.input.emit('pointerdown', { id: 1, x: 200, y: 300 });
+                const unlockedAfterTap = controls.isAimUnlocked;
+
+                // Simulate arena release
+                gameScene.input.emit('pointerup', { id: 1, x: 200, y: 300 });
+                const lockedAfterRelease = !controls.isAimUnlocked;
+
+                return {
+                    initialLocked,
+                    unlockedAfterTap,
+                    lockedAfterRelease
+                };
+            }""")
+            assert control_state["initialLocked"], "Aim should be forward-locked by default"
+            assert control_state["unlockedAfterTap"], "Aim should unlock upon arena tap"
+            assert control_state["lockedAfterRelease"], "Aim should re-lock upon touch release"
+
+            # 8. Verify Level 10 Decade Climax Boss (The Mega Candle) & Untruncated HUD
+            page.evaluate("""() => {
+                const gameScene = window.game.scene.getScene('Game');
+                gameScene.scene.start('Game', { levelNum: 10, lives: 3, tanksDefeated: 15 });
+            }""")
+            time.sleep(1.0)
+
+            boss_10_eval = page.evaluate("""() => {
+                const gameScene = window.game.scene.getScene('Game');
+                const hudScene = window.game.scene.getScene('HUD');
+
+                const enemies = gameScene.enemies.getChildren();
+                const boss = enemies.find(e => e.type === 'boss_candle');
+
+                return {
+                    levelNum: gameScene.levelNum,
+                    isBossLevel: gameScene.levelData.isBossLevel,
+                    bossType: gameScene.levelData.bossType,
+                    bossFound: !!boss,
+                    bossHp: boss ? boss.hp : null,
+                    hasHealthBar: boss ? !!boss.healthBar : false,
+                    hudTitle: hudScene.subText ? hudScene.subText.text : '',
+                    hasEllipsis: hudScene.subText ? hudScene.subText.text.includes('...') : false
+                };
+            }""")
+
+            assert boss_10_eval["levelNum"] == 10, f"Expected level 10, got {boss_10_eval['levelNum']}"
+            assert boss_10_eval["isBossLevel"], "Level 10 must be marked as isBossLevel"
+            assert boss_10_eval["bossType"] == "boss_candle", f"Expected boss_candle, got {boss_10_eval['bossType']}"
+            assert boss_10_eval["bossFound"], "Level 10 must spawn boss_candle"
+            assert boss_10_eval["bossHp"] == 3, f"Level 10 boss must have 3 HP, got {boss_10_eval['bossHp']}"
+            assert boss_10_eval["hasHealthBar"], "Level 10 boss must have an attached health bar"
+            assert not boss_10_eval["hasEllipsis"], f"HUD title must not be truncated with ellipsis: {boss_10_eval['hudTitle']}"
+
+            # 9. Verify Level 70 Grand Champion Climax Boss (The 70!)
+            page.evaluate("""() => {
+                const gameScene = window.game.scene.getScene('Game');
+                gameScene.scene.start('Game', { levelNum: 70, lives: 3, tanksDefeated: 100 });
+            }""")
+            time.sleep(1.0)
+
+            boss_70_eval = page.evaluate("""() => {
+                const gameScene = window.game.scene.getScene('Game');
+                const hudScene = window.game.scene.getScene('HUD');
+
+                const enemies = gameScene.enemies.getChildren();
+                const boss = enemies.find(e => e.type === 'boss');
+
+                return {
+                    levelNum: gameScene.levelNum,
+                    isBossLevel: gameScene.levelData.isBossLevel,
+                    bossType: gameScene.levelData.bossType,
+                    bossFound: !!boss,
+                    bossHp: boss ? boss.hp : null,
+                    hasHealthBar: boss ? !!boss.healthBar : false,
+                    hudTitle: hudScene.subText ? hudScene.subText.text : '',
+                    hasEllipsis: hudScene.subText ? hudScene.subText.text.includes('...') : false
+                };
+            }""")
+
+            assert boss_70_eval["levelNum"] == 70, f"Expected level 70, got {boss_70_eval['levelNum']}"
+            assert boss_70_eval["isBossLevel"], "Level 70 must be marked as isBossLevel"
+            assert boss_70_eval["bossFound"], "Level 70 must spawn boss"
+            assert boss_70_eval["bossHp"] == 8, f"Level 70 boss must have 8 HP, got {boss_70_eval['bossHp']}"
+            assert boss_70_eval["hasHealthBar"], "Level 70 boss must have an attached health bar"
+            assert not boss_70_eval["hasEllipsis"], f"HUD title must not be truncated with ellipsis: {boss_70_eval['hudTitle']}"
+
             browser.close()
 
     finally:

@@ -6,6 +6,7 @@ export class TouchControls {
     this.scene = scene;
     this.moveVector = new Phaser.Math.Vector2(0, 0);
     this.aimVector = new Phaser.Math.Vector2(0, -1);
+    this.isAimUnlocked = false;
     this.isFiring = false;
     this.wantsMine = false;
 
@@ -103,6 +104,10 @@ export class TouchControls {
     }).setOrigin(0.5).setDepth(96);
 
     this.fireBtn.on('pointerdown', () => {
+      if (!this.isAimUnlocked && this.scene.player) {
+        const rad = this.scene.player.rotation;
+        this.aimVector.set(Math.cos(rad), Math.sin(rad));
+      }
       this.isFiring = true;
       this.fireBtn.setScale(0.9);
     });
@@ -137,19 +142,20 @@ export class TouchControls {
       this.mineBtn.setScale(1.0);
     });
 
-    // 5. Arena Direct Aim: Tap/drag anywhere in combat arena (y <= 615) aims and fires
+    // 5. Arena Direct Aim: Tap/drag anywhere in combat arena (y <= 615) unlocks aim and fires
     this.arenaPointerId = null;
 
     this.scene.input.on('pointerdown', (pointer) => {
       if (pointer.y <= 615) {
         this.arenaPointerId = pointer.id;
+        this.isAimUnlocked = true;
         this.updateAimToPoint(pointer.x, pointer.y);
         this.isFiring = true;
       }
     });
 
     this.scene.input.on('pointermove', (pointer) => {
-      if (pointer.y <= 615) {
+      if (pointer.y <= 615 && this.arenaPointerId === pointer.id) {
         this.updateAimToPoint(pointer.x, pointer.y);
       }
     });
@@ -158,6 +164,8 @@ export class TouchControls {
       if (pointer.id === this.arenaPointerId) {
         this.arenaPointerId = null;
         this.isFiring = false;
+        // Re-lock aiming to forward on next move
+        this.isAimUnlocked = false;
       }
     });
   }
@@ -213,10 +221,24 @@ export class TouchControls {
       }
 
       if (this.spaceKey && this.spaceKey.isDown) {
+        if (!this.isAimUnlocked && this.scene.player) {
+          const rad = this.scene.player.rotation;
+          this.aimVector.set(Math.cos(rad), Math.sin(rad));
+        }
         this.isFiring = true;
       }
       if (this.mineKey && Phaser.Input.Keyboard.JustDown(this.mineKey)) {
         this.wantsMine = true;
+      }
+    }
+
+    // Auto-align aim vector to movement direction or motorcycle heading when not manually aiming
+    if (!this.isAimUnlocked) {
+      if (this.moveVector.length() > 0.1) {
+        this.aimVector.copy(this.moveVector);
+      } else if (this.scene.player) {
+        const rad = this.scene.player.rotation;
+        this.aimVector.set(Math.cos(rad), Math.sin(rad));
       }
     }
   }

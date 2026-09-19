@@ -152,7 +152,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.enemies, this.terrain.wallsGroup);
     this.physics.add.collider(this.enemies, this.terrain.blocksGroup);
     // Boat tanks are restricted to water channels / can navigate water
-    this.physics.add.collider(this.enemies, this.terrain.waterGroup, null, (enemy) => enemy.type !== 'boat');
+    this.physics.add.collider(this.enemies, this.terrain.waterGroup, null, (enemy) => enemy.type !== 'boat' && enemy.type !== 'boss_boat');
     this.physics.add.collider(this.enemies, this.enemies);
 
     // Player vs Obstacles & Enemies

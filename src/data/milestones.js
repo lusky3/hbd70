@@ -21,7 +21,7 @@ export const MILESTONES = {
   7: { year: 1962, title: "60s Radio Classics" },
   8: { year: 1963, title: "Neighborhood Street Hockey" },
   9: { year: 1964, title: "Gilligan's Island Premieres ('3-Hour Tour!')" },
-  10: { year: 1965, title: "King City Youth Days" },
+  10: { year: 1965, title: "King City Youth Days — Boss: The Mega Candle 🕯️" },
 
   11: { year: 1966, title: "Star Trek: TOS ('Space, The Final Frontier')" },
   12: { year: 1967, title: "Canada Centennial & Expo 67" },
@@ -32,7 +32,7 @@ export const MILESTONES = {
   17: { year: 1972, title: "Summit Series: Team Canada Hockey Legend!" },
   18: { year: 1973, title: "Tuning Up First Engines" },
   19: { year: 1974, title: "King City Secondary Graduation!" },
-  20: { year: 1975, title: "Classic Motoring & The Open Road" },
+  20: { year: 1975, title: "Classic Motoring — Boss: Golf Dreadnought ⛳" },
 
   21: { year: 1976, title: "Joining CN Rail & George Brown Millwright Program!" },
   22: { year: 1977, title: "Star Wars Hits Theaters ('May The Force Be With You')" },
@@ -43,7 +43,7 @@ export const MILESTONES = {
   27: { year: 1982, title: "Rail Yard Heavy Machinery" },
   28: { year: 1983, title: "The A-Team Premieres ('Love It When a Plan Comes Together')" },
   29: { year: 1984, title: "80s Rock & Long Highway Drives" },
-  30: { year: 1985, title: "Cottage Campfires & Lake Cruising" },
+  30: { year: 1985, title: "Cottage Campfires — Boss: Zamboni Juggernaut 🏒" },
 
   31: { year: 1986, title: "Meeting Carrie Orr" },
   32: { year: 1987, title: "Oct 24: Married Carrie Orr ❤️ & Star Trek: TNG ('Make It So')" },
@@ -54,7 +54,7 @@ export const MILESTONES = {
   37: { year: 1992, title: "Four Wonderful Kids at Home" },
   38: { year: 1993, title: "Backyard Rinks & Hockey Drills" },
   39: { year: 1994, title: "Summer Lake Days at the Cottage" },
-  40: { year: 1995, title: "Family Road Trips Across Ontario" },
+  40: { year: 1995, title: "Family Road Trips — Boss: The Iron Cruiser 🚤" },
 
   41: { year: 1996, title: "Promoted to System Manager, Intermodal Equipment (CN Rail)!" },
   42: { year: 1997, title: "Building the Cottage Dock & Boating" },
@@ -65,7 +65,7 @@ export const MILESTONES = {
   47: { year: 2002, title: "26+ Years of Dedicated Service at CN Rail" },
   48: { year: 2003, title: "Joining Reefer Sales & NCIS Premieres ('Gibbs' Rules')" },
   49: { year: 2004, title: "Starry Nights by the Lake" },
-  50: { year: 2005, title: "Half a Century of Legendary Adventures" },
+  50: { year: 2005, title: "Half a Century — Boss: Blizzard Snowcat ❄️" },
 
   51: { year: 2006, title: "Motorcycle Cruising & The Open Highway" },
   52: { year: 2007, title: "Keeping Reefer Fleet Fleets Rolling" },
@@ -76,7 +76,7 @@ export const MILESTONES = {
   57: { year: 2012, title: "Railcar Pooling Logistics Leadership" },
   58: { year: 2013, title: "Proud Dad & Growing Family Milestones" },
   59: { year: 2014, title: "Highway Adventures with Carrie" },
-  60: { year: 2015, title: "Promoted to TTX Regional Manager (Burlington, ON)!" },
+  60: { year: 2015, title: "TTX Regional Manager — Boss: Chopper Warlord 🏍️" },
 
   61: { year: 2016, title: "The 60 Milestone: Still Riding Strong" },
   62: { year: 2017, title: "TTX Regional Fleet Excellence" },
@@ -87,5 +87,5 @@ export const MILESTONES = {
   67: { year: 2022, title: "Celebrating Life, Family & Good Times" },
   68: { year: 2023, title: "Cruising into Prime Retirement" },
   69: { year: 2024, title: "Counting Down to the Big Milestone" },
-  70: { year: 2026, title: "Happy 70th Birthday, Allan! The Big 70! 🎂🎉" }
+  70: { year: 2026, title: "Happy 70th Birthday, Allan! Grand Boss: The 70! 🎂🎉" }
 };

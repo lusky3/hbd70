@@ -95,16 +95,16 @@ export class LevelCardScene extends Phaser.Scene {
       livesContainer.add(bikeIcon);
     }
 
-    this.add.text(width / 2, height * 0.82, 'Get Ready!', {
+    this.add.text(width / 2, height * 0.82, 'Tap anywhere to start • Get Ready!', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '14px',
-      color: '#64748b'
+      color: '#94a3b8'
     }).setOrigin(0.5);
 
     // Audio cue
     audio.playBounce();
 
-    // Auto-advance after 2.0s (or tap to skip)
+    // Auto-advance after 3.8s (or tap to skip)
     let advanced = false;
     const advanceToGame = () => {
       if (advanced) return;
@@ -119,7 +119,7 @@ export class LevelCardScene extends Phaser.Scene {
       });
     };
 
-    this.time.delayedCall(2000, advanceToGame);
+    this.time.delayedCall(3800, advanceToGame);
     this.input.once('pointerdown', advanceToGame);
   }
 }

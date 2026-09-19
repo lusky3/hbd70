@@ -43,8 +43,14 @@ export class PlayerTank extends Phaser.Physics.Arcade.Sprite {
       this.setVelocity(0, 0);
     }
 
-    // 2. Turret Aiming (Independent)
-    if (aimVector && aimVector.length() > 0.1) {
+    // 2. Turret Aiming (Forward-locked with tap-to-aim unlock)
+    if (this.scene.controls && this.scene.controls.isAimUnlocked) {
+      if (aimVector && aimVector.length() > 0.1) {
+        this.turretAngle = Math.atan2(aimVector.y, aimVector.x);
+      }
+    } else if (this.scene.controls && !this.scene.controls.isAimUnlocked) {
+      this.turretAngle = Phaser.Math.Angle.RotateTo(this.turretAngle, this.rotation, 0.25);
+    } else if (aimVector && aimVector.length() > 0.1) {
       this.turretAngle = Math.atan2(aimVector.y, aimVector.x);
     }
     this.turret.setPosition(this.x, this.y);

@@ -83,15 +83,48 @@ for (let i = 1; i <= 70; i++) {
   const milestone = MILESTONES[i] || { year: 1956 + (i - 1), title: `Level ${i}` };
 
   const grid = createBorderedGrid();
-  const templateFn = TEMPLATES[(i - 1) % TEMPLATES.length];
+  const isBossLevel = i % 10 === 0;
+  const templateFn = isBossLevel ? TEMPLATES[6] : TEMPLATES[(i - 1) % TEMPLATES.length];
   templateFn(grid);
 
   // Determine enemy spawns based on level progression & world
   const enemies = [];
   const enemyType = world.enemyType;
 
-  if (i === 70) {
-    // Level 70: Final Boss — The 70!
+  if (i === 10) {
+    // Level 10: Climax Boss — The Mega Candle
+    grid[3][6] = 0; grid[3][5] = 0; grid[3][7] = 0; grid[2][6] = 0; grid[4][6] = 0;
+    enemies.push({ type: 'boss_candle', x: 6, y: 3 });
+    enemies.push({ type: 'candle', x: 2, y: 2 });
+    enemies.push({ type: 'candle', x: 9, y: 2 });
+  } else if (i === 20) {
+    // Level 20: Climax Boss — The Golf Dreadnought
+    grid[3][6] = 0; grid[3][5] = 0; grid[3][7] = 0; grid[2][6] = 0; grid[4][6] = 0;
+    enemies.push({ type: 'boss_golf', x: 6, y: 3 });
+    enemies.push({ type: 'golf', x: 2, y: 4 });
+  } else if (i === 30) {
+    // Level 30: Climax Boss — The Zamboni Juggernaut
+    grid[3][6] = 0; grid[3][5] = 0; grid[3][7] = 0; grid[2][6] = 0; grid[4][6] = 0;
+    enemies.push({ type: 'boss_puck', x: 6, y: 3 });
+    enemies.push({ type: 'puck', x: 9, y: 4 });
+  } else if (i === 40) {
+    // Level 40: Climax Boss — The Iron Cruiser
+    grid[3][6] = 0; grid[3][5] = 0; grid[3][7] = 0; grid[2][6] = 0; grid[4][6] = 0;
+    enemies.push({ type: 'boss_boat', x: 6, y: 3 });
+    enemies.push({ type: 'boat', x: 2, y: 4 });
+  } else if (i === 50) {
+    // Level 50: Climax Boss — The Blizzard Snowcat
+    grid[3][6] = 0; grid[3][5] = 0; grid[3][7] = 0; grid[2][6] = 0; grid[4][6] = 0;
+    enemies.push({ type: 'boss_snowmobile', x: 6, y: 3 });
+    enemies.push({ type: 'snowmobile', x: 9, y: 4 });
+  } else if (i === 60) {
+    // Level 60: Climax Boss — The Chopper Warlord
+    grid[3][6] = 0; grid[3][5] = 0; grid[3][7] = 0; grid[2][6] = 0; grid[4][6] = 0;
+    enemies.push({ type: 'boss_biker', x: 6, y: 3 });
+    enemies.push({ type: 'biker', x: 2, y: 4 });
+  } else if (i === 70) {
+    // Level 70: Grand Champion Climax Boss — The 70!
+    grid[3][6] = 0; grid[3][5] = 0; grid[3][7] = 0; grid[2][6] = 0; grid[4][6] = 0;
     enemies.push({ type: 'boss', x: 6, y: 3 });
     enemies.push({ type: 'candle', x: 2, y: 2 });
     enemies.push({ type: 'candle', x: 9, y: 2 });
@@ -127,6 +160,8 @@ for (let i = 1; i <= 70; i++) {
 
   LEVELS.push({
     levelNum: i,
+    isBossLevel,
+    bossType: isBossLevel ? enemies[0].type : null,
     worldId: world.id,
     worldName: world.name,
     decade: world.decade,

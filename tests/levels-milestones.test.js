@@ -75,7 +75,10 @@ test('AC-4: Allan Lusk Specific Family & Career Milestones Present', () => {
 test('AC-5 & AC-6: Exactly 70 Levels with Valid Grid & Enemy Data', () => {
   assert.equal(LEVELS.length, 70, 'Must have exactly 70 levels defined in array');
 
-  const validEnemyTypes = new Set(['candle', 'golf', 'puck', 'boat', 'snowmobile', 'biker', 'boss']);
+  const validEnemyTypes = new Set([
+    'candle', 'golf', 'puck', 'boat', 'snowmobile', 'biker', 'boss',
+    'boss_candle', 'boss_golf', 'boss_puck', 'boss_boat', 'boss_snowmobile', 'boss_biker', 'boss_70'
+  ]);
 
   LEVELS.forEach((lvl, idx) => {
     const levelNum = idx + 1;
@@ -115,4 +118,31 @@ test('AC-5 & AC-6: Exactly 70 Levels with Valid Grid & Enemy Data', () => {
       }
     }
   });
+});
+
+test('AC-3: All 7 Decade Climax Levels (10, 20, 30, 40, 50, 60, 70) Feature Unique Bosses', () => {
+  const expectedBosses = {
+    10: 'boss_candle',
+    20: 'boss_golf',
+    30: 'boss_puck',
+    40: 'boss_boat',
+    50: 'boss_snowmobile',
+    60: 'boss_biker',
+    70: 'boss'
+  };
+
+  for (const [lvlStr, expectedBoss] of Object.entries(expectedBosses)) {
+    const lvlNum = Number(lvlStr);
+    const level = LEVELS[lvlNum - 1];
+    assert.ok(level, `Level ${lvlNum} must exist`);
+    assert.equal(level.isBossLevel, true, `Level ${lvlNum} must have isBossLevel: true`);
+    assert.equal(level.bossType, expectedBoss, `Level ${lvlNum} bossType must be ${expectedBoss}`);
+
+    // Verify boss is present in enemies array
+    const bossInEnemies = level.enemies.find(e => e.type === expectedBoss);
+    assert.ok(bossInEnemies, `Level ${lvlNum} must contain ${expectedBoss} in its enemies list`);
+
+    // Verify milestone title mentions Boss
+    assert.match(level.title, /Boss:/i, `Level ${lvlNum} title should mention Boss battle`);
+  }
 });
