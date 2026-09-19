@@ -8,6 +8,8 @@ import { GameScene } from './scenes/Game.js';
 import { HUDScene } from './scenes/HUD.js';
 import { GameOverScene } from './scenes/GameOver.js';
 import { VictoryScene } from './scenes/Victory.js';
+import { LevelSelectScene } from './scenes/LevelSelect.js';
+import { CreditsScene } from './scenes/Credits.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -29,11 +31,13 @@ const config = {
   scene: [
     BootScene,
     SplashScene,
+    LevelSelectScene,
     LevelCardScene,
     GameScene,
     HUDScene,
     GameOverScene,
-    VictoryScene
+    VictoryScene,
+    CreditsScene
   ],
   input: {
     activePointers: 3

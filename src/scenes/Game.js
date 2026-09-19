@@ -9,6 +9,7 @@ import { Mine } from '../entities/Mine.js';
 import { TerrainBuilder } from '../systems/TerrainBuilder.js';
 import { TouchControls } from '../systems/TouchControls.js';
 import { audio } from '../systems/AudioManager.js';
+import { storage } from '../systems/Storage.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -309,6 +310,7 @@ export class GameScene extends Phaser.Scene {
       if (remaining === 0 && !this.isLevelClearing && !this.isGameOver) {
         this.isLevelClearing = true;
         this.isPlayerInvulnerable = true;
+        storage.recordLevelBeaten(this.levelNum);
 
         if (this.player && this.player.active) {
           this.player.stop();

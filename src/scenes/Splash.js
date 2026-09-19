@@ -2,6 +2,7 @@
 // Warm festive splash screen unlocking Web Audio API on first user interaction
 
 import { audio } from '../systems/AudioManager.js';
+import { storage } from '../systems/Storage.js';
 
 export class SplashScene extends Phaser.Scene {
   constructor() {
@@ -11,6 +12,7 @@ export class SplashScene extends Phaser.Scene {
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+    const progress = storage.getProgress();
 
     // 1. Background gradient / dark midnight celebratory canvas
     const bg = this.add.graphics();
@@ -38,10 +40,10 @@ export class SplashScene extends Phaser.Scene {
     }
 
     // 3. Animated Birthday Cake / Tank Icon
-    const cakeContainer = this.add.container(width / 2, height * 0.26);
+    const cakeContainer = this.add.container(width / 2, height * 0.24);
 
     const cakeText = this.add.text(0, 0, '🎂', {
-      fontSize: '68px',
+      fontSize: '64px',
       align: 'center'
     }).setOrigin(0.5);
 
@@ -49,7 +51,7 @@ export class SplashScene extends Phaser.Scene {
 
     this.tweens.add({
       targets: cakeContainer,
-      y: height * 0.26 - 10,
+      y: height * 0.24 - 8,
       scaleY: 1.05,
       scaleX: 1.03,
       duration: 1200,
@@ -59,27 +61,27 @@ export class SplashScene extends Phaser.Scene {
     });
 
     // 4. Headline & Family Dedication
-    this.add.text(width / 2, height * 0.38, 'HAPPY 70th BIRTHDAY,\nALLAN!', {
+    this.add.text(width / 2, height * 0.35, 'HAPPY 70th BIRTHDAY,\nALLAN!', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '28px',
+      fontSize: '27px',
       fontWeight: 'bold',
       color: '#ffd700',
       align: 'center',
-      lineSpacing: 8,
+      lineSpacing: 6,
       shadow: { color: '#b45309', fill: true, blur: 8, offsetX: 0, offsetY: 2 }
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.49, 'From Cody, Amy, Jenn & Kelsey\n— and Carrie ❤️', {
+    this.add.text(width / 2, height * 0.45, 'From Cody, Amy, Jenn & Kelsey\n— and Carrie ❤️', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '17px',
+      fontSize: '16px',
       color: '#cbd5e1',
       align: 'center',
-      lineSpacing: 6
+      lineSpacing: 5
     }).setOrigin(0.5);
 
     // Motorcycle Graphic Preview
-    const bike = this.add.sprite(width / 2, height * 0.58, 'motorcycle').setScale(1.6);
-    this.add.sprite(width / 2, height * 0.58, 'turret').setScale(1.6);
+    const bike = this.add.sprite(width / 2, height * 0.54, 'motorcycle').setScale(1.5);
+    this.add.sprite(width / 2, height * 0.54, 'turret').setScale(1.5);
     this.tweens.add({
       targets: bike,
       angle: { from: -4, to: 4 },
@@ -88,27 +90,31 @@ export class SplashScene extends Phaser.Scene {
       repeat: -1
     });
 
-    this.add.text(width / 2, height * 0.64, 'Allan\'s Cruiser Tank Edition', {
+    this.add.text(width / 2, height * 0.60, 'Allan\'s Cruiser Tank Edition', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#94a3b8'
     }).setOrigin(0.5);
 
-    // 5. "TAP TO PLAY" Interactive Button (Audio unlock gate)
-    const btnWidth = 240;
-    const btnHeight = 56;
+    // 5. "TAP TO PLAY" / "RESUME" Interactive Button
+    const btnWidth = 230;
+    const btnHeight = 52;
     const btnX = width / 2;
-    const btnY = height * 0.76;
+    const btnY = height * 0.70;
 
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0x22c55e, 1);
-    btnBg.fillRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 16);
+    btnBg.fillRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 14);
     btnBg.lineStyle(3, 0x86efac, 1);
-    btnBg.strokeRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 16);
+    btnBg.strokeRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 14);
 
-    const btnText = this.add.text(btnX, btnY, 'TAP TO PLAY', {
+    const playLabel = progress.highestLevelBeaten > 0
+      ? `RESUME (L${progress.unlockedLevel})`
+      : 'TAP TO PLAY';
+
+    const btnText = this.add.text(btnX, btnY, playLabel, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '22px',
+      fontSize: '20px',
       fontWeight: 'bold',
       color: '#ffffff'
     }).setOrigin(0.5);
@@ -119,33 +125,86 @@ export class SplashScene extends Phaser.Scene {
     // Pulse button animation
     this.tweens.add({
       targets: [btnBg, btnText],
-      scale: 1.04,
-      duration: 650,
+      scale: 1.03,
+      duration: 700,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
 
-    // Tap handler
+    // Play/Resume handler
     hitZone.on('pointerdown', () => {
-      // Unlock Web Audio API context
       audio.init();
       audio.playShoot();
 
       this.cameras.main.fadeOut(300, 0, 0, 0);
       this.time.delayedCall(300, () => {
         this.scene.start('LevelCard', {
-          levelNum: 1,
+          levelNum: progress.unlockedLevel,
           lives: 3,
           tanksDefeated: 0
         });
       });
     });
 
-    this.add.text(width / 2, height * 0.85, '70 Levels • 1956 to 2026', {
+    // 6. "LEVELS" Button (Stage select & progress tracker)
+    const levelsBtnWidth = 210;
+    const levelsBtnHeight = 44;
+    const levelsBtnY = height * 0.80;
+
+    const levelsBtnBg = this.add.graphics();
+    levelsBtnBg.fillStyle(0x1e293b, 0.95);
+    levelsBtnBg.fillRoundedRect(btnX - levelsBtnWidth / 2, levelsBtnY - levelsBtnHeight / 2, levelsBtnWidth, levelsBtnHeight, 12);
+    levelsBtnBg.lineStyle(2, 0x38bdf8, 1);
+    levelsBtnBg.strokeRoundedRect(btnX - levelsBtnWidth / 2, levelsBtnY - levelsBtnHeight / 2, levelsBtnWidth, levelsBtnHeight, 12);
+
+    const beatenCount = progress.beatenLevels.length;
+    const levelsBtnText = this.add.text(btnX, levelsBtnY, `LEVELS (${beatenCount}/70)`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '13px',
+      fontSize: '15px',
+      fontWeight: 'bold',
+      color: '#38bdf8',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+
+    const levelsHitZone = this.add.zone(btnX, levelsBtnY, levelsBtnWidth, levelsBtnHeight)
+      .setInteractive({ useHandCursor: true });
+
+    levelsHitZone.on('pointerdown', () => {
+      audio.init();
+      this.scene.start('LevelSelect');
+    });
+
+    this.add.text(width / 2, height * 0.88, '70 Levels • 1956 to 2026', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
       color: '#64748b'
     }).setOrigin(0.5);
+
+    // 7. Small "Credits" Link in Bottom Right
+    const creditsLink = this.add.container(width - 20, height - 22);
+    const creditsText = this.add.text(0, 0, 'Credits 📜', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: '600',
+      color: '#94a3b8'
+    }).setOrigin(1, 1);
+
+    creditsLink.add(creditsText);
+    creditsLink.setSize(75, 40);
+    creditsLink.setInteractive({ useHandCursor: true });
+
+    creditsLink.on('pointerdown', () => {
+      audio.init();
+      this.scene.start('Credits');
+    });
+
+    creditsLink.on('pointerover', () => {
+      creditsText.setColor('#ffd700');
+    });
+
+    creditsLink.on('pointerout', () => {
+      creditsText.setColor('#94a3b8');
+    });
   }
 }

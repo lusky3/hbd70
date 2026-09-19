@@ -247,6 +247,98 @@ def run_e2e():
             assert settled_state["vy"] == 0, f"Player body Y velocity must be 0 after level clear, got {settled_state['vy']}"
             assert settled_state["turretMatches"], f"Turret must remain attached to tank position (turret: {settled_state['turretX']}, player: {settled_state['playerX']})"
 
+            # 11. Verify Level Select, LocalStorage Persistence & Star Wars Credits
+            # Check localStorage was written when level completed in Step 10
+            storage_data = page.evaluate("""() => {
+                const raw = localStorage.getItem('hbd70_progress');
+                return raw ? JSON.parse(raw) : null;
+            }""")
+            assert storage_data is not None, "Progress must be saved to localStorage"
+            assert storage_data["highestLevelBeaten"] >= 1, f"Expected highestLevelBeaten >= 1, got {storage_data}"
+            assert 1 in storage_data["beatenLevels"], "Level 1 must be recorded in beatenLevels"
+            assert storage_data["unlockedLevel"] >= 2, f"Level 2 must be unlocked, got {storage_data}"
+
+            # Navigate back to SplashScene and verify new UI elements
+            page.evaluate("""() => {
+                window.game.scene.stop('Game');
+                window.game.scene.start('Splash');
+            }""")
+            time.sleep(0.5)
+
+            splash_eval = page.evaluate("""() => {
+                const splash = window.game.scene.getScene('Splash');
+                const children = splash.children.list;
+                const levelsBtn = children.find(c => c.text && c.text.includes('LEVELS'));
+                const creditsLink = children.find(c => c.type === 'Container' && c.list && c.list.some(sub => sub.text && sub.text.includes('Credits')));
+                return {
+                    hasLevelsBtn: !!levelsBtn,
+                    levelsText: levelsBtn ? levelsBtn.text : null,
+                    hasCredits: !!creditsLink
+                };
+            }""")
+            assert splash_eval["hasLevelsBtn"], "SplashScene must display LEVELS button"
+            assert "1/70" in splash_eval["levelsText"], f"Expected 1/70 beaten levels on button, got {splash_eval['levelsText']}"
+            assert splash_eval["hasCredits"], "SplashScene must display Credits link"
+
+            # Open LevelSelectScene
+            page.evaluate("""() => {
+                window.game.scene.stop('Splash');
+                window.game.scene.start('LevelSelect');
+            }""")
+            time.sleep(0.5)
+
+            level_select_eval = page.evaluate("""() => {
+                const ls = window.game.scene.getScene('LevelSelect');
+                if (!ls || !ls.scene.isActive()) return { active: false };
+
+                const texts = ls.scrollContainer.list.filter(c => c.type === 'Text').map(t => t.text);
+                const hasLevel1Title = texts.some(t => t.includes('Allan is Born'));
+                const hasQuestionMarks = texts.some(t => t === '????');
+
+                return {
+                    active: true,
+                    hasLevel1Title,
+                    hasQuestionMarks
+                };
+            }""")
+            assert level_select_eval["active"], "LevelSelectScene must be active"
+            assert level_select_eval["hasLevel1Title"], "Beaten Level 1 must display milestone title"
+            assert level_select_eval["hasQuestionMarks"], "Unbeaten levels must display ????"
+
+            # Open CreditsScene
+            page.evaluate("""() => {
+                window.game.scene.stop('LevelSelect');
+                window.game.scene.start('Credits');
+            }""")
+            time.sleep(0.5)
+
+            credits_eval = page.evaluate("""() => {
+                const cs = window.game.scene.getScene('Credits');
+                if (!cs || !cs.scene.isActive()) return { active: false };
+
+                const initialOffset = cs.scrollOffset;
+                // Simulate dragging upward
+                cs.input.emit('pointerdown', { y: 500 });
+                cs.input.emit('pointermove', { y: 400 });
+                const scrubbedOffset = cs.scrollOffset;
+                cs.input.emit('pointerup', {});
+
+                const textLines = cs.textItems.map(item => item.obj.text);
+                const hasAllanTribute = textLines.some(t => t.includes("ALLAN'S MILESTONE"));
+                const hasCodyCredit = textLines.some(t => t.includes("Cody Lusk"));
+
+                return {
+                    active: true,
+                    hasAllanTribute,
+                    hasCodyCredit,
+                    scrubbedOffsetChanged: scrubbedOffset !== initialOffset
+                };
+            }""")
+            assert credits_eval["active"], "CreditsScene must be active"
+            assert credits_eval["hasAllanTribute"], "Credits must include Allan Lusk dedication"
+            assert credits_eval["hasCodyCredit"], "Credits must include Cody Lusk credits"
+            assert credits_eval["scrubbedOffsetChanged"], "Dragging must adjust scroll offset"
+
             browser.close()
 
     finally:

@@ -149,3 +149,58 @@
 
 - **Effects**: Full-screen canvas confetti particle emitter.
 - **Tone**: Heartfelt celebratory celebration.
+
+---
+
+## 6. Level Select Screen (`LevelSelectScene`)
+
+```
++---------------------------------------+
+|  [< BACK]          LEVEL SELECT       |
+|  Completed: 12 / 70                   |
+|---------------------------------------|
+|  [L1: 1956 - Year One: Allan is Born] |
+|  [L2: 1957 - First Steps & Toddler]   |
+|  [L3: 1958 - Trike Racer in Training] |
+|  ...                                  |
+|  [L12: 1967 - Canada Centennial]      |
+|  [L13: 1968 - ???? (LOCKED)]          |
+|  [L14: 1969 - ???? (LOCKED)]          |
+|---------------------------------------|
+|  [Scrollable list/grid of 70 levels]  |
++---------------------------------------+
+```
+
+- **Scroll/Drag**: Smooth touch and mouse wheel/drag vertical scrolling across all 70 levels.
+- **Status Indication**: Beaten levels show milestone titles with gold/green accents; unbeaten show `????` with dim lock styling.
+- **Action**: Tapping any beaten or current unlocked level starts gameplay immediately from that level.
+
+---
+
+## 7. Star Wars Credits Screen (`CreditsScene`)
+
+```
++---------------------------------------+
+|  [< BACK]                             |
+|                                       |
+|             .    *        .     *     |
+|               *      .      *         |
+|                                       |
+|               /                     \ |
+|              /   HAPPY 70th BIRTHDAY \ |
+|             /       ALLAN LUSK!       \|
+|            /                           \|
+|           /  Executive Producer: Cody   \|
+|          /   Lead Developer: Cody        \|
+|         /    QA & Playtesting: Cody       \|
+|        /     Special Thanks: Carrie Orr... \|
+|       /                                     \|
+|                                       |
+|         [Drag up/down to scrub crawl] |
++---------------------------------------+
+```
+
+- **Perspective**: Classic Star Wars style perspective crawl or vertical marquee rolling through space starfield.
+- **Interactivity**: User can drag up/down to scrub through the credits roll; releasing resumes auto-scrolling.
+- **Content**: Dedicated to Allan Lusk, attributing humorous AAA studio roles to Cody and thanking open source libraries and family.
+
