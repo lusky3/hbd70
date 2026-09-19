@@ -201,6 +201,52 @@ def run_e2e():
             assert boss_70_eval["hasHealthBar"], "Level 70 boss must have an attached health bar"
             assert not boss_70_eval["hasEllipsis"], f"HUD title must not be truncated with ellipsis: {boss_70_eval['hudTitle']}"
 
+            # 10. Verify Turret Anchoring & Velocity Stop When Level Clears
+            page.evaluate("""() => {
+                const gameScene = window.game.scene.getScene('Game');
+                gameScene.scene.start('Game', { levelNum: 1, lives: 3, tanksDefeated: 0 });
+            }""")
+            time.sleep(1.0)
+
+            clear_state = page.evaluate("""() => {
+                const gameScene = window.game.scene.getScene('Game');
+                const player = gameScene.player;
+
+                // Simulate moving player at 100 velocity
+                player.setVelocity(100, 50);
+
+                // Defeat all enemies to trigger level clearing
+                gameScene.enemies.getChildren().forEach(e => e.destroyTank());
+                gameScene.checkLevelComplete();
+
+                return {
+                    isLevelClearing: gameScene.isLevelClearing
+                };
+            }""")
+            time.sleep(0.4)
+
+            settled_state = page.evaluate("""() => {
+                const gameScene = window.game.scene.getScene('Game');
+                const player = gameScene.player;
+                const turret = player ? player.turret : null;
+
+                const vx = player ? player.body.velocity.x : null;
+                const vy = player ? player.body.velocity.y : null;
+                const turretMatches = player && turret ? (Math.abs(turret.x - player.x) < 0.1 && Math.abs(turret.y - player.y) < 0.1) : false;
+
+                return {
+                    vx,
+                    vy,
+                    turretMatches,
+                    playerX: player ? player.x : null,
+                    turretX: turret ? turret.x : null
+                };
+            }""")
+
+            assert settled_state["vx"] == 0, f"Player body X velocity must be 0 after level clear, got {settled_state['vx']}"
+            assert settled_state["vy"] == 0, f"Player body Y velocity must be 0 after level clear, got {settled_state['vy']}"
+            assert settled_state["turretMatches"], f"Turret must remain attached to tank position (turret: {settled_state['turretX']}, player: {settled_state['playerX']})"
+
             browser.close()
 
     finally:

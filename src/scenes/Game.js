@@ -172,7 +172,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (this.isGameOver || this.isLevelClearing) return;
+    if (this.isGameOver) return;
+
+    if (this.isLevelClearing) {
+      if (this.player && this.player.active) {
+        this.player.stop();
+      }
+      return;
+    }
 
     // 1. Update controls input
     if (this.controls) {
@@ -301,6 +308,16 @@ export class GameScene extends Phaser.Scene {
 
       if (remaining === 0 && !this.isLevelClearing && !this.isGameOver) {
         this.isLevelClearing = true;
+        this.isPlayerInvulnerable = true;
+
+        if (this.player && this.player.active) {
+          this.player.stop();
+        }
+
+        if (this.enemyBullets) {
+          this.enemyBullets.clear(true, true);
+        }
+
         audio.stopBGM();
         audio.playFanfare();
 

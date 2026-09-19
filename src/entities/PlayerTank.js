@@ -28,6 +28,22 @@ export class PlayerTank extends Phaser.Physics.Arcade.Sprite {
     this.turretAngle = -Math.PI / 2; // Facing up by default
   }
 
+  preUpdate(time, delta) {
+    super.preUpdate(time, delta);
+    if (this.turret && this.active) {
+      this.turret.setPosition(this.x, this.y);
+      this.turret.rotation = this.turretAngle;
+    }
+  }
+
+  stop() {
+    this.setVelocity(0, 0);
+    if (this.turret && this.active) {
+      this.turret.setPosition(this.x, this.y);
+      this.turret.rotation = this.turretAngle;
+    }
+  }
+
   update(moveVector, aimVector, isFiring, wantsMine, time) {
     // 1. Movement Physics & Body Rotation
     if (moveVector.length() > 0.1) {
