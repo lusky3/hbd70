@@ -77,6 +77,12 @@ export class GameScene extends Phaser.Scene {
 
     // 7. Setup Colliders
     this.setupColliders();
+
+    // 8. Start Background Music & Shutdown Hook
+    audio.startBGM();
+    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
+      audio.stopBGM();
+    });
   }
 
   setupColliders() {
@@ -247,6 +253,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.lives <= 0) {
       this.isGameOver = true;
+      audio.stopBGM();
       audio.playGameOver();
       this.time.delayedCall(1500, () => {
         this.scene.stop('HUD');
@@ -294,6 +301,7 @@ export class GameScene extends Phaser.Scene {
 
       if (remaining === 0 && !this.isLevelClearing && !this.isGameOver) {
         this.isLevelClearing = true;
+        audio.stopBGM();
         audio.playFanfare();
 
         if (this.confettiEmitter) {

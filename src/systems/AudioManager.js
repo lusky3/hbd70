@@ -6,6 +6,10 @@ class AudioManager {
     this.ctx = null;
     this.isMuted = false;
     this.lastRevTime = 0;
+    this.bgmPlaying = false;
+    this.bgmStep = 0;
+    this.nextNoteTime = 0;
+    this.bgmTimer = null;
   }
 
   init() {
@@ -186,6 +190,101 @@ class AudioManager {
         osc.stop(t + 0.26);
       });
     } catch (e) {}
+  }
+
+  // --- Continuous Chiptune Background Music (BGM) ---
+
+  startBGM() {
+    if (this.bgmPlaying || this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    this.bgmPlaying = true;
+    this.bgmStep = 0;
+    this.nextNoteTime = this.ctx.currentTime + 0.05;
+    this.schedulerLoop();
+  }
+
+  stopBGM() {
+    this.bgmPlaying = false;
+    if (this.bgmTimer) {
+      clearTimeout(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+  }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    if (this.isMuted) {
+      this.stopBGM();
+    } else {
+      this.startBGM();
+    }
+    return this.isMuted;
+  }
+
+  schedulerLoop() {
+    if (!this.bgmPlaying || !this.ctx) return;
+
+    // Lookahead scheduling window (0.12s) for rock-solid zero-jitter timing
+    while (this.nextNoteTime < this.ctx.currentTime + 0.12) {
+      this.playBGMStep(this.nextNoteTime, this.bgmStep);
+      this.nextNoteTime += 0.22; // 8th note duration (~136 BPM upbeat arcade tempo)
+      this.bgmStep = (this.bgmStep + 1) % 32;
+    }
+
+    this.bgmTimer = setTimeout(() => this.schedulerLoop(), 40);
+  }
+
+  playBGMStep(time, step) {
+    if (this.isMuted || !this.ctx) return;
+
+    // 32-step upbeat walking arcade bassline (triangle wave)
+    const bassNotes = [
+      65.41, 0, 65.41, 82.41, 98.00, 0, 82.41, 73.42,      // Bar 1: C - C E G - E D
+      87.31, 0, 87.31, 110.00, 130.81, 0, 110.00, 98.00,  // Bar 2: F - F A C - A G
+      98.00, 0, 98.00, 123.47, 146.83, 0, 123.47, 110.00, // Bar 3: G - G B D - B A
+      65.41, 0, 98.00, 0, 130.81, 0, 65.41, 0              // Bar 4: C - G - C - C -
+    ];
+
+    // 32-step cheerful chiptune lead melody (square wave with soft decay)
+    const melodyNotes = [
+      261.63, 0, 329.63, 392.00, 523.25, 493.88, 392.00, 0,   // C E G C5 B G
+      440.00, 0, 392.00, 329.63, 349.23, 329.63, 293.66, 0,   // A G E F E D
+      392.00, 0, 440.00, 523.25, 587.33, 523.25, 440.00, 0,   // G A C5 D5 C5 A
+      523.25, 0, 392.00, 0, 329.63, 0, 261.63, 0               // C5 - G - E - C -
+    ];
+
+    const bassFreq = bassNotes[step];
+    if (bassFreq > 0) {
+      try {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(bassFreq, time);
+        gain.gain.setValueAtTime(0.04, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(time);
+        osc.stop(time + 0.19);
+      } catch (e) {}
+    }
+
+    const melodyFreq = melodyNotes[step];
+    if (melodyFreq > 0) {
+      try {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(melodyFreq, time);
+        gain.gain.setValueAtTime(0.022, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(time);
+        osc.stop(time + 0.17);
+      } catch (e) {}
+    }
   }
 }
 

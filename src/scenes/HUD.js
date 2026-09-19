@@ -1,5 +1,7 @@
 // src/scenes/HUD.js
-// Overlay HUD displaying Allan's remaining motorcycle lives, milestone title, and active mines
+// Overlay HUD displaying Allan's remaining motorcycle lives, milestone title, active mines, and mute toggle
+
+import { audio } from '../systems/AudioManager.js';
 
 export class HUDScene extends Phaser.Scene {
   constructor() {
@@ -17,13 +19,23 @@ export class HUDScene extends Phaser.Scene {
     bg.lineBetween(0, 60, width, 60);
 
     // 1. Lives Container (Motorcycle icons)
-    this.livesContainer = this.add.container(20, 30);
+    this.livesContainer = this.add.container(16, 30);
     this.lifeIcons = [];
     for (let i = 0; i < 3; i++) {
-      const icon = this.add.sprite(i * 26 + 12, 0, 'motorcycle').setScale(0.7);
+      const icon = this.add.sprite(i * 24 + 10, 0, 'motorcycle').setScale(0.65);
       this.livesContainer.add(icon);
       this.lifeIcons.push(icon);
     }
+
+    // Audio Mute Toggle Button
+    this.muteBtn = this.add.text(96, 30, audio.isMuted ? '🔇' : '🔊', {
+      fontSize: '16px'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    this.muteBtn.on('pointerdown', () => {
+      const isMuted = audio.toggleMute();
+      this.muteBtn.setText(isMuted ? '🔇' : '🔊');
+    });
 
     // 2. Level & Year Center Text
     this.titleText = this.add.text(width / 2, 22, 'Level 1: 1956', {
