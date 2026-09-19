@@ -5,6 +5,6 @@
   "type": "module",
   "scripts": {
     "start": "npx serve .",
-    "test": "node -e \"import('./src/data/levels.js').then(m => console.log('70 levels loaded ok'))\""
+    "test": "node --test tests/*.test.js"
   }
 }
