@@ -24,6 +24,7 @@
 .claude-chat/
 .cursor/
 .antigravity/scratch/
+.playwright-mcp/
 
 # Framework Tool Bytecode (framework namespace only; project policy untouched)
 .agentcortex/**/__pycache__/
