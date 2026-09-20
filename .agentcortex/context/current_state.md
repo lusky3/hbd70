@@ -17,7 +17,7 @@
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
 - **Last Updated**: 2026-09-19
 - **Last Verified**: 2026-09-19
-- **Update Sequence**: 3
+- **Update Sequence**: 4
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -70,6 +70,10 @@
 (none yet)
 
 ## Ship History
+
+### Ship-main-2026-09-19-player-status
+- Feature shipped: Player Progress Retention & Level Select Status Preservation — Complete backwards compatibility for stored player progress in `localStorage`, auto-repair of legacy profiles with missing `beatenLevels`, in-place title discovery persistence via `revealedLevels`, fixed `LevelSelectScene` to correctly treat all unlocked levels as playable with milestone titles and `PLAY ▶` tag, and preserved difficulty/cheat settings across game over retries.
+- Tests: Pass (34/34 node unit tests + headless browser module validation + ACX validator 113 PASS)
 
 ### Ship-main-2026-09-19-cheats
 - Feature shipped: Secret Cheats, Level Select Discovery, Spawn Invincibility & CPU Speed Control — Triple-tap level select milestone discovery in-place, secret 3-tap godmode invincibility cheat in top-right corner with golden aura and toast, secret downward swipe auto rapid-fire cheat (80ms cooldown, 12 bullet cap), 3000ms spawn/respawn invulnerability with flashing indicator, and interactive CPU speed slider (0.25x - 2.0x) scaling enemy speed and firing rates.

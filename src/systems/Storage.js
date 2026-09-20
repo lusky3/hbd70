@@ -8,7 +8,8 @@ class StorageManager {
     this.memoryState = {
       highestLevelBeaten: 0,
       beatenLevels: [],
-      unlockedLevel: 1
+      unlockedLevel: 1,
+      revealedLevels: []
     };
     this.isStorageAvailable = this.checkStorageAvailability();
   }
@@ -38,10 +39,26 @@ class StorageManager {
         return { ...this.memoryState };
       }
       const data = JSON.parse(raw);
+      const highestLevelBeaten = Number(data.highestLevelBeaten) || 0;
+      let beatenLevels = Array.isArray(data.beatenLevels) ? data.beatenLevels.map(Number) : [];
+
+      // Backward compatibility: ensure beatenLevels contains all levels up to highestLevelBeaten if empty
+      if (beatenLevels.length === 0 && highestLevelBeaten > 0) {
+        for (let i = 1; i <= highestLevelBeaten; i++) {
+          beatenLevels.push(i);
+        }
+      }
+
+      // Existing players must never lose unlocked levels; unlocked is at least highestLevelBeaten + 1
+      const minimumUnlocked = Math.min(70, Math.max(1, highestLevelBeaten + 1));
+      const unlockedLevel = Math.max(1, Math.min(70, Math.max(Number(data.unlockedLevel) || 1, minimumUnlocked)));
+      const revealedLevels = Array.isArray(data.revealedLevels) ? data.revealedLevels.map(Number) : [];
+
       return {
-        highestLevelBeaten: Number(data.highestLevelBeaten) || 0,
-        beatenLevels: Array.isArray(data.beatenLevels) ? data.beatenLevels.map(Number) : [],
-        unlockedLevel: Math.max(1, Math.min(70, Number(data.unlockedLevel) || 1))
+        highestLevelBeaten,
+        beatenLevels,
+        unlockedLevel,
+        revealedLevels
       };
     } catch (err) {
       console.warn('Could not read saved progress from localStorage:', err);
@@ -60,11 +77,40 @@ class StorageManager {
     const beatenLevels = Array.from(beatenSet).sort((a, b) => a - b);
     const highestLevelBeaten = Math.max(current.highestLevelBeaten, num);
     const unlockedLevel = Math.min(70, Math.max(current.unlockedLevel, num + 1));
+    const revealedLevels = current.revealedLevels || [];
 
     const updated = {
       highestLevelBeaten,
       beatenLevels,
-      unlockedLevel
+      unlockedLevel,
+      revealedLevels
+    };
+
+    this.memoryState = { ...updated };
+
+    if (this.isStorageAvailable) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch (err) {
+        console.warn('Could not save progress to localStorage:', err);
+      }
+    }
+
+    return updated;
+  }
+
+  recordLevelRevealed(levelNum) {
+    const num = Number(levelNum);
+    if (!num || num < 1 || num > 70) return this.getProgress();
+
+    const current = this.getProgress();
+    const revealedSet = new Set(current.revealedLevels || []);
+    revealedSet.add(num);
+
+    const revealedLevels = Array.from(revealedSet).sort((a, b) => a - b);
+    const updated = {
+      ...current,
+      revealedLevels
     };
 
     this.memoryState = { ...updated };
@@ -90,11 +136,17 @@ class StorageManager {
     return progress.beatenLevels.includes(Number(levelNum));
   }
 
+  isLevelRevealed(levelNum) {
+    const progress = this.getProgress();
+    return (progress.revealedLevels || []).includes(Number(levelNum));
+  }
+
   clearProgress() {
     this.memoryState = {
       highestLevelBeaten: 0,
       beatenLevels: [],
-      unlockedLevel: 1
+      unlockedLevel: 1,
+      revealedLevels: []
     };
     if (this.isStorageAvailable) {
       try {

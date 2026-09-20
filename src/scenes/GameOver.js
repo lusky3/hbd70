@@ -11,6 +11,9 @@ export class GameOverScene extends Phaser.Scene {
   init(data) {
     this.levelNum = data.levelNum || 1;
     this.tanksDefeated = data.tanksDefeated || 0;
+    this.isInvincibleCheat = data.isInvincibleCheat || false;
+    this.rapidFireCheat = data.rapidFireCheat || false;
+    this.cpuSpeedMultiplier = data.cpuSpeedMultiplier !== undefined ? data.cpuSpeedMultiplier : 1.0;
   }
 
   create() {
@@ -91,11 +94,14 @@ export class GameOverScene extends Phaser.Scene {
       audio.playShoot();
       this.cameras.main.fadeOut(250, 0, 0, 0);
       this.time.delayedCall(250, () => {
-        // Resume from current level checkpoint with refreshed lives
+        // Resume from current level checkpoint with refreshed lives and preserved status
         this.scene.start('LevelCard', {
           levelNum: this.levelNum,
           lives: 3,
-          tanksDefeated: this.tanksDefeated
+          tanksDefeated: this.tanksDefeated,
+          isInvincibleCheat: this.isInvincibleCheat,
+          rapidFireCheat: this.rapidFireCheat,
+          cpuSpeedMultiplier: this.cpuSpeedMultiplier
         });
       });
     });

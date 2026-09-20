@@ -9,6 +9,12 @@ export class LevelSelectScene extends Phaser.Scene {
     super({ key: 'LevelSelect' });
   }
 
+  init(data) {
+    this.cpuSpeedMultiplier = data && data.cpuSpeedMultiplier !== undefined ? data.cpuSpeedMultiplier : 1.0;
+    this.isInvincibleCheat = data && data.isInvincibleCheat ? data.isInvincibleCheat : false;
+    this.rapidFireCheat = data && data.rapidFireCheat ? data.rapidFireCheat : false;
+  }
+
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -107,9 +113,8 @@ export class LevelSelectScene extends Phaser.Scene {
         });
         this.scrollContainer.add(lvlLabel);
 
-        // Milestone Name (or ???? if not beaten and not current and not revealed)
-        LevelSelectScene.revealedTitles = LevelSelectScene.revealedTitles || new Set();
-        const isRevealed = LevelSelectScene.revealedTitles.has(lvl);
+        // Milestone Name (or ???? if not beaten and not unlocked and not revealed)
+        const isRevealed = storage.isLevelRevealed(lvl);
 
         let displayTitle = '????';
         let statusTag = '🔒';
@@ -165,8 +170,8 @@ export class LevelSelectScene extends Phaser.Scene {
 
           if (tapCount >= 3) {
             tapCount = 0;
-            // Triple tap: reveal title!
-            LevelSelectScene.revealedTitles.add(lvl);
+            // Triple tap: reveal and persist title!
+            storage.recordLevelRevealed(lvl);
             const fullT = milestone.title;
             const shortT = fullT.length > maxLen ? fullT.substring(0, maxLen - 1) + '…' : fullT;
             titleLabel.setText(shortT);
@@ -185,7 +190,14 @@ export class LevelSelectScene extends Phaser.Scene {
               ease: 'Quad.easeInOut'
             });
           } else if (isUnlocked && tapCount === 1) {
-            this.scene.start('LevelCard', { levelNum: lvl, lives: 3, tanksDefeated: 0 });
+            this.scene.start('LevelCard', {
+              levelNum: lvl,
+              lives: 3,
+              tanksDefeated: 0,
+              isInvincibleCheat: this.isInvincibleCheat,
+              rapidFireCheat: this.rapidFireCheat,
+              cpuSpeedMultiplier: this.cpuSpeedMultiplier
+            });
           }
         });
 

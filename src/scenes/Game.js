@@ -291,7 +291,10 @@ export class GameScene extends Phaser.Scene {
         this.scene.stop('HUD');
         this.scene.start('GameOver', {
           levelNum: this.levelNum,
-          tanksDefeated: this.tanksDefeated
+          tanksDefeated: this.tanksDefeated,
+          isInvincibleCheat: this.isInvincibleCheat,
+          rapidFireCheat: this.rapidFireCheat,
+          cpuSpeedMultiplier: this.cpuSpeedMultiplier
         });
       });
     } else {
