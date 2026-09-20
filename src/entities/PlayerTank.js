@@ -26,6 +26,9 @@ export class PlayerTank extends Phaser.Physics.Arcade.Sprite {
     this.turret = scene.add.sprite(x, y, 'turret');
     this.turret.setDepth(22);
     this.turretAngle = -Math.PI / 2; // Facing up by default
+
+    // Godmode Invincibility Aura
+    this.auraGraphics = null;
   }
 
   preUpdate(time, delta) {
@@ -33,6 +36,40 @@ export class PlayerTank extends Phaser.Physics.Arcade.Sprite {
     if (this.turret && this.active) {
       this.turret.setPosition(this.x, this.y);
       this.turret.rotation = this.turretAngle;
+    }
+    if (this.auraGraphics && this.active) {
+      this.auraGraphics.setPosition(this.x, this.y);
+    }
+  }
+
+  setInvincibleAura(active) {
+    if (active) {
+      if (!this.auraGraphics && this.scene && this.scene.add) {
+        this.auraGraphics = this.scene.add.graphics();
+        this.auraGraphics.setPosition(this.x, this.y);
+        this.auraGraphics.setDepth(24);
+
+        this.auraGraphics.lineStyle(2.5, 0xffd700, 0.9);
+        this.auraGraphics.strokeCircle(0, 0, 20);
+        this.auraGraphics.fillStyle(0xfbbf24, 0.25);
+        this.auraGraphics.fillCircle(0, 0, 20);
+
+        this.scene.tweens.add({
+          targets: this.auraGraphics,
+          scaleX: 1.15,
+          scaleY: 1.15,
+          alpha: 0.6,
+          duration: 400,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+    } else {
+      if (this.auraGraphics) {
+        this.auraGraphics.destroy();
+        this.auraGraphics = null;
+      }
     }
   }
 
@@ -73,8 +110,10 @@ export class PlayerTank extends Phaser.Physics.Arcade.Sprite {
     this.turret.rotation = this.turretAngle;
 
     // 3. Firing
-    if (isFiring && time > this.lastFireTime + this.fireCooldown) {
-      this.fireBullet(time);
+    const isRapid = !!(this.scene && this.scene.rapidFireCheat);
+    const cooldown = isRapid ? 80 : this.fireCooldown;
+    if (isFiring && time > this.lastFireTime + cooldown) {
+      this.fireBullet(time, isRapid);
     }
 
     // 4. Mine Placement
@@ -83,10 +122,11 @@ export class PlayerTank extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  fireBullet(time) {
-    // Max 5 active bullets
+  fireBullet(time, isRapid = false) {
+    // Max active bullets (12 in rapid fire mode, 5 in standard mode)
+    const maxBullets = (isRapid || (this.scene && this.scene.rapidFireCheat)) ? 12 : 5;
     const activeCount = this.scene.playerBullets.countActive(true);
-    if (activeCount >= 5) return;
+    if (activeCount >= maxBullets) return;
 
     this.lastFireTime = time;
 
@@ -118,6 +158,10 @@ export class PlayerTank extends Phaser.Physics.Arcade.Sprite {
     audio.playExplosion();
     if (this.scene.confettiEmitter) {
       this.scene.confettiEmitter.explode(30, this.x, this.y);
+    }
+    if (this.auraGraphics) {
+      this.auraGraphics.destroy();
+      this.auraGraphics = null;
     }
     if (this.turret) this.turret.destroy();
     this.destroy();

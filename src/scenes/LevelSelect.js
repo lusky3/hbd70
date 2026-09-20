@@ -95,7 +95,7 @@ export class LevelSelectScene extends Phaser.Scene {
 
         // Interactive Hitbox
         const hitZone = this.add.zone(width / 2, currentY + cardHeight / 2, cardWidth, cardHeight)
-          .setInteractive({ useHandCursor: isUnlocked });
+          .setInteractive({ useHandCursor: true });
         this.scrollContainer.add(hitZone);
 
         // Level Number & Year
@@ -107,7 +107,10 @@ export class LevelSelectScene extends Phaser.Scene {
         });
         this.scrollContainer.add(lvlLabel);
 
-        // Milestone Name (or ???? if not beaten and not current)
+        // Milestone Name (or ???? if not beaten and not current and not revealed)
+        LevelSelectScene.revealedTitles = LevelSelectScene.revealedTitles || new Set();
+        const isRevealed = LevelSelectScene.revealedTitles.has(lvl);
+
         let displayTitle = '????';
         let statusTag = '🔒';
         let tagColor = '#64748b';
@@ -120,6 +123,10 @@ export class LevelSelectScene extends Phaser.Scene {
           displayTitle = milestone.title;
           statusTag = 'PLAY ▶';
           tagColor = '#f59e0b';
+        } else if (isRevealed) {
+          displayTitle = milestone.title;
+          statusTag = '👀';
+          tagColor = '#38bdf8';
         }
 
         // Truncate display title cleanly for 1 line in list card
@@ -129,7 +136,7 @@ export class LevelSelectScene extends Phaser.Scene {
         const titleLabel = this.add.text(28, currentY + 30, shortTitle, {
           fontFamily: 'system-ui, -apple-system, sans-serif',
           fontSize: '11px',
-          color: isUnlocked ? '#f1f5f9' : '#475569'
+          color: isUnlocked ? '#f1f5f9' : (isRevealed ? '#38bdf8' : '#475569')
         });
         this.scrollContainer.add(titleLabel);
 
@@ -142,13 +149,45 @@ export class LevelSelectScene extends Phaser.Scene {
         }).setOrigin(1, 0.5);
         this.scrollContainer.add(badge);
 
-        if (isUnlocked) {
-          hitZone.on('pointerup', () => {
-            if (!this.wasDragging) {
-              this.scene.start('LevelCard', { levelNum: lvl, lives: 3, tanksDefeated: 0 });
+        let tapCount = 0;
+        let lastTapTime = 0;
+
+        hitZone.on('pointerup', () => {
+          if (this.wasDragging) return;
+
+          const now = Date.now();
+          if (now - lastTapTime < 700) {
+            tapCount++;
+          } else {
+            tapCount = 1;
+          }
+          lastTapTime = now;
+
+          if (tapCount >= 3) {
+            tapCount = 0;
+            // Triple tap: reveal title!
+            LevelSelectScene.revealedTitles.add(lvl);
+            const fullT = milestone.title;
+            const shortT = fullT.length > maxLen ? fullT.substring(0, maxLen - 1) + '…' : fullT;
+            titleLabel.setText(shortT);
+            titleLabel.setColor('#38bdf8');
+            if (!isBeaten && !isUnlocked) {
+              badge.setText('👀');
+              badge.setColor('#38bdf8');
             }
-          });
-        }
+
+            this.tweens.add({
+              targets: [card, titleLabel],
+              scaleX: 1.03,
+              scaleY: 1.05,
+              duration: 90,
+              yoyo: true,
+              ease: 'Quad.easeInOut'
+            });
+          } else if (isUnlocked && tapCount === 1) {
+            this.scene.start('LevelCard', { levelNum: lvl, lives: 3, tanksDefeated: 0 });
+          }
+        });
 
         currentY += cardHeight + spacing;
       }
@@ -269,3 +308,5 @@ export class LevelSelectScene extends Phaser.Scene {
     });
   }
 }
+
+export { checkTripleTapGesture } from '../systems/GestureUtils.js';

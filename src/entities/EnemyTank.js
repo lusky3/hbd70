@@ -151,6 +151,19 @@ export class EnemyTank extends Phaser.Physics.Arcade.Sprite {
         this.body.setCircle(12, 4, 4);
     }
     this.maxHp = this.hp;
+    this.baseSpeed = this.speed;
+    this.baseFireCooldown = this.fireCooldown;
+    this.speedMultiplier = (this.scene && this.scene.cpuSpeedMultiplier) ? this.scene.cpuSpeedMultiplier : 1.0;
+    if (this.speedMultiplier !== 1.0) {
+      this.speed = this.baseSpeed * this.speedMultiplier;
+      this.fireCooldown = Math.max(200, Math.round(this.baseFireCooldown / this.speedMultiplier));
+    }
+  }
+
+  setSpeedMultiplier(multiplier) {
+    this.speedMultiplier = Phaser.Math.Clamp(multiplier, 0.25, 2.0);
+    this.speed = this.baseSpeed * this.speedMultiplier;
+    this.fireCooldown = Math.max(200, Math.round(this.baseFireCooldown / this.speedMultiplier));
   }
 
   drawHealthBar() {

@@ -23,6 +23,9 @@ export class GameScene extends Phaser.Scene {
     this.isGameOver = false;
     this.isLevelClearing = false;
     this.isPlayerInvulnerable = false;
+    this.isInvincibleCheat = data.isInvincibleCheat || false;
+    this.rapidFireCheat = data.rapidFireCheat || false;
+    this.cpuSpeedMultiplier = data.cpuSpeedMultiplier !== undefined ? data.cpuSpeedMultiplier : 1.0;
   }
 
   create() {
@@ -51,21 +54,38 @@ export class GameScene extends Phaser.Scene {
     this.terrain = new TerrainBuilder(this);
     this.terrain.build(this.levelData);
 
-    // 4. Spawn Player Tank
+    // 4. Spawn Player Tank with 3s spawn invulnerability
     const pStart = this.terrain.toWorld(this.levelData.playerStart.x, this.levelData.playerStart.y);
     this.player = new PlayerTank(this, pStart.x, pStart.y);
     this.playerGroup.add(this.player);
+    if (this.isInvincibleCheat && this.player.setInvincibleAura) {
+      this.player.setInvincibleAura(true);
+    }
+    this.grantSpawnInvulnerability(3000);
 
-    // 5. Spawn Enemies
+    // 5. Spawn Enemies with CPU speed multiplier applied
     this.levelData.enemies.forEach((enemyDef) => {
       const ePos = this.terrain.toWorld(enemyDef.x, enemyDef.y);
       const enemy = new EnemyTank(this, ePos.x, ePos.y, enemyDef.type);
+      if (this.cpuSpeedMultiplier !== 1.0 && enemy.setSpeedMultiplier) {
+        enemy.setSpeedMultiplier(this.cpuSpeedMultiplier);
+      }
       this.enemies.add(enemy);
     });
 
     // 6. Setup Controls & HUD
     this.controls = new TouchControls(this);
     this.scene.launch('HUD');
+
+    // Handle CPU speed adjustment from HUD
+    this.events.on('set-cpu-speed', (mult) => {
+      this.cpuSpeedMultiplier = Phaser.Math.Clamp(mult, 0.25, 2.0);
+      this.enemies.getChildren().forEach((e) => {
+        if (e.active && e.setSpeedMultiplier) {
+          e.setSpeedMultiplier(this.cpuSpeedMultiplier);
+        }
+      });
+    });
 
     this.events.emit('update-hud', {
       lives: this.lives,
@@ -124,8 +144,8 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.physics.add.overlap(this.enemyBullets, this.playerGroup, (bullet) => {
-      if (!this.isPlayerInvulnerable) {
-        bullet.explode();
+      bullet.explode();
+      if (!this.isPlayerInvulnerable && !this.isInvincibleCheat) {
         this.onPlayerHit();
       }
     });
@@ -142,7 +162,10 @@ export class GameScene extends Phaser.Scene {
 
     // Tanks vs Mines
     const tankMineOverlap = (tank, mine) => {
-      if (mine.isArmed) mine.explode();
+      if (mine.isArmed) {
+        if (tank === this.player && (this.isPlayerInvulnerable || this.isInvincibleCheat)) return;
+        mine.explode();
+      }
     };
     this.physics.add.overlap(this.playerGroup, this.playerMines, tankMineOverlap);
     this.physics.add.overlap(this.playerGroup, this.enemyMines, tankMineOverlap);
@@ -161,12 +184,12 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.playerGroup, this.terrain.blocksGroup);
     // Water hazard causes instant life loss if driven into (AC-6)
     this.physics.add.collider(this.playerGroup, this.terrain.waterGroup, () => {
-      if (!this.isPlayerInvulnerable) {
+      if (!this.isPlayerInvulnerable && !this.isInvincibleCheat) {
         this.onPlayerHit();
       }
     });
     this.physics.add.collider(this.playerGroup, this.enemies, () => {
-      if (!this.isPlayerInvulnerable) {
+      if (!this.isPlayerInvulnerable && !this.isInvincibleCheat) {
         this.onPlayerHit();
       }
     });
@@ -189,10 +212,11 @@ export class GameScene extends Phaser.Scene {
 
     // 2. Update player tank
     if (this.player && this.player.active) {
+      const isFiring = (this.controls && this.controls.isFiring) || this.rapidFireCheat;
       this.player.update(
         this.controls.moveVector,
         this.controls.aimVector,
-        this.controls.isFiring,
+        isFiring,
         this.controls.wantsMine,
         time
       );
@@ -215,7 +239,7 @@ export class GameScene extends Phaser.Scene {
 
   onMineExplode(x, y, radius) {
     // Check player proximity
-    if (this.player && this.player.active && !this.isPlayerInvulnerable) {
+    if (this.player && this.player.active && !this.isPlayerInvulnerable && !this.isInvincibleCheat) {
       const pDist = Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y);
       if (pDist <= radius) {
         this.onPlayerHit();
@@ -249,7 +273,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   onPlayerHit() {
-    if (this.isPlayerInvulnerable || this.isGameOver || this.isLevelClearing) return;
+    if (this.isPlayerInvulnerable || this.isInvincibleCheat || this.isGameOver || this.isLevelClearing) return;
 
     this.lives--;
     if (this.player) {
@@ -284,22 +308,69 @@ export class GameScene extends Phaser.Scene {
     this.player = new PlayerTank(this, pStart.x, pStart.y);
     this.playerGroup.add(this.player);
 
-    // 1.5s invulnerability flash
+    if (this.isInvincibleCheat && this.player.setInvincibleAura) {
+      this.player.setInvincibleAura(true);
+    }
+
+    // 3s spawn invulnerability
+    this.grantSpawnInvulnerability(3000);
+  }
+
+  grantSpawnInvulnerability(duration = 3000) {
     this.isPlayerInvulnerable = true;
-    this.tweens.add({
+    if (this.playerInvulnTween) {
+      this.playerInvulnTween.stop();
+      this.playerInvulnTween = null;
+    }
+    const repeats = Math.max(1, Math.floor(duration / 300));
+    this.playerInvulnTween = this.tweens.add({
       targets: [this.player, this.player.turret],
       alpha: 0.3,
       duration: 150,
       yoyo: true,
-      repeat: 6,
+      repeat: repeats,
       onComplete: () => {
-        this.isPlayerInvulnerable = false;
+        if (!this.isInvincibleCheat) {
+          this.isPlayerInvulnerable = false;
+        }
         if (this.player && this.player.active) {
           this.player.setAlpha(1);
           if (this.player.turret) this.player.turret.setAlpha(1);
         }
       }
     });
+  }
+
+  toggleInvincibleCheat() {
+    this.isInvincibleCheat = !this.isInvincibleCheat;
+    if (this.isInvincibleCheat) {
+      this.isPlayerInvulnerable = true;
+    } else {
+      this.isPlayerInvulnerable = false;
+    }
+    if (this.player && this.player.active && this.player.setInvincibleAura) {
+      this.player.setInvincibleAura(this.isInvincibleCheat);
+    }
+    const hud = this.scene.get('HUD');
+    if (hud && hud.showToast) {
+      hud.showToast(
+        this.isInvincibleCheat ? '🛡️ CHEAT: INVINCIBLE [ON]' : '🛡️ CHEAT: INVINCIBLE [OFF]',
+        this.isInvincibleCheat ? '#10b981' : '#94a3b8'
+      );
+    }
+    return this.isInvincibleCheat;
+  }
+
+  toggleRapidFireCheat() {
+    this.rapidFireCheat = !this.rapidFireCheat;
+    const hud = this.scene.get('HUD');
+    if (hud && hud.showToast) {
+      hud.showToast(
+        this.rapidFireCheat ? '⚡ CHEAT: RAPID FIRE [ON]' : '⚡ CHEAT: RAPID FIRE [OFF]',
+        this.rapidFireCheat ? '#f59e0b' : '#94a3b8'
+      );
+    }
+    return this.rapidFireCheat;
   }
 
   checkLevelComplete() {
@@ -337,7 +408,10 @@ export class GameScene extends Phaser.Scene {
             this.scene.start('LevelCard', {
               levelNum: this.levelNum + 1,
               lives: this.lives,
-              tanksDefeated: this.tanksDefeated
+              tanksDefeated: this.tanksDefeated,
+              isInvincibleCheat: this.isInvincibleCheat,
+              rapidFireCheat: this.rapidFireCheat,
+              cpuSpeedMultiplier: this.cpuSpeedMultiplier
             });
           }
         });

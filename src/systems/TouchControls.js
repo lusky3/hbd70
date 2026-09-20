@@ -1,6 +1,8 @@
 // src/systems/TouchControls.js
 // Mobile virtual joystick + fire/mine touch buttons + desktop keyboard/mouse fallback
 
+import { checkSwipeDownGesture } from './GestureUtils.js';
+
 export class TouchControls {
   constructor(scene) {
     this.scene = scene;
@@ -142,10 +144,13 @@ export class TouchControls {
       this.mineBtn.setScale(1.0);
     });
 
-    // 5. Arena Direct Aim: Tap/drag anywhere in combat arena (y <= 615) unlocks aim and fires
+    // 5. Arena Direct Aim & Swipe Gesture Detection
     this.arenaPointerId = null;
+    this.swipeStarts = new Map();
 
     this.scene.input.on('pointerdown', (pointer) => {
+      this.swipeStarts.set(pointer.id, { x: pointer.x, y: pointer.y, time: Date.now() });
+
       if (pointer.y <= 615) {
         this.arenaPointerId = pointer.id;
         this.isAimUnlocked = true;
@@ -161,6 +166,18 @@ export class TouchControls {
     });
 
     this.scene.input.on('pointerup', (pointer) => {
+      // Check downward swipe cheat: top 1/3 of screen to bottom 1/3 of screen
+      const start = this.swipeStarts.get(pointer.id);
+      if (start) {
+        this.swipeStarts.delete(pointer.id);
+        const screenHeight = this.scene.cameras.main.height || 854;
+        if (checkSwipeDownGesture(start.x, start.y, pointer.x, pointer.y, screenHeight)) {
+          if (this.scene.toggleRapidFireCheat) {
+            this.scene.toggleRapidFireCheat();
+          }
+        }
+      }
+
       if (pointer.id === this.arenaPointerId) {
         this.arenaPointerId = null;
         this.isFiring = false;
@@ -243,3 +260,5 @@ export class TouchControls {
     }
   }
 }
+
+export { checkSwipeDownGesture } from './GestureUtils.js';

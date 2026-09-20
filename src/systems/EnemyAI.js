@@ -106,7 +106,8 @@ export class EnemyAI {
     // Fast sliding. When hitting walls or obstacles, arcade bounce preserves momentum.
     // If stopped or very slow, kick off in a new angle
     const currentSpeed = this.tank.body.velocity.length();
-    if (currentSpeed < 30) {
+    const threshold = 30 * (this.tank.speedMultiplier || 1.0);
+    if (currentSpeed < threshold) {
       const angle = Math.random() * Math.PI * 2;
       this.tank.setVelocity(Math.cos(angle) * this.tank.speed, Math.sin(angle) * this.tank.speed);
     }

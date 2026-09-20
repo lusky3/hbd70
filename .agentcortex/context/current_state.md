@@ -17,7 +17,7 @@
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
 - **Last Updated**: 2026-09-19
 - **Last Verified**: 2026-09-19
-- **Update Sequence**: 2
+- **Update Sequence**: 3
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -25,6 +25,7 @@
   - docs/specs/birthday-tanks-core.md: Birthday Tanks! — Allan Lusk's 70th Birthday Edition [status: shipped] [Updated: 2026-09-19]
   - docs/specs/decade-bosses-and-control-tuning.md: Decade Bosses & Control Usability Tuning [status: shipped] [Updated: 2026-09-19]
   - docs/specs/level-select-persistence-credits.md: Level Select, Game Progress Persistence & Allan Lusk Star Wars Credits [status: shipped] [Updated: 2026-09-19]
+  - docs/specs/cheats-difficulty-and-selection.md: Secret Cheats, Level Select Discovery, Spawn Invincibility & CPU Speed Control [status: shipped] [Updated: 2026-09-19]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -69,6 +70,10 @@
 (none yet)
 
 ## Ship History
+
+### Ship-main-2026-09-19-cheats
+- Feature shipped: Secret Cheats, Level Select Discovery, Spawn Invincibility & CPU Speed Control — Triple-tap level select milestone discovery in-place, secret 3-tap godmode invincibility cheat in top-right corner with golden aura and toast, secret downward swipe auto rapid-fire cheat (80ms cooldown, 12 bullet cap), 3000ms spawn/respawn invulnerability with flashing indicator, and interactive CPU speed slider (0.25x - 2.0x) scaling enemy speed and firing rates.
+- Tests: Pass (31/31 node unit tests + headless browser HTTP 200 canvas validation + ACX validator 113 PASS)
 
 ### Ship-main-2026-09-19-progression
 - Feature shipped: Level Select, Game Progress Persistence & Allan Lusk Star Wars Credits — Home screen LEVELS (X/70) counter, interactive 70-level selection screen across 7 worlds with milestone titles and ???? uncompleted masking, localStorage session persistence (`hbd70_progress`) with fallback, and Star Wars 3D angled auto-scrolling credits crawl with touch/mouse drag scrubbing dedicated to Allan Lusk.

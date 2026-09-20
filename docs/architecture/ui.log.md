@@ -17,3 +17,7 @@ source_sha: 0c50c9766dbedeba2cf94599a17554b331614d5d
 - [DECISION] Store level progress in browser `localStorage` under `hbd70_progress` with schema `{ highestLevelBeaten: number, unlockedLevel: number }`.
 - [DECISION] Hide uncompleted level titles behind `????` to preserve milestone curiosity while allowing instant jumping to any beaten level.
 - [DECISION] Render the Star Wars credits crawl using Phaser camera/container vertical scroll with interactive pointer drag-and-resume dynamics.
+
+### [ui][2026-09-19][main]
+cross-ref: See [gameplay][2026-09-19][main] in docs/architecture/gameplay.log.md
+
