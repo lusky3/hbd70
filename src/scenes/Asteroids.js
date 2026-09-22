@@ -124,6 +124,7 @@ export class AsteroidsScene extends Phaser.Scene {
     this.touchDownTime = 0;
     this.touchDownX = 0;
     this.touchDownY = 0;
+    this.isTouchSteering = false;
 
     this.cursors = this.input.keyboard?.createCursorKeys();
     this.wasd = this.input.keyboard?.addKeys({
@@ -245,22 +246,26 @@ export class AsteroidsScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer) => {
       // Ignore clicks on top header (y < 68) or bottom button bar (y > height - barHeight)
       if (pointer.y > 68 && pointer.y < height - barHeight) {
+        // Prevent multi-touch clashing: lock to first active pointer
+        if (this.touchPointer !== null) return;
+
         this.touchPointer = pointer;
         this.touchDownTime = this.time.now;
         this.touchDownX = pointer.x;
         this.touchDownY = pointer.y;
+        this.isTouchSteering = false;
       }
     });
 
     const finishTouch = (pointer) => {
       if (this.touchPointer && pointer.id === this.touchPointer.id) {
-        const dt = this.time.now - this.touchDownTime;
-        const dist = Math.hypot(pointer.x - this.touchDownX, pointer.y - this.touchDownY);
-        // Quick tap without significant drag fires laser along existing heading (without altering ship rotation)
-        if (dt < 280 && dist < 12) {
+        // If the pointer never transitioned into an active drag/hold steering gesture,
+        // it was a tap: fire laser strictly along the ship's current heading!
+        if (!this.isTouchSteering) {
           this.fireLaser();
         }
         this.touchPointer = null;
+        this.isTouchSteering = false;
         this.controls.touchThrust = false;
         if (this.touchRingGfx) this.touchRingGfx.clear();
       }
@@ -609,51 +614,67 @@ export class AsteroidsScene extends Phaser.Scene {
 
     // 0. Playfield Touch Ring & Gesture Steering
     if (this.touchPointer && this.touchPointer.isDown && this.ship && this.ship.active) {
-      const dx = this.touchPointer.x - this.ship.x;
-      const dy = this.touchPointer.y - this.ship.y;
-      const dist = Math.hypot(dx, dy);
+      const holdTime = time - this.touchDownTime;
+      const dragDist = Math.hypot(this.touchPointer.x - this.touchDownX, this.touchPointer.y - this.touchDownY);
 
-      if (this.touchRingGfx) this.touchRingGfx.clear();
+      // Only engage steering/thrust if finger has intentionally dragged (> 14px) OR held down (> 220ms)
+      if (!this.isTouchSteering) {
+        if (dragDist > 14 || holdTime > 220) {
+          this.isTouchSteering = true;
+        }
+      }
 
-      if (dist > 14) {
-        const targetAngle = Math.atan2(dy, dx);
-        const angleDiff = Phaser.Math.Angle.Wrap(targetAngle - this.ship.rotation);
-        const steerSpeed = 6.0; // rad/sec for responsive finger tracking
-        this.ship.rotation += Phaser.Math.Clamp(angleDiff, -steerSpeed * dt, steerSpeed * dt);
+      if (this.isTouchSteering) {
+        const dx = this.touchPointer.x - this.ship.x;
+        const dy = this.touchPointer.y - this.ship.y;
+        const distFromShip = Math.hypot(dx, dy);
 
-        const innerRadius = 70;
-        const isThrusting = dist > innerRadius;
-        this.controls.touchThrust = isThrusting;
+        if (this.touchRingGfx) this.touchRingGfx.clear();
 
-        if (this.touchRingGfx) {
-          // Inner steering circle
-          this.touchRingGfx.lineStyle(1.5, 0x38bdf8, 0.45);
-          this.touchRingGfx.strokeCircle(this.ship.x, this.ship.y, innerRadius);
+        if (distFromShip > 14) {
+          const targetAngle = Math.atan2(dy, dx);
+          const angleDiff = Phaser.Math.Angle.Wrap(targetAngle - this.ship.rotation);
+          const steerSpeed = 6.0; // rad/sec for responsive finger tracking
+          this.ship.rotation += Phaser.Math.Clamp(angleDiff, -steerSpeed * dt, steerSpeed * dt);
 
-          // Heading pointer notch
-          this.touchRingGfx.lineStyle(2, 0x38bdf8, 0.8);
-          this.touchRingGfx.lineBetween(
-            this.ship.x,
-            this.ship.y,
-            this.ship.x + Math.cos(this.ship.rotation) * innerRadius,
-            this.ship.y + Math.sin(this.ship.rotation) * innerRadius
-          );
+          const innerRadius = 70;
+          const isThrusting = distFromShip > innerRadius;
+          this.controls.touchThrust = isThrusting;
 
-          if (isThrusting) {
-            // Amber outer thrust perimeter
-            this.touchRingGfx.lineStyle(2, 0xf59e0b, 0.8);
-            this.touchRingGfx.strokeCircle(this.ship.x, this.ship.y, innerRadius + 14);
-            // Tether line to finger
-            this.touchRingGfx.lineStyle(1.5, 0xf59e0b, 0.6);
-            this.touchRingGfx.lineBetween(this.ship.x, this.ship.y, this.touchPointer.x, this.touchPointer.y);
-            this.touchRingGfx.fillStyle(0xf59e0b, 0.9);
-            this.touchRingGfx.fillCircle(this.touchPointer.x, this.touchPointer.y, 6);
-          } else {
-            // Steering reticle at finger
-            this.touchRingGfx.fillStyle(0x38bdf8, 0.75);
-            this.touchRingGfx.fillCircle(this.touchPointer.x, this.touchPointer.y, 5);
+          if (this.touchRingGfx) {
+            // Inner steering circle
+            this.touchRingGfx.lineStyle(1.5, 0x38bdf8, 0.45);
+            this.touchRingGfx.strokeCircle(this.ship.x, this.ship.y, innerRadius);
+
+            // Heading pointer notch
+            this.touchRingGfx.lineStyle(2, 0x38bdf8, 0.8);
+            this.touchRingGfx.lineBetween(
+              this.ship.x,
+              this.ship.y,
+              this.ship.x + Math.cos(this.ship.rotation) * innerRadius,
+              this.ship.y + Math.sin(this.ship.rotation) * innerRadius
+            );
+
+            if (isThrusting) {
+              // Amber outer thrust perimeter
+              this.touchRingGfx.lineStyle(2, 0xf59e0b, 0.8);
+              this.touchRingGfx.strokeCircle(this.ship.x, this.ship.y, innerRadius + 14);
+              // Tether line to finger
+              this.touchRingGfx.lineStyle(1.5, 0xf59e0b, 0.6);
+              this.touchRingGfx.lineBetween(this.ship.x, this.ship.y, this.touchPointer.x, this.touchPointer.y);
+              this.touchRingGfx.fillStyle(0xf59e0b, 0.9);
+              this.touchRingGfx.fillCircle(this.touchPointer.x, this.touchPointer.y, 6);
+            } else {
+              // Steering reticle at finger
+              this.touchRingGfx.fillStyle(0x38bdf8, 0.75);
+              this.touchRingGfx.fillCircle(this.touchPointer.x, this.touchPointer.y, 5);
+            }
           }
         }
+      } else {
+        // While within tap threshold: do NOT steer, do NOT thrust, do NOT draw ring
+        if (this.touchRingGfx) this.touchRingGfx.clear();
+        this.controls.touchThrust = false;
       }
     } else {
       if (this.touchRingGfx) this.touchRingGfx.clear();

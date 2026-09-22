@@ -116,7 +116,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
     this.player.body.allowGravity = false;
     this.playerSpeed = 300;
     this.lastFiredTime = 0;
-    this.fireCooldown = 280;
+    this.fireCooldown = 250;
     this.reloadGfx = this.add.graphics();
     this.reloadGfx.setDepth(100);
 
@@ -346,6 +346,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
     this.fireBtnBg = fBg;
     this.fireBtnText = fText;
     this.lastReadyState = true;
+    this.lastBtnText = '🔥 FIRE';
     this.touchMoveDir = 0;
 
     // Play-area touch dragging & tap-to-fire
@@ -357,6 +358,9 @@ export class SpaceInvadersScene extends Phaser.Scene {
 
     this.input.on('pointerdown', (pointer) => {
       if (pointer.y > 68 && pointer.y < height - 75) {
+        // Prevent multi-touch clashing: lock to first active dragging pointer
+        if (this.dragPointerId !== null) return;
+
         this.dragPointerId = pointer.id;
         this.isTouchDragging = true;
         this.hasMovedDrag = false;
@@ -441,8 +445,10 @@ export class SpaceInvadersScene extends Phaser.Scene {
 
     // 2. Fire button appearance update
     if (this.fireBtnBg && this.fireBtnText) {
-      if (this.lastReadyState !== isReady) {
+      const currentText = isReady ? '🔥 FIRE' : (bulletsActive >= 2 ? '⏳ 2/2' : '⏳ RELOAD');
+      if (this.lastReadyState !== isReady || this.lastBtnText !== currentText) {
         this.lastReadyState = isReady;
+        this.lastBtnText = currentText;
         this.fireBtnBg.clear();
         if (isReady) {
           this.fireBtnBg.fillStyle(0xe11d48, 1);
@@ -456,7 +462,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
           this.fireBtnBg.fillRoundedRect(-65, -28, 130, 56, 14);
           this.fireBtnBg.lineStyle(2, 0x94a3b8, 0.8);
           this.fireBtnBg.strokeRoundedRect(-65, -28, 130, 56, 14);
-          this.fireBtnText.setText(bulletsActive >= 2 ? '⏳ 2/2' : '⏳ RELOAD');
+          this.fireBtnText.setText(currentText);
           this.fireBtnText.setColor('#cbd5e1');
         }
       }

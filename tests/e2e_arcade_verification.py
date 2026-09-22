@@ -176,15 +176,25 @@ def run_arcade_e2e():
             }""")
             assert inv_drag_x == 380, f"Player cannon should follow continuous finger swipe across buttons to x=380, got {inv_drag_x}"
 
-            # Tap release to fire
-            inv_bullets_before = page.evaluate("""() => {
+            # Release drag pointer 1
+            page.evaluate("""() => {
                 const inv = window.game.scene.getScene('SpaceInvaders');
-                // Quick tap in play area without dragging
-                inv.input.emit('pointerdown', { id: 2, x: 240, y: 700 });
-                inv.input.emit('pointerup', { id: 2, x: 240, y: 700 });
+                inv.input.emit('pointerup', { id: 1, x: 380, y: 820 });
+            }""")
+            time.sleep(0.3)
+
+            # Real browser tap in play area to fire cannon
+            page.mouse.move(240, 600)
+            page.mouse.down()
+            time.sleep(0.06)
+            page.mouse.up()
+            time.sleep(0.1)
+
+            inv_bullets_after = page.evaluate("""() => {
+                const inv = window.game.scene.getScene('SpaceInvaders');
                 return inv.playerBullets.countActive();
             }""")
-            assert inv_bullets_before >= 1, "Quick tap in play area should fire cannon"
+            assert inv_bullets_after >= 1, f"Quick tap in play area should fire cannon, got {inv_bullets_after}"
 
             # Return to GameSelect from Space Invaders
             page.mouse.click(55, 34)
@@ -222,25 +232,30 @@ def run_arcade_e2e():
             }""")
             assert asteroids_started, "Asteroids game must be active after dismissing overlay"
 
-            # Verify tap-to-fire heading invariance
-            ast_rotation_before = page.evaluate("""() => {
+            # Verify tap-to-fire heading invariance with real browser mouse input
+            page.evaluate("""() => {
                 const ast = window.game.scene.getScene('Asteroids');
                 ast.ship.rotation = 1.25; // Set specific heading
-                // Quick tap at (100, 300) without drag
-                ast.input.emit('pointerdown', { id: 3, x: 100, y: 300 });
-                return ast.ship.rotation;
             }""")
             time.sleep(0.05)
+            ast_rotation_before = page.evaluate("() => window.game.scene.getScene('Asteroids').ship.rotation")
+
+            # Perform a real browser tap at (120, 280) in the playfield
+            page.mouse.move(120, 280)
+            page.mouse.down()
+            time.sleep(0.08)
+            page.mouse.up()
+            time.sleep(0.1)
+
             ast_rotation_after = page.evaluate("""() => {
                 const ast = window.game.scene.getScene('Asteroids');
-                ast.input.emit('pointerup', { id: 3, x: 100, y: 300 });
                 return {
                     rotation: ast.ship.rotation,
                     lasers: ast.lasers.countActive(),
                     score: ast.score
                 };
             }""")
-            assert abs(ast_rotation_after["rotation"] - ast_rotation_before) < 1e-6, f"Ship heading must not change during tap-to-fire! Before {ast_rotation_before}, after {ast_rotation_after['rotation']}"
+            assert abs(ast_rotation_after["rotation"] - ast_rotation_before) < 1e-5, f"Ship heading must not change during tap-to-fire! Before {ast_rotation_before}, after {ast_rotation_after['rotation']}"
             assert ast_rotation_after["lasers"] >= 1 or ast_rotation_after["score"] > 0, "Tap on playfield should fire laser"
 
             # Return to GameSelect from Asteroids

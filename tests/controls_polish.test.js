@@ -36,20 +36,20 @@ test('AC-2: Credits Roster Includes QA Testers and [In Spirit] Section', () => {
 test('AC-3 & AC-4: Space Invaders Continuous Drag & Tap-to-Fire Cooldown Logic', () => {
   const invadersContent = fs.readFileSync(path.join(rootDir, 'src/scenes/SpaceInvaders.js'), 'utf-8');
   assert.match(invadersContent, /this\.isTouchDragging/, 'Space Invaders must track isTouchDragging state');
-  assert.match(invadersContent, /this\.fireCooldown/, 'Space Invaders must define firing cooldown interval');
+  assert.match(invadersContent, /this\.fireCooldown = 250;/, 'Space Invaders must set fireCooldown to 250ms');
   assert.match(invadersContent, /this\.reloadGfx/, 'Space Invaders must render overhead reload meter graphics');
   assert.match(invadersContent, /updateCooldownUI/, 'Space Invaders must update cooldown UI in game loop');
 
-  // Verify cooldown logic math
-  const fireCooldown = 280;
+  // Verify cooldown logic math (250ms)
+  const fireCooldown = 250;
   let lastFired = 1000;
-  const now1 = 1150;
+  const now1 = 1150; // 150ms elapsed
   const canFire1 = (now1 - lastFired) >= fireCooldown;
-  assert.equal(canFire1, false, 'Should be throttled during cooldown');
+  assert.equal(canFire1, false, 'Should be throttled during 250ms cooldown');
 
-  const now2 = 1300;
+  const now2 = 1260; // 260ms elapsed
   const canFire2 = (now2 - lastFired) >= fireCooldown;
-  assert.equal(canFire2, true, 'Should be allowed to fire after cooldown expires');
+  assert.equal(canFire2, true, 'Should be allowed to fire after 250ms cooldown expires');
 });
 
 test('AC-5: Procedural CN Railcar Features Detailed Livery, Trucks, and Catwalk', () => {
@@ -65,18 +65,69 @@ test('AC-6: Asteroids Tap-to-Fire Preserves Ship Heading Invariance', () => {
   const asteroidsContent = fs.readFileSync(path.join(rootDir, 'src/scenes/Asteroids.js'), 'utf-8');
   assert.match(asteroidsContent, /this\.touchRingGfx/, 'Asteroids must instantiate touchRingGfx');
   assert.match(asteroidsContent, /touchThrust/, 'Asteroids must support touchThrust control state');
+  assert.match(asteroidsContent, /this\.isTouchSteering/, 'Asteroids must latch isTouchSteering for gestures');
   assert.match(asteroidsContent, /this\.fireLaser\(\)/, 'Asteroids tap must invoke fireLaser directly');
 
-  // Mathematical proof: Tap release fires without modifying ship.rotation
-  let shipRotation = -Math.PI / 4;
-  const tapDist = 5; // Under 12px threshold
-  const tapDuration = 120; // Under 280ms threshold
-  const isTap = tapDuration < 280 && tapDist < 12;
-  assert.equal(isTap, true, 'Pointer gesture should be recognized as quick tap');
+  // Behavioral verification of Asteroids touch gesture state machine
+  const initialRotation = -1.25; // Ship facing arbitrary heading
+  let ship = { rotation: initialRotation, x: 240, y: 400, active: true };
+  let touchPointer = { id: 1, x: 100, y: 100, isDown: true };
+  let touchDownX = 100;
+  let touchDownY = 100;
+  let touchDownTime = 1000;
+  let isTouchSteering = false;
+  let laserFired = false;
+  let touchThrust = false;
 
-  // Tapping should keep ship rotation identical
-  const originalHeading = shipRotation;
-  assert.equal(shipRotation, originalHeading, 'Ship heading must remain strictly invariant during tap-to-fire');
+  // Frame update simulation during a tap: pointer held for 100ms with 4px jitter
+  const simulateUpdate = (currentTime, curX, curY) => {
+    touchPointer.x = curX;
+    touchPointer.y = curY;
+    const holdTime = currentTime - touchDownTime;
+    const dragDist = Math.hypot(touchPointer.x - touchDownX, touchPointer.y - touchDownY);
+
+    if (!isTouchSteering) {
+      if (dragDist > 14 || holdTime > 220) {
+        isTouchSteering = true;
+      }
+    }
+
+    if (isTouchSteering) {
+      const dx = touchPointer.x - ship.x;
+      const dy = touchPointer.y - ship.y;
+      const distFromShip = Math.hypot(dx, dy);
+      if (distFromShip > 14) {
+        const targetAngle = Math.atan2(dy, dx);
+        ship.rotation = targetAngle; // Steers toward finger
+      }
+      touchThrust = distFromShip > 70;
+    } else {
+      touchThrust = false;
+    }
+  };
+
+  // 1. Simulating tap frame at 50ms
+  simulateUpdate(1050, 103, 101);
+  assert.equal(isTouchSteering, false, 'Pointer jitter < 14px must NOT trigger steering');
+  assert.equal(touchThrust, false, 'Tap must NOT trigger accidental thrust');
+  assert.equal(ship.rotation, initialRotation, 'Ship heading must remain strictly invariant during tap');
+
+  // 2. Simulating tap frame at 110ms
+  simulateUpdate(1110, 104, 102);
+  assert.equal(isTouchSteering, false, 'Tap under 220ms and < 14px must NOT trigger steering');
+  assert.equal(ship.rotation, initialRotation, 'Ship heading must remain unchanged');
+
+  // 3. Simulating pointerup on tap
+  if (!isTouchSteering) {
+    laserFired = true;
+  }
+  assert.equal(laserFired, true, 'Laser must fire upon releasing tap');
+  assert.equal(ship.rotation, initialRotation, 'Ship heading must be 100% invariant before and after tap');
+
+  // 4. Contrast with intentional steering drag (> 14px)
+  simulateUpdate(1250, 150, 100); // 50px drag
+  assert.equal(isTouchSteering, true, 'Displacement > 14px must engage touch steering');
+  assert.notEqual(ship.rotation, initialRotation, 'Steering drag must update ship heading');
 });
 
 test('AC-7: Version Consistency across package.json, src/version.js, GameSelect.js, and CHANGELOG.md', () => {
