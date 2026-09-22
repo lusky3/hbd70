@@ -30,3 +30,14 @@ source_sha: 292aea986e2fdc82b4b26b00a121a7bbcc926d16
 - [DECISION] Standardize an instructional How-to-Play overlay on Level 1 across all games before active gameplay starts.
 - [DECISION] Store arcade mini-game stats in a dedicated 'arcadeStats' key within existing storage for clean backward compatibility.
 
+### [ui][2026-09-22][main]
+source_spec: docs/specs/arcade-controls-and-credits-polish.md
+source_sha: 06a133f40d183aa41f87e2d6b5d318a6c4543020
+
+- [DECISION] Preserve heading invariance during Asteroids tap-to-fire using touch steering latch (> 14px drag or > 220ms hold) so vector inertia and shooting direction are never disrupted.
+- [DECISION] Decouple Space Invaders play-area touch drag from bottom direction buttons so downward finger drift never stalls horizontal movement.
+- [DECISION] Render visual overhead reload gauge and action bar fire button cooldown states (250ms duration) for clear player feedback.
+- [DECISION] Separate family credits into dedicated [In Spirit] and QA Tester roster sections to honor familial contributions accurately.
+- [DECISION] Expose semantic application version v1.1.0 on GameSelectScene footer and maintain Keep a Changelog format.
+
+

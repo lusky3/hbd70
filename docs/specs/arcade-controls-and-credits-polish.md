@@ -1,5 +1,5 @@
 ---
-status: draft
+status: shipped
 title: Allan's 70th Birthday Arcade: Controls, Strings & Visual Polish
 source: internal
 source_doc: user_request
