@@ -17,7 +17,7 @@
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
 - **Last Updated**: 2026-09-22
 - **Last Verified**: 2026-09-22
-- **Update Sequence**: 6
+- **Update Sequence**: 7
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -28,6 +28,7 @@
   - docs/specs/cheats-difficulty-and-selection.md: Secret Cheats, Level Select Discovery, Spawn Invincibility & CPU Speed Control [status: shipped] [Updated: 2026-09-19]
   - docs/specs/birthday-arcade-multigame.md: Allan's 70th Birthday Arcade: Multi-Game Collection & Touch Usability [status: shipped] [Updated: 2026-09-22]
   - docs/specs/arcade-controls-and-credits-polish.md: Allan's 70th Birthday Arcade: Controls, Strings & Visual Polish [status: shipped] [Updated: 2026-09-22]
+  - docs/specs/arcade-leaderboards-cloudflare-d1.md: Allan's 70th Birthday Arcade: Cloudflare D1 Leaderboards [status: shipped] [Updated: 2026-09-22]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -72,6 +73,10 @@
 (none yet)
 
 ## Ship History
+
+### Ship-main-2026-09-22-leaderboards-cloudflare-d1
+- Feature shipped: Allan's 70th Birthday Arcade: Cloudflare D1 Leaderboards — Global persistent family arcade leaderboard backend using Cloudflare Workers + Cloudflare D1 (serverless SQLite), RESTful API with parameterized bindings, rate limiting, and per-game score validation; client LeaderboardService with 3s timeout and fail-soft localStorage fallback; 3-character retro arcade slot machine initials overlay with touch chevrons, vertical swipe gestures, and keyboard typing; monospace neon LeaderboardModal with 4 arcade game tabs and date formatting; integrated RECORD HIGH SCORE button in game over and victory screens across Tanks, Pong, Space Invaders, and Asteroids.
+- Tests: Pass (64/64 node unit tests + Playwright headless browser E2E test suites passing with 0 console errors + ACX validator 113 PASS)
 
 ### Ship-main-2026-09-22-controls-credits-polish
 - Feature shipped: Allan's 70th Birthday Arcade: Controls, Strings & Visual Polish — Corrected Al's birthplace to Parry Sound, ON in credits; updated splash dedication to Cody & Carrie; honored Amy, Jennifer & Kelsey in dedicated ★ [IN SPIRIT] ★ credits section; added Kelsey Lusk & Jay as QA Testers; implemented continuous playfield finger drag and tap-to-fire with 250ms cooldown meter in Space Invaders; overhauled procedural CN Railcar sprite with authentic red livery, bogie trucks, and catwalk; added Asteroids tap-to-fire heading invariance and touch steering ring; displayed version v1.1.0 in GameSelect footer, bumped package.json, and created CHANGELOG.md.

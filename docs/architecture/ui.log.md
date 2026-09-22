@@ -40,4 +40,13 @@ source_sha: 06a133f40d183aa41f87e2d6b5d318a6c4543020
 - [DECISION] Separate family credits into dedicated [In Spirit] and QA Tester roster sections to honor familial contributions accurately.
 - [DECISION] Expose semantic application version v1.1.0 on GameSelectScene footer and maintain Keep a Changelog format.
 
+### [ui][2026-09-22][main]
+source_spec: docs/specs/arcade-leaderboards-cloudflare-d1.md
+source_sha: 0e37267
+
+- [DECISION] 3-letter retro arcade slot machine initials overlay with touch chevrons, vertical swipe drag, and desktop keyboard typing.
+- [DECISION] Centered LeaderboardModal featuring 4 arcade game tabs, retro cyan/gold typography, online/offline status badge, and date formatting.
+- [DECISION] Expose RECORD HIGH SCORE button in game over and victory screens across Tanks, Pong, Space Invaders, and Asteroids.
+
+
 

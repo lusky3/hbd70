@@ -1,5 +1,5 @@
 ---
-status: draft
+status: shipped
 title: Allan's 70th Birthday Arcade: Cloudflare D1 Leaderboards
 source: internal
 source_doc: user_request
