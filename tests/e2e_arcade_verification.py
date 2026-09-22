@@ -4,6 +4,7 @@
 import sys
 import time
 import subprocess
+import json
 from playwright.sync_api import sync_playwright
 
 def run_arcade_e2e():
@@ -26,8 +27,28 @@ def run_arcade_e2e():
             )
             page = browser.new_page(viewport={"width": 480, "height": 854})
 
-            page.on("pageerror", lambda err: errors.append(f"PAGE_ERROR: {err}"))
+            def on_page_error(err):
+                print(f"[PAGE_ERROR]: {err}")
+                if hasattr(err, "stack"):
+                    print(f"[PAGE_ERROR STACK]: {err.stack}")
+                errors.append(f"PAGE_ERROR: {err}")
+            page.on("pageerror", on_page_error)
             page.on("console", lambda msg: errors.append(f"CONSOLE_ERROR: {msg.text}") if msg.type == "error" else None)
+
+            def handle_lb_route(route):
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps({
+                        "success": True,
+                        "gameId": "tanks",
+                        "results": [
+                            {"rank": 1, "initials": "AL7", "score": 70000, "detail": "Level 70 Beaten", "created_at": "2026-09-22T00:00:00Z"},
+                            {"rank": 2, "initials": "COD", "score": 65000, "detail": "Level 65", "created_at": "2026-09-22T00:00:00Z"}
+                        ]
+                    })
+                )
+            page.route("**/api/v1/leaderboard/*", handle_lb_route)
 
             # 1. Navigate to Game
             page.goto(f"http://localhost:{port}/", wait_until="networkidle")
@@ -89,6 +110,48 @@ def run_arcade_e2e():
             # Return to GameSelect
             page.mouse.click(55, 34)
             time.sleep(0.5)
+
+            # 3c. Test Leaderboard Modal from GameSelect
+            print("[E2E] Testing Leaderboard Modal & Tab Switching...")
+            page.mouse.click(240, 765)
+            time.sleep(0.5)
+
+            lb_modal_state = page.evaluate("""() => {
+                const lb = window.game.scene.getScene('LeaderboardModal');
+                if (!lb || !lb.scene.isActive()) return { active: false };
+                const texts = lb.children.list.filter(c => c.type === 'Text').map(t => t.text);
+                const hasTitle = texts.some(t => t && t.includes('ALLAN ARCADE TOP 10'));
+                return {
+                    active: true,
+                    hasTitle: hasTitle,
+                    activeGameId: lb.activeGameId,
+                    tabCount: lb.tabButtons ? lb.tabButtons.length : 0
+                };
+            }""")
+            assert lb_modal_state["active"], "LeaderboardModal must be active after clicking High Scores button"
+            assert lb_modal_state["hasTitle"], "LeaderboardModal must render top title"
+            assert lb_modal_state["tabCount"] == 4, f"LeaderboardModal must feature 4 tabs, got {lb_modal_state['tabCount']}"
+
+            # Switch tabs to Asteroids
+            page.evaluate("""() => {
+                const lb = window.game.scene.getScene('LeaderboardModal');
+                const astTab = lb.tabButtons.find(t => t.id === 'asteroids');
+                if (astTab && astTab.container) {
+                    astTab.container.emit('pointerdown');
+                }
+            }""")
+            time.sleep(0.3)
+            active_tab = page.evaluate("() => window.game.scene.getScene('LeaderboardModal').activeGameId")
+            assert active_tab == "asteroids", f"Active tab should switch to asteroids, got {active_tab}"
+
+            # Close Leaderboard Modal
+            page.evaluate("""() => {
+                const lb = window.game.scene.getScene('LeaderboardModal');
+                lb.closeModal();
+            }""")
+            time.sleep(0.4)
+            lb_closed = page.evaluate("() => !window.game.scene.isActive('LeaderboardModal')")
+            assert lb_closed, "LeaderboardModal should close and return to GameSelect"
 
             # 4. Test Pong Scene Flow
             print("[E2E] Testing Birthday Pong Scene...")

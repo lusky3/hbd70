@@ -106,8 +106,37 @@ export class GameOverScene extends Phaser.Scene {
       });
     });
 
+    // 5.5 Leaderboard Button
+    const lbBtnY = height * 0.81;
+    const lbBtn = this.add.container(btnX, lbBtnY);
+    const lbBg = this.add.graphics();
+    lbBg.fillStyle(0x0f172a, 1);
+    lbBg.fillRoundedRect(-btnWidth / 2, -20, btnWidth, 40, 10);
+    lbBg.lineStyle(1.5, 0xfacc15, 0.9);
+    lbBg.strokeRoundedRect(-btnWidth / 2, -20, btnWidth, 40, 10);
+    lbBtn.add(lbBg);
+
+    const lbText = this.add.text(0, 0, '🏆 RECORD HIGH SCORE 🏆', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: 'bold',
+      color: '#facc15'
+    }).setOrigin(0.5);
+    lbBtn.add(lbText);
+    lbBtn.setSize(btnWidth, 40);
+    lbBtn.setInteractive({ useHandCursor: true });
+    lbBtn.on('pointerdown', () => {
+      audio.playShoot?.();
+      this.scene.launch('InitialsEntryOverlay', {
+        gameId: 'tanks',
+        score: this.levelNum * 1000 + this.tanksDefeated * 50,
+        detail: `Level ${this.levelNum}`,
+        returnScene: 'GameOver'
+      });
+    });
+
     // 6. Return to Arcade Menu link
-    const homeBtn = this.add.text(width / 2, height * 0.83, 'Return to Arcade Menu', {
+    const homeBtn = this.add.text(width / 2, height * 0.89, 'Return to Arcade Menu', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '14px',
       color: '#64748b'

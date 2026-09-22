@@ -186,6 +186,48 @@ export class GameSelectScene extends Phaser.Scene {
       this.createGameCard(cardStartX, cy, item);
     });
 
+    // 3.5 Global Leaderboard Button
+    const lbBtnY = 765;
+    const lbBtn = this.add.container(width / 2, lbBtnY);
+    const lbBg = this.add.graphics();
+    lbBg.fillStyle(0x0f172a, 0.95);
+    lbBg.fillRoundedRect(-135, -19, 270, 38, 10);
+    lbBg.lineStyle(1.5, 0xfacc15, 0.85);
+    lbBg.strokeRoundedRect(-135, -19, 270, 38, 10);
+    lbBtn.add(lbBg);
+
+    const lbText = this.add.text(0, 0, '🏆 HIGH SCORES & RANKS 🏆', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: 'bold',
+      color: '#facc15',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+    lbBtn.add(lbText);
+
+    lbBtn.setSize(270, 38);
+    lbBtn.setInteractive(new Phaser.Geom.Rectangle(-135, -19, 270, 38), Phaser.Geom.Rectangle.Contains);
+    lbBtn.input.cursor = 'pointer';
+
+    lbBtn.on('pointerdown', () => {
+      audio.playShoot?.();
+      this.scene.launch('LeaderboardModal', { gameId: 'tanks', returnScene: 'GameSelect' });
+    });
+    lbBtn.on('pointerover', () => {
+      lbBg.clear();
+      lbBg.fillStyle(0x1e293b, 1);
+      lbBg.fillRoundedRect(-135, -19, 270, 38, 10);
+      lbBg.lineStyle(2, 0xfacc15, 1);
+      lbBg.strokeRoundedRect(-135, -19, 270, 38, 10);
+    });
+    lbBtn.on('pointerout', () => {
+      lbBg.clear();
+      lbBg.fillStyle(0x0f172a, 0.95);
+      lbBg.fillRoundedRect(-135, -19, 270, 38, 10);
+      lbBg.lineStyle(1.5, 0xfacc15, 0.85);
+      lbBg.strokeRoundedRect(-135, -19, 270, 38, 10);
+    });
+
     // 4. Footer with Version & Credits Link
     const footerY = height - 28;
     this.add.text(20, footerY, `v${APP_VERSION}`, {
@@ -214,7 +256,7 @@ export class GameSelectScene extends Phaser.Scene {
     creditsLink.setInteractive({ useHandCursor: true });
     creditsLink.on('pointerdown', () => {
       audio.playShoot();
-      this.scene.start('Credits');
+      this.scene.start('Credits', { returnScene: 'GameSelect' });
     });
     creditsLink.on('pointerover', () => creditsText.setColor('#ffd700'));
     creditsLink.on('pointerout', () => creditsText.setColor('#94a3b8'));

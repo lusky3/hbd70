@@ -14,6 +14,8 @@ import { GameSelectScene } from './scenes/GameSelect.js';
 import { PongScene } from './scenes/Pong.js';
 import { SpaceInvadersScene } from './scenes/SpaceInvaders.js';
 import { AsteroidsScene } from './scenes/Asteroids.js';
+import { InitialsEntryOverlayScene } from './scenes/InitialsEntryOverlay.js';
+import { LeaderboardModalScene } from './scenes/LeaderboardModal.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -45,7 +47,9 @@ const config = {
     HUDScene,
     GameOverScene,
     VictoryScene,
-    CreditsScene
+    CreditsScene,
+    InitialsEntryOverlayScene,
+    LeaderboardModalScene
   ],
   input: {
     activePointers: 3

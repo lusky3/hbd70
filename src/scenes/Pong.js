@@ -355,19 +355,19 @@ export class PongScene extends Phaser.Scene {
     modal.add([title, sub, finalScore, rallyStat]);
 
     // Play Again Button
-    const playAgainBtn = this.add.container(0, 50);
+    const playAgainBtn = this.add.container(0, 35);
     const pBg = this.add.graphics();
     pBg.fillStyle(0x22c55e, 1);
-    pBg.fillRoundedRect(-120, -18, 240, 36, 10);
+    pBg.fillRoundedRect(-120, -15, 240, 30, 8);
     playAgainBtn.add(pBg);
     const pText = this.add.text(0, 0, 'PLAY AGAIN ▶', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '14px',
+      fontSize: '13px',
       fontWeight: 'bold',
       color: '#ffffff'
     }).setOrigin(0.5);
     playAgainBtn.add(pText);
-    playAgainBtn.setSize(240, 36);
+    playAgainBtn.setSize(240, 30);
     playAgainBtn.setInteractive({ useHandCursor: true });
     playAgainBtn.on('pointerdown', () => {
       audio.playShoot();
@@ -375,13 +375,41 @@ export class PongScene extends Phaser.Scene {
     });
     modal.add(playAgainBtn);
 
+    // Leaderboard Button
+    const lbBtn = this.add.container(0, 72);
+    const lBtnBg = this.add.graphics();
+    lBtnBg.fillStyle(0x0f172a, 1);
+    lBtnBg.fillRoundedRect(-120, -15, 240, 30, 8);
+    lBtnBg.lineStyle(1.5, 0xfacc15, 1);
+    lBtnBg.strokeRoundedRect(-120, -15, 240, 30, 8);
+    lbBtn.add(lBtnBg);
+    const lText = this.add.text(0, 0, '🏆 RECORD HIGH SCORE 🏆', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold',
+      color: '#facc15'
+    }).setOrigin(0.5);
+    lbBtn.add(lText);
+    lbBtn.setSize(240, 30);
+    lbBtn.setInteractive({ useHandCursor: true });
+    lbBtn.on('pointerdown', () => {
+      audio.playShoot?.();
+      this.scene.launch('InitialsEntryOverlay', {
+        gameId: 'pong',
+        score: this.maxRally,
+        detail: `${this.maxRally} Rally (${this.playerScore}-${this.cpuScore})`,
+        returnScene: 'Pong'
+      });
+    });
+    modal.add(lbBtn);
+
     // Menu Button
-    const menuBtn = this.add.container(0, 95);
+    const menuBtn = this.add.container(0, 108);
     const mBtnBg = this.add.graphics();
     mBtnBg.fillStyle(0x1e293b, 1);
-    mBtnBg.fillRoundedRect(-120, -16, 240, 32, 8);
+    mBtnBg.fillRoundedRect(-120, -15, 240, 30, 8);
     mBtnBg.lineStyle(1.5, 0x64748b, 1);
-    mBtnBg.strokeRoundedRect(-120, -16, 240, 32, 8);
+    mBtnBg.strokeRoundedRect(-120, -15, 240, 30, 8);
     menuBtn.add(mBtnBg);
     const mText = this.add.text(0, 0, 'BACK TO ARCADE', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -390,7 +418,7 @@ export class PongScene extends Phaser.Scene {
       color: '#cbd5e1'
     }).setOrigin(0.5);
     menuBtn.add(mText);
-    menuBtn.setSize(240, 32);
+    menuBtn.setSize(240, 30);
     menuBtn.setInteractive({ useHandCursor: true });
     menuBtn.on('pointerdown', () => {
       audio.playShoot();

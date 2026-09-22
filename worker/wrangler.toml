@@ -1,0 +1,10 @@
+name = "hbd70-leaderboard"
+main = "index.js"
+compatibility_date = "2026-09-01"
+
+# Cloudflare D1 Serverless SQLite Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "hbd70-leaderboard"
+database_id = "hbd70-d1-placeholder" # Replaced when deployed via `wrangler d1 create hbd70-leaderboard`
+migrations_dir = "schema.sql"

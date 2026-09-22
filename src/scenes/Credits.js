@@ -6,6 +6,10 @@ export class CreditsScene extends Phaser.Scene {
     super({ key: 'Credits' });
   }
 
+  init(data) {
+    this.returnScene = (data && data.returnScene) ? data.returnScene : 'GameSelect';
+  }
+
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -173,7 +177,7 @@ export class CreditsScene extends Phaser.Scene {
     backBtn.setSize(72, 36);
     backBtn.setInteractive({ useHandCursor: true });
     backBtn.on('pointerdown', () => {
-      this.scene.start('Splash');
+      this.scene.start(this.returnScene || 'GameSelect');
     });
 
     this.add.text(width / 2 + 15, 36, 'CREDITS & TRIBUTE', {

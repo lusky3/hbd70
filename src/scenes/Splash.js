@@ -178,7 +178,7 @@ export class SplashScene extends Phaser.Scene {
     creditsLink.on('pointerdown', (pointer, localX, localY, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
       audio.init();
-      this.scene.start('Credits');
+      this.scene.start('Credits', { returnScene: 'Splash' });
     });
 
     creditsLink.on('pointerover', () => {

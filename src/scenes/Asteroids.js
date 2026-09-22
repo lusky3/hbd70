@@ -566,39 +566,67 @@ export class AsteroidsScene extends Phaser.Scene {
     // Play Again Button
     const retryBtn = this.add.graphics();
     retryBtn.fillStyle(0x22c55e, 1);
-    retryBtn.fillRoundedRect(-130, 25, 260, 42, 10);
+    retryBtn.fillRoundedRect(-130, 18, 260, 34, 8);
     box.add(retryBtn);
 
-    const retryText = this.add.text(0, 46, 'PLAY AGAIN ▶', {
+    const retryText = this.add.text(0, 35, 'PLAY AGAIN ▶', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '15px',
+      fontSize: '14px',
       fontWeight: 'bold',
       color: '#ffffff'
     }).setOrigin(0.5);
     box.add(retryText);
 
-    const retryZone = this.add.zone(0, 46, 260, 42).setInteractive({ useHandCursor: true });
+    const retryZone = this.add.zone(0, 35, 260, 34).setInteractive({ useHandCursor: true });
     box.add(retryZone);
     retryZone.on('pointerdown', () => {
       audio.playShoot();
       this.scene.restart();
     });
 
+    // Leaderboard Button
+    const lbBtn = this.add.graphics();
+    lbBtn.fillStyle(0x0f172a, 1);
+    lbBtn.fillRoundedRect(-130, 58, 260, 34, 8);
+    lbBtn.lineStyle(1.5, 0xfacc15, 1);
+    lbBtn.strokeRoundedRect(-130, 58, 260, 34, 8);
+    box.add(lbBtn);
+
+    const lbText = this.add.text(0, 75, '🏆 RECORD HIGH SCORE 🏆', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      color: '#facc15'
+    }).setOrigin(0.5);
+    box.add(lbText);
+
+    const lbZone = this.add.zone(0, 75, 260, 34).setInteractive({ useHandCursor: true });
+    box.add(lbZone);
+    lbZone.on('pointerdown', () => {
+      audio.playShoot?.();
+      this.scene.launch('InitialsEntryOverlay', {
+        gameId: 'asteroids',
+        score: this.score,
+        detail: `Wave ${this.wave}`,
+        returnScene: 'Asteroids'
+      });
+    });
+
     // Menu Button
     const menuBtn = this.add.graphics();
     menuBtn.fillStyle(0x334155, 1);
-    menuBtn.fillRoundedRect(-130, 78, 260, 38, 10);
+    menuBtn.fillRoundedRect(-130, 98, 260, 34, 8);
     box.add(menuBtn);
 
-    const menuText = this.add.text(0, 97, 'ARCADE MENU', {
+    const menuText = this.add.text(0, 115, 'ARCADE MENU', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '14px',
+      fontSize: '13px',
       fontWeight: 'bold',
       color: '#cbd5e1'
     }).setOrigin(0.5);
     box.add(menuText);
 
-    const menuZone = this.add.zone(0, 97, 260, 38).setInteractive({ useHandCursor: true });
+    const menuZone = this.add.zone(0, 115, 260, 34).setInteractive({ useHandCursor: true });
     box.add(menuZone);
     menuZone.on('pointerdown', () => {
       audio.playShoot();

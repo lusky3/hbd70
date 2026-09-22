@@ -649,10 +649,10 @@ export class SpaceInvadersScene extends Phaser.Scene {
     modal.add([title, finalScore, waveReached, bestScore]);
 
     // Try Again
-    const retryBtn = this.add.container(0, 35);
+    const retryBtn = this.add.container(0, 26);
     const rBg = this.add.graphics();
     rBg.fillStyle(0x22c55e, 1);
-    rBg.fillRoundedRect(-110, -16, 220, 34, 8);
+    rBg.fillRoundedRect(-110, -15, 220, 30, 8);
     retryBtn.add(rBg);
     const rText = this.add.text(0, 0, 'TRY AGAIN ▶', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -661,7 +661,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#ffffff'
     }).setOrigin(0.5);
     retryBtn.add(rText);
-    retryBtn.setSize(220, 34);
+    retryBtn.setSize(220, 30);
     retryBtn.setInteractive({ useHandCursor: true });
     retryBtn.on('pointerdown', () => {
       audio.playShoot();
@@ -669,13 +669,41 @@ export class SpaceInvadersScene extends Phaser.Scene {
     });
     modal.add(retryBtn);
 
+    // Leaderboard Button
+    const lbBtn = this.add.container(0, 64);
+    const lBtnBg = this.add.graphics();
+    lBtnBg.fillStyle(0x0f172a, 1);
+    lBtnBg.fillRoundedRect(-110, -15, 220, 30, 8);
+    lBtnBg.lineStyle(1.5, 0xfacc15, 1);
+    lBtnBg.strokeRoundedRect(-110, -15, 220, 30, 8);
+    lbBtn.add(lBtnBg);
+    const lText = this.add.text(0, 0, '🏆 RECORD HIGH SCORE 🏆', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold',
+      color: '#facc15'
+    }).setOrigin(0.5);
+    lbBtn.add(lText);
+    lbBtn.setSize(220, 30);
+    lbBtn.setInteractive({ useHandCursor: true });
+    lbBtn.on('pointerdown', () => {
+      audio.playShoot?.();
+      this.scene.launch('InitialsEntryOverlay', {
+        gameId: 'invaders',
+        score: this.score,
+        detail: `Wave ${this.wave}`,
+        returnScene: 'SpaceInvaders'
+      });
+    });
+    modal.add(lbBtn);
+
     // Menu Button
-    const menuBtn = this.add.container(0, 78);
+    const menuBtn = this.add.container(0, 102);
     const mBtnBg = this.add.graphics();
     mBtnBg.fillStyle(0x1e293b, 1);
-    mBtnBg.fillRoundedRect(-110, -16, 220, 34, 8);
+    mBtnBg.fillRoundedRect(-110, -15, 220, 30, 8);
     mBtnBg.lineStyle(1.5, 0x64748b, 1);
-    mBtnBg.strokeRoundedRect(-110, -16, 220, 34, 8);
+    mBtnBg.strokeRoundedRect(-110, -15, 220, 30, 8);
     menuBtn.add(mBtnBg);
     const mText = this.add.text(0, 0, 'BACK TO ARCADE', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -684,7 +712,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#cbd5e1'
     }).setOrigin(0.5);
     menuBtn.add(mText);
-    menuBtn.setSize(220, 34);
+    menuBtn.setSize(220, 30);
     menuBtn.setInteractive({ useHandCursor: true });
     menuBtn.on('pointerdown', () => {
       audio.playShoot();
