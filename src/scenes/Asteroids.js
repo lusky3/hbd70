@@ -114,8 +114,8 @@ export class AsteroidsScene extends Phaser.Scene {
       fire: false
     };
 
-    this.cursors = this.input.keyboard.createCursorKeys();
-    this.wasd = this.input.keyboard.addKeys({
+    this.cursors = this.input.keyboard?.createCursorKeys();
+    this.wasd = this.input.keyboard?.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,
       down: Phaser.Input.Keyboard.KeyCodes.S,
       left: Phaser.Input.Keyboard.KeyCodes.A,
@@ -123,10 +123,20 @@ export class AsteroidsScene extends Phaser.Scene {
       space: Phaser.Input.Keyboard.KeyCodes.SPACE
     });
 
-    // 7. Touch Controls Action Bar (Bottom)
+    // 7. Pre-allocated Thrust Particle Emitter (avoids GC churn)
+    this.thrustEmitter = this.add.particles(0, 0, 'confetti', {
+      lifespan: 220,
+      scale: { start: 0.6, end: 0.1 },
+      alpha: { start: 0.8, end: 0 },
+      tint: 0x38bdf8,
+      emitting: false
+    });
+    this.thrustEmitter.setDepth(10);
+
+    // 8. Touch Controls Action Bar (Bottom)
     this.createTouchControls(width, height);
 
-    // 8. Spawn First Wave
+    // 9. Spawn First Wave
     this.spawnAsteroidWave();
 
     // 9. Show Controls Overlay
@@ -294,19 +304,31 @@ export class AsteroidsScene extends Phaser.Scene {
 
       audio.playLaser();
 
+      // Cancel previous expireTimer if laser was recycled
+      if (laser.expireTimer) {
+        laser.expireTimer.remove();
+        laser.expireTimer = null;
+      }
+
       // Auto-destroy after 1.1 seconds
-      this.time.delayedCall(1100, () => {
+      laser.expireTimer = this.time.delayedCall(1100, () => {
         if (laser.active) {
           laser.setActive(false);
           laser.setVisible(false);
           laser.body.stop();
         }
+        laser.expireTimer = null;
       });
     }
   }
 
   handleLaserAsteroidHit(laser, asteroid) {
     if (!laser.active || !asteroid.active) return;
+
+    if (laser.expireTimer) {
+      laser.expireTimer.remove();
+      laser.expireTimer = null;
+    }
 
     laser.setActive(false);
     laser.setVisible(false);
@@ -534,8 +556,8 @@ export class AsteroidsScene extends Phaser.Scene {
     const rotSpeed = 3.6; // rad/sec
     const dt = delta / 1000;
 
-    const rotatingLeft = this.controls.rotLeft || this.cursors.left.isDown || this.wasd.left.isDown;
-    const rotatingRight = this.controls.rotRight || this.cursors.right.isDown || this.wasd.right.isDown;
+    const rotatingLeft = this.controls.rotLeft || this.cursors?.left?.isDown || this.wasd?.left?.isDown;
+    const rotatingRight = this.controls.rotRight || this.cursors?.right?.isDown || this.wasd?.right?.isDown;
 
     if (rotatingLeft) {
       this.ship.rotation -= rotSpeed * dt;
@@ -545,7 +567,7 @@ export class AsteroidsScene extends Phaser.Scene {
     }
 
     // 2. Thrust handling
-    const thrusting = this.controls.thrust || this.cursors.up.isDown || this.wasd.up.isDown;
+    const thrusting = this.controls.thrust || this.cursors?.up?.isDown || this.wasd?.up?.isDown;
 
     if (thrusting) {
       const thrustAccel = 260;
@@ -559,23 +581,20 @@ export class AsteroidsScene extends Phaser.Scene {
         audio.playThrust();
       }
 
-      // Exhaust particle flare
+      // Exhaust particle flare using pooled particle emitter (zero GC churn)
       const rearX = this.ship.x - Math.cos(this.ship.rotation) * 14;
       const rearY = this.ship.y - Math.sin(this.ship.rotation) * 14;
-      const flare = this.add.circle(rearX, rearY, Phaser.Math.Between(2, 3), 0x38bdf8, 0.8);
-      this.tweens.add({
-        targets: flare,
-        alpha: 0,
-        scale: 0.1,
-        duration: 200,
-        onComplete: () => flare.destroy()
-      });
+      if (this.thrustEmitter) {
+        this.thrustEmitter.emitParticleAt(rearX, rearY, 1);
+      }
     } else {
       this.ship.setAcceleration(0, 0);
     }
 
     // 3. Fire handling (keyboard)
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.space) || Phaser.Input.Keyboard.JustDown(this.wasd.space)) {
+    const justDownSpace = (this.cursors && Phaser.Input.Keyboard.JustDown(this.cursors.space)) ||
+                          (this.wasd && Phaser.Input.Keyboard.JustDown(this.wasd.space));
+    if (justDownSpace) {
       this.fireLaser();
     }
 

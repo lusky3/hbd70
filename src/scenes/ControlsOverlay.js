@@ -161,6 +161,7 @@ export class ControlsOverlay {
       audio.init();
       audio.playShoot();
 
+      scene.tweens.killTweensOf([startBtn, btnText]);
       scene.tweens.add({
         targets: [overlayBg, container],
         alpha: 0,

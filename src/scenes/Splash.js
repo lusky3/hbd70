@@ -108,7 +108,7 @@ export class SplashScene extends Phaser.Scene {
     promptBg.strokeRoundedRect(-170, -26, 340, 52, 16);
     promptContainer.add(promptBg);
 
-    const promptText = this.add.text(0, 0, '★ TAP ANYWHERE TO PLAY ★', {
+    const promptText = this.add.text(0, 0, '★ PRESS ANYWHERE TO CONTINUE ★', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '18px',
       fontWeight: 'bold',

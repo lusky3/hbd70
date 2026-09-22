@@ -114,7 +114,7 @@ export class PongScene extends Phaser.Scene {
     this.paddleGrip = this.add.sprite(width / 2, 752, 'pong_grip');
     this.paddleGrip.setDepth(10);
 
-    const gripLabel = this.add.text(width / 2, 778, 'TOUCH & DRAG HANDLE', {
+    this.gripLabel = this.add.text(width / 2, 778, 'TOUCH & DRAG HANDLE', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '10px',
       fontWeight: 'bold',
@@ -146,18 +146,12 @@ export class PongScene extends Phaser.Scene {
       const clampedX = Phaser.Math.Clamp(pointerX, minX, maxX);
       this.playerPaddle.x = clampedX;
       this.paddleGrip.x = clampedX;
-      gripLabel.x = clampedX;
+      if (this.gripLabel) this.gripLabel.x = clampedX;
     };
 
     touchZone.on('pointerdown', (pointer) => movePaddleTo(pointer.x));
     touchZone.on('pointermove', (pointer) => {
       if (pointer.isDown) movePaddleTo(pointer.x);
-    });
-
-    this.input.on('pointermove', (pointer) => {
-      if (pointer.isDown && pointer.y > height * 0.65) {
-        movePaddleTo(pointer.x);
-      }
     });
 
     // Keyboard Fallback (Arrows / A & D)
@@ -205,6 +199,7 @@ export class PongScene extends Phaser.Scene {
     const targetX = Phaser.Math.Clamp(this.playerPaddle.x + dx, minX, maxX);
     this.playerPaddle.x = targetX;
     this.paddleGrip.x = targetX;
+    if (this.gripLabel) this.gripLabel.x = targetX;
   }
 
   updateAI(delta) {

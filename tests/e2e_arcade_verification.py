@@ -172,11 +172,14 @@ def run_arcade_e2e():
             }""")
             time.sleep(0.2)
 
-            lasers_active = page.evaluate("""() => {
+            laser_fired_state = page.evaluate("""() => {
                 const ast = window.game.scene.getScene('Asteroids');
-                return ast ? ast.lasers.countActive() : 0;
+                return {
+                    lasersActive: ast ? ast.lasers.countActive() : 0,
+                    score: ast ? ast.score : 0
+                };
             }""")
-            assert lasers_active >= 1, f"At least 1 laser bolt must be active, got {lasers_active}"
+            assert laser_fired_state["lasersActive"] >= 1 or laser_fired_state["score"] > 0, f"Laser must be active or hit an asteroid, got {laser_fired_state}"
 
             # Return to GameSelect from Asteroids
             page.mouse.click(55, 34)

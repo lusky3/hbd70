@@ -268,21 +268,46 @@ def run_e2e():
             splash_eval = page.evaluate("""() => {
                 const splash = window.game.scene.getScene('Splash');
                 const children = splash.children.list;
-                const levelsBtn = children.find(c => c.text && c.text.includes('LEVELS'));
                 const creditsLink = children.find(c => c.type === 'Container' && c.list && c.list.some(sub => sub.text && sub.text.includes('Credits')));
                 return {
-                    hasLevelsBtn: !!levelsBtn,
-                    levelsText: levelsBtn ? levelsBtn.text : null,
                     hasCredits: !!creditsLink
                 };
             }""")
-            assert splash_eval["hasLevelsBtn"], "SplashScene must display LEVELS button"
-            assert "1/70" in splash_eval["levelsText"], f"Expected 1/70 beaten levels on button, got {splash_eval['levelsText']}"
             assert splash_eval["hasCredits"], "SplashScene must display Credits link"
+
+            # Transition from Splash to GameSelectScene
+            page.evaluate("""() => {
+                window.game.scene.stop('Splash');
+                window.game.scene.start('GameSelect');
+            }""")
+            time.sleep(0.5)
+
+            gameselect_eval = page.evaluate("""() => {
+                const gs = window.game.scene.getScene('GameSelect');
+                const texts = [];
+                const collectTexts = (obj) => {
+                    if (obj.text) texts.push(obj.text);
+                    if (obj.list) obj.list.forEach(collectTexts);
+                };
+                gs.children.list.forEach(collectTexts);
+
+                const hasLevelsBtn = texts.some(t => t.includes('LEVELS'));
+                const progressText = texts.find(t => t.includes('Progress: Level') || t.includes('Beaten'));
+                const hasCredits = texts.some(t => t.includes('Credits'));
+
+                return {
+                    hasLevelsBtn,
+                    progressText,
+                    hasCredits
+                };
+            }""")
+            assert gameselect_eval["hasLevelsBtn"], "GameSelectScene must display LEVELS button"
+            assert "1 Beaten" in gameselect_eval["progressText"], f"Expected 1 Beaten on GameSelect, got {gameselect_eval['progressText']}"
+            assert gameselect_eval["hasCredits"], "GameSelectScene must display Credits link"
 
             # Open LevelSelectScene
             page.evaluate("""() => {
-                window.game.scene.stop('Splash');
+                window.game.scene.stop('GameSelect');
                 window.game.scene.start('LevelSelect');
             }""")
             time.sleep(0.5)

@@ -17,6 +17,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
     this.lives = 3;
     this.wave = 1;
     this.gameActive = false;
+    this.isInvulnerable = false;
 
     // 1. Dark Space Background with Twinkling Stars
     const bg = this.add.graphics();
@@ -430,23 +431,31 @@ export class SpaceInvadersScene extends Phaser.Scene {
 
   onPlayerHit(player, bullet) {
     bullet.destroy();
+    if (this.isInvulnerable || !this.gameActive) return;
+
     audio.playExplosion();
     this.lives--;
     this.livesText.setText(`LIVES: ${'❤️'.repeat(Math.max(0, this.lives))}`);
 
-    // Flash player invulnerability
-    this.player.setAlpha(0.4);
+    if (this.lives <= 0) {
+      this.handleGameOver();
+      return;
+    }
+
+    // Flash player with invulnerability cooldown (1500ms)
+    this.isInvulnerable = true;
+    this.player.setAlpha(0.3);
     this.tweens.add({
       targets: this.player,
       alpha: 1,
-      duration: 180,
-      repeat: 4,
-      onComplete: () => { this.player.setAlpha(1); }
+      duration: 150,
+      yoyo: true,
+      repeat: 5,
+      onComplete: () => {
+        this.player.setAlpha(1);
+        this.isInvulnerable = false;
+      }
     });
-
-    if (this.lives <= 0) {
-      this.handleGameOver();
-    }
   }
 
   addScore(pts) {
