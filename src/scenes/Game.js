@@ -56,14 +56,13 @@ export class GameScene extends Phaser.Scene {
     this.terrain = new TerrainBuilder(this);
     this.terrain.build(this.levelData);
 
-    // 4. Spawn Player Tank with 3s spawn invulnerability
+    // 4. Spawn Player Tank
     const pStart = this.terrain.toWorld(this.levelData.playerStart.x, this.levelData.playerStart.y);
     this.player = new PlayerTank(this, pStart.x, pStart.y);
     this.playerGroup.add(this.player);
     if (this.isInvincibleCheat && this.player.setInvincibleAura) {
       this.player.setInvincibleAura(true);
     }
-    this.grantSpawnInvulnerability(3000);
 
     // 5. Spawn Enemies with CPU speed multiplier applied
     this.levelData.enemies.forEach((enemyDef) => {
@@ -84,7 +83,10 @@ export class GameScene extends Phaser.Scene {
       this.isPausedForControls = true;
       ControlsOverlay.show(this, 'tanks', () => {
         this.isPausedForControls = false;
+        this.grantSpawnInvulnerability(3000);
       });
+    } else {
+      this.grantSpawnInvulnerability(3000);
     }
 
     // Handle CPU speed adjustment from HUD

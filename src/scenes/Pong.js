@@ -152,8 +152,8 @@ export class PongScene extends Phaser.Scene {
     };
 
     touchZone.on('pointerdown', (pointer) => movePaddleTo(pointer.x));
-    touchZone.on('pointermove', (pointer) => {
-      if (pointer.isDown) movePaddleTo(pointer.x);
+    this.input.on('pointermove', (pointer) => {
+      if (pointer.isDown && pointer.y > height / 2) movePaddleTo(pointer.x);
     });
 
     // Keyboard Fallback (Arrows / A & D)
