@@ -3,6 +3,7 @@
 
 import { audio } from '../systems/AudioManager.js';
 import { storage } from '../systems/Storage.js';
+import { APP_VERSION } from '../version.js';
 
 export class GameSelectScene extends Phaser.Scene {
   constructor() {
@@ -185,9 +186,16 @@ export class GameSelectScene extends Phaser.Scene {
       this.createGameCard(cardStartX, cy, item);
     });
 
-    // 4. Footer with Credits Link
+    // 4. Footer with Version & Credits Link
     const footerY = height - 28;
-    this.add.text(width / 2, footerY, 'Honoring Allan Lusk • 1956 to 2026', {
+    this.add.text(20, footerY, `v${APP_VERSION}`, {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold',
+      color: '#64748b'
+    }).setOrigin(0, 0.5);
+
+    this.add.text(width / 2 + 10, footerY, 'Honoring Allan Lusk • 1956 to 2026', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '11px',
       color: '#64748b'

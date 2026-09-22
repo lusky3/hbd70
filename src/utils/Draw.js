@@ -880,18 +880,93 @@ function generateInvaderTextures(scene) {
     canvas.refresh();
   }
 
-  // 5. Mystery CN Railcar UFO
+  // 5. Mystery Vintage CN Railcar UFO
   if (!scene.textures.exists('invader_ufo')) {
-    const canvas = scene.textures.createCanvas('invader_ufo', 44, 20);
+    const canvas = scene.textures.createCanvas('invader_ufo', 56, 24);
     const ctx = canvas.getContext();
-    ctx.fillStyle = '#dc2626'; // CN Rail Red
-    ctx.fillRect(2, 4, 40, 14);
+
+    // 1. Couplers on both ends
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(0, 15, 4, 3);
+    ctx.fillRect(52, 15, 4, 3);
+
+    // 2. Chassis Underframe
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(4, 15, 48, 3);
+
+    // Underbody equipment box / air brake cylinder
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(23, 17, 10, 3);
+
+    // 3. Wheel Trucks / Bogies (Dual 2-Axle)
+    const drawTruck = (centerX) => {
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(centerX - 8, 17, 16, 2); // Truck bolster
+      // Wheels
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(centerX - 5, 20, 3, 0, Math.PI * 2);
+      ctx.arc(centerX + 5, 20, 3, 0, Math.PI * 2);
+      ctx.fill();
+      // Wheel rims / bearings
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(centerX - 6, 19, 2, 2);
+      ctx.fillRect(centerX + 4, 19, 2, 2);
+    };
+    drawTruck(14);
+    drawTruck(42);
+
+    // 4. Boxcar Body (CN Heritage Red & Black Ends)
+    ctx.fillStyle = '#dc2626'; // CN Red
+    ctx.fillRect(4, 3, 48, 12);
+
+    // Darker corrugated side ribs
+    ctx.fillStyle = '#b91c1c';
+    for (let rx = 7; rx <= 49; rx += 5) {
+      ctx.fillRect(rx, 4, 1, 10);
+    }
+
+    // Black reinforced ends
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(4, 3, 3, 12);
+    ctx.fillRect(49, 3, 3, 12);
+
+    // Sliding Center Door Panel
+    ctx.fillStyle = '#991b1b';
+    ctx.fillRect(22, 4, 12, 10);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(21, 3, 14, 1); // Upper door guide track
+    ctx.fillRect(21, 14, 14, 1); // Lower door guide track
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(31, 8, 2, 3); // Door latch
+
+    // 5. Roof with Catwalk / Running Board
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(5, 1, 46, 2); // Roof catwalk
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(8, 0, 40, 1); // Raised center walk plank
+
+    // 6. Iconic White CN Lettering
     ctx.fillStyle = '#ffffff';
-    // CN letters / Windows
-    ctx.fillRect(6, 7, 6, 6);
-    ctx.fillRect(16, 7, 6, 6);
-    ctx.fillRect(26, 7, 6, 6);
-    ctx.fillRect(36, 7, 4, 6);
+    // 'C'
+    ctx.fillRect(9, 6, 4, 1.5);
+    ctx.fillRect(9, 6, 1.5, 5);
+    ctx.fillRect(9, 9.5, 4, 1.5);
+    // 'N'
+    ctx.fillRect(14, 6, 1.5, 5);
+    ctx.fillRect(15.5, 7.5, 1.5, 2);
+    ctx.fillRect(17, 6, 1.5, 5);
+
+    // Road number tribute (1956)
+    ctx.fillStyle = '#fef08a';
+    ctx.font = 'bold 5px sans-serif';
+    ctx.fillText('1956', 36, 10);
+
+    // 7. Yellow Safety End Markers / Stirrup steps
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(4, 16, 2, 2);
+    ctx.fillRect(50, 16, 2, 2);
+
     canvas.refresh();
   }
 

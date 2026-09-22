@@ -34,7 +34,7 @@ export class CreditsScene extends Phaser.Scene {
     const lines = [
       { text: 'EPISODE LXX', color: '#ffd700', size: 16, bold: true, space: 14 },
       { text: "ALLAN'S MILESTONE", color: '#ffd700', size: 24, bold: true, space: 28 },
-      { text: 'A long time ago in King City, Ontario...', color: '#67e8f9', size: 14, bold: false, space: 20 },
+      { text: 'A long time ago in Parry Sound, Ontario...', color: '#67e8f9', size: 14, bold: false, space: 20 },
       { text: 'Seventy years of legendary mechanics,', color: '#e2e8f0', size: 15, bold: false, space: 8 },
       { text: 'cottage campfires, rail yard mastery,', color: '#e2e8f0', size: 15, bold: false, space: 8 },
       { text: 'and four wonderful kids culminated in', color: '#e2e8f0', size: 15, bold: false, space: 8 },
@@ -64,10 +64,16 @@ export class CreditsScene extends Phaser.Scene {
       { text: 'Cody Lusk', color: '#38bdf8', size: 16, bold: true, space: 18 },
 
       { text: 'LEAD QA TESTER & DESTROYER OF GLITCHES', color: '#94a3b8', size: 11, bold: false, space: 4 },
-      { text: 'Cody Lusk', color: '#38bdf8', size: 16, bold: true, space: 26 },
+      { text: 'Cody Lusk', color: '#38bdf8', size: 16, bold: true, space: 14 },
+
+      { text: 'QA TESTERS & GLITCH HUNTERS', color: '#94a3b8', size: 11, bold: false, space: 4 },
+      { text: 'Kelsey Lusk & Jay', color: '#38bdf8', size: 16, bold: true, space: 26 },
+
+      { text: '★ [IN SPIRIT] ★', color: '#f59e0b', size: 14, bold: true, space: 14 },
+      { text: 'Amy, Jennifer & Kelsey', color: '#f1f5f9', size: 14, bold: false, space: 24 },
 
       { text: '★ CRAFT SERVICES & MORAL SUPPORT ★', color: '#f59e0b', size: 14, bold: true, space: 16 },
-      { text: 'Carrie Orr, Amy, Jennifer, Kelsey & Cody', color: '#f1f5f9', size: 14, bold: false, space: 32 },
+      { text: 'Carrie Orr & Cody', color: '#f1f5f9', size: 14, bold: false, space: 32 },
 
       { text: '★ DEDICATED WITH LOVE TO ★', color: '#f59e0b', size: 16, bold: true, space: 14 },
       { text: 'ALLAN LUSK', color: '#ffd700', size: 24, bold: true, space: 12 },

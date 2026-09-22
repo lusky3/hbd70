@@ -114,8 +114,16 @@ export class AsteroidsScene extends Phaser.Scene {
       rotLeft: false,
       rotRight: false,
       thrust: false,
+      touchThrust: false,
       fire: false
     };
+
+    this.touchRingGfx = this.add.graphics();
+    this.touchRingGfx.setDepth(150);
+    this.touchPointer = null;
+    this.touchDownTime = 0;
+    this.touchDownX = 0;
+    this.touchDownY = 0;
 
     this.cursors = this.input.keyboard?.createCursorKeys();
     this.wasd = this.input.keyboard?.addKeys({
@@ -232,6 +240,34 @@ export class AsteroidsScene extends Phaser.Scene {
       },
       () => { this.controls.fire = false; }
     );
+
+    // Playfield touch gestures: tap-to-fire + steering ring + thrust
+    this.input.on('pointerdown', (pointer) => {
+      // Ignore clicks on top header (y < 68) or bottom button bar (y > height - barHeight)
+      if (pointer.y > 68 && pointer.y < height - barHeight) {
+        this.touchPointer = pointer;
+        this.touchDownTime = this.time.now;
+        this.touchDownX = pointer.x;
+        this.touchDownY = pointer.y;
+      }
+    });
+
+    const finishTouch = (pointer) => {
+      if (this.touchPointer && pointer.id === this.touchPointer.id) {
+        const dt = this.time.now - this.touchDownTime;
+        const dist = Math.hypot(pointer.x - this.touchDownX, pointer.y - this.touchDownY);
+        // Quick tap without significant drag fires laser along existing heading (without altering ship rotation)
+        if (dt < 280 && dist < 12) {
+          this.fireLaser();
+        }
+        this.touchPointer = null;
+        this.controls.touchThrust = false;
+        if (this.touchRingGfx) this.touchRingGfx.clear();
+      }
+    };
+
+    this.input.on('pointerup', finishTouch);
+    this.input.on('pointerupoutside', finishTouch);
   }
 
   spawnAsteroidWave() {
@@ -568,10 +604,63 @@ export class AsteroidsScene extends Phaser.Scene {
   update(time, delta) {
     if (!this.gameActive) return;
 
-    // 1. Rotation handling
     const rotSpeed = 3.6; // rad/sec
     const dt = delta / 1000;
 
+    // 0. Playfield Touch Ring & Gesture Steering
+    if (this.touchPointer && this.touchPointer.isDown && this.ship && this.ship.active) {
+      const dx = this.touchPointer.x - this.ship.x;
+      const dy = this.touchPointer.y - this.ship.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (this.touchRingGfx) this.touchRingGfx.clear();
+
+      if (dist > 14) {
+        const targetAngle = Math.atan2(dy, dx);
+        const angleDiff = Phaser.Math.Angle.Wrap(targetAngle - this.ship.rotation);
+        const steerSpeed = 6.0; // rad/sec for responsive finger tracking
+        this.ship.rotation += Phaser.Math.Clamp(angleDiff, -steerSpeed * dt, steerSpeed * dt);
+
+        const innerRadius = 70;
+        const isThrusting = dist > innerRadius;
+        this.controls.touchThrust = isThrusting;
+
+        if (this.touchRingGfx) {
+          // Inner steering circle
+          this.touchRingGfx.lineStyle(1.5, 0x38bdf8, 0.45);
+          this.touchRingGfx.strokeCircle(this.ship.x, this.ship.y, innerRadius);
+
+          // Heading pointer notch
+          this.touchRingGfx.lineStyle(2, 0x38bdf8, 0.8);
+          this.touchRingGfx.lineBetween(
+            this.ship.x,
+            this.ship.y,
+            this.ship.x + Math.cos(this.ship.rotation) * innerRadius,
+            this.ship.y + Math.sin(this.ship.rotation) * innerRadius
+          );
+
+          if (isThrusting) {
+            // Amber outer thrust perimeter
+            this.touchRingGfx.lineStyle(2, 0xf59e0b, 0.8);
+            this.touchRingGfx.strokeCircle(this.ship.x, this.ship.y, innerRadius + 14);
+            // Tether line to finger
+            this.touchRingGfx.lineStyle(1.5, 0xf59e0b, 0.6);
+            this.touchRingGfx.lineBetween(this.ship.x, this.ship.y, this.touchPointer.x, this.touchPointer.y);
+            this.touchRingGfx.fillStyle(0xf59e0b, 0.9);
+            this.touchRingGfx.fillCircle(this.touchPointer.x, this.touchPointer.y, 6);
+          } else {
+            // Steering reticle at finger
+            this.touchRingGfx.fillStyle(0x38bdf8, 0.75);
+            this.touchRingGfx.fillCircle(this.touchPointer.x, this.touchPointer.y, 5);
+          }
+        }
+      }
+    } else {
+      if (this.touchRingGfx) this.touchRingGfx.clear();
+      this.controls.touchThrust = false;
+    }
+
+    // 1. Rotation handling (buttons / keyboard)
     const rotatingLeft = this.controls.rotLeft || this.cursors?.left?.isDown || this.wasd?.left?.isDown;
     const rotatingRight = this.controls.rotRight || this.cursors?.right?.isDown || this.wasd?.right?.isDown;
 
@@ -582,8 +671,8 @@ export class AsteroidsScene extends Phaser.Scene {
       this.ship.rotation += rotSpeed * dt;
     }
 
-    // 2. Thrust handling
-    const thrusting = this.controls.thrust || this.cursors?.up?.isDown || this.wasd?.up?.isDown;
+    // 2. Thrust handling (buttons / keyboard / touch gesture)
+    const thrusting = this.controls.thrust || this.controls.touchThrust || this.cursors?.up?.isDown || this.wasd?.up?.isDown;
 
     if (thrusting) {
       const thrustAccel = 260;

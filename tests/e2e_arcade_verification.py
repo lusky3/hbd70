@@ -44,16 +44,51 @@ def run_arcade_e2e():
             page.mouse.click(240, 400)
             time.sleep(0.5)
 
-            # 3. Verify GameSelect Scene
+            # 3. Verify GameSelect Scene & Version v1.1.0
             game_select_state = page.evaluate("""() => {
                 const gs = window.game.scene.getScene('GameSelect');
                 if (!gs || !gs.scene.isActive()) return { active: false };
+                const textObjects = gs.children.list.filter(c => c.type === 'Text');
+                const texts = textObjects.map(t => t.text);
+                const hasVersion = texts.some(t => t.includes('v1.1.0'));
                 return {
                     active: true,
+                    hasVersion: hasVersion,
                     cameras: gs.cameras.main.width === 480
                 };
             }""")
             assert game_select_state["active"], f"GameSelectScene must be active after splash tap, got {game_select_state}"
+            assert game_select_state["hasVersion"], f"GameSelectScene must display v1.1.0 in footer, got {game_select_state}"
+
+            # 3b. Verify Credits Scene strings (Parry Sound, [IN SPIRIT], QA Testers)
+            print("[E2E] Testing Credits Scene Strings...")
+            page.evaluate("""() => {
+                const gs = window.game.scene.getScene('GameSelect');
+                gs.scene.start('Credits');
+            }""")
+            time.sleep(0.5)
+
+            credits_state = page.evaluate("""() => {
+                const cr = window.game.scene.getScene('Credits');
+                if (!cr || !cr.scene.isActive()) return { active: false };
+                const texts = cr.textItems ? cr.textItems.map(t => t.obj ? t.obj.text : '') : [];
+                return {
+                    active: true,
+                    hasParrySound: texts.some(t => t && t.includes('Parry Sound')),
+                    noKingCity: !texts.some(t => t && t.includes('King City')),
+                    hasInSpirit: texts.some(t => t && t.includes('[IN SPIRIT]')),
+                    hasQATesters: texts.some(t => t && t.includes('Kelsey Lusk & Jay'))
+                };
+            }""")
+            assert credits_state["active"], "CreditsScene must be active"
+            assert credits_state["hasParrySound"], f"Credits must feature Parry Sound: {credits_state}"
+            assert credits_state["noKingCity"], f"Credits must not mention King City: {credits_state}"
+            assert credits_state["hasInSpirit"], f"Credits must feature [IN SPIRIT]: {credits_state}"
+            assert credits_state["hasQATesters"], f"Credits must feature Kelsey & Jay: {credits_state}"
+
+            # Return to GameSelect
+            page.mouse.click(55, 34)
+            time.sleep(0.5)
 
             # 4. Test Pong Scene Flow
             print("[E2E] Testing Birthday Pong Scene...")
@@ -127,7 +162,29 @@ def run_arcade_e2e():
                 const inv = window.game.scene.getScene('SpaceInvaders');
                 return inv && inv.gameActive;
             }""")
-            assert invaders_started, "Space Invaders game must be active after dismissing overlay"
+            # Verify continuous touch dragging across play area and button area
+            page.evaluate("""() => {
+                const inv = window.game.scene.getScene('SpaceInvaders');
+                // Simulate pointerdown in play area
+                inv.input.emit('pointerdown', { id: 1, x: 240, y: 700 });
+                // Move down across direction buttons (y = 820) to x = 380
+                inv.input.emit('pointermove', { id: 1, x: 380, y: 820 });
+            }""")
+            inv_drag_x = page.evaluate("""() => {
+                const inv = window.game.scene.getScene('SpaceInvaders');
+                return inv.player.x;
+            }""")
+            assert inv_drag_x == 380, f"Player cannon should follow continuous finger swipe across buttons to x=380, got {inv_drag_x}"
+
+            # Tap release to fire
+            inv_bullets_before = page.evaluate("""() => {
+                const inv = window.game.scene.getScene('SpaceInvaders');
+                // Quick tap in play area without dragging
+                inv.input.emit('pointerdown', { id: 2, x: 240, y: 700 });
+                inv.input.emit('pointerup', { id: 2, x: 240, y: 700 });
+                return inv.playerBullets.countActive();
+            }""")
+            assert inv_bullets_before >= 1, "Quick tap in play area should fire cannon"
 
             # Return to GameSelect from Space Invaders
             page.mouse.click(55, 34)
@@ -165,21 +222,26 @@ def run_arcade_e2e():
             }""")
             assert asteroids_started, "Asteroids game must be active after dismissing overlay"
 
-            # Fire laser in Asteroids
-            page.evaluate("""() => {
+            # Verify tap-to-fire heading invariance
+            ast_rotation_before = page.evaluate("""() => {
                 const ast = window.game.scene.getScene('Asteroids');
-                if (ast) ast.fireLaser();
+                ast.ship.rotation = 1.25; // Set specific heading
+                // Quick tap at (100, 300) without drag
+                ast.input.emit('pointerdown', { id: 3, x: 100, y: 300 });
+                return ast.ship.rotation;
             }""")
-            time.sleep(0.2)
-
-            laser_fired_state = page.evaluate("""() => {
+            time.sleep(0.05)
+            ast_rotation_after = page.evaluate("""() => {
                 const ast = window.game.scene.getScene('Asteroids');
+                ast.input.emit('pointerup', { id: 3, x: 100, y: 300 });
                 return {
-                    lasersActive: ast ? ast.lasers.countActive() : 0,
-                    score: ast ? ast.score : 0
+                    rotation: ast.ship.rotation,
+                    lasers: ast.lasers.countActive(),
+                    score: ast.score
                 };
             }""")
-            assert laser_fired_state["lasersActive"] >= 1 or laser_fired_state["score"] > 0, f"Laser must be active or hit an asteroid, got {laser_fired_state}"
+            assert abs(ast_rotation_after["rotation"] - ast_rotation_before) < 1e-6, f"Ship heading must not change during tap-to-fire! Before {ast_rotation_before}, after {ast_rotation_after['rotation']}"
+            assert ast_rotation_after["lasers"] >= 1 or ast_rotation_after["score"] > 0, "Tap on playfield should fire laser"
 
             # Return to GameSelect from Asteroids
             page.mouse.click(55, 34)

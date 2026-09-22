@@ -71,7 +71,7 @@ export class SplashScene extends Phaser.Scene {
       shadow: { color: '#b45309', fill: true, blur: 8, offsetX: 0, offsetY: 2 }
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.45, 'From Cody, Amy, Jenn & Kelsey\n— and Carrie ❤️', {
+    this.add.text(width / 2, height * 0.45, 'From Cody\n— and Carrie ❤️', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '16px',
       color: '#cbd5e1',

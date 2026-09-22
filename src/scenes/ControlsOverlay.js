@@ -223,11 +223,11 @@ export class ControlsOverlay {
           touchInstructions: [
             {
               icon: '◀ ▶',
-              desc: 'Use bottom Left & Right arrows (or drag anywhere on the bottom lane) to steer cannon.'
+              desc: 'Drag anywhere on screen (or use Left/Right arrows) to slide your cannon.'
             },
             {
               icon: '🔥',
-              desc: 'Tap [FIRE] button to shoot candles, cakes, and trains.'
+              desc: 'Tap anywhere in the play area (or [FIRE] button) to shoot. Watch the reload meter!'
             },
             {
               icon: '🛡️',
@@ -235,7 +235,7 @@ export class ControlsOverlay {
             },
             {
               icon: '🚂',
-              desc: 'Shoot the mystery vintage CN Railcar passing at the top for bonus points!'
+              desc: 'Shoot the vintage CN Railcar passing at the top for big bonus points!'
             }
           ],
           keyboard: '• Left / Right Arrows (or A/D) to move • Spacebar to fire.'
@@ -247,16 +247,16 @@ export class ControlsOverlay {
           subtitle: 'Pilot Allan\'s Cruiser through deep space and shatter birthday meteorites!',
           touchInstructions: [
             {
+              icon: '🎯',
+              desc: 'Tap anywhere on screen (or [FIRE] button) to shoot forward with zero-drift recoil!'
+            },
+            {
               icon: '🔄',
-              desc: 'Tap ⟲ / ⟳ Rotate buttons to steer your space cruiser 360°.'
+              desc: 'Drag touch ring around your ship to steer 360° (or use bottom ⟲ / ⟳ buttons).'
             },
             {
               icon: '▲',
-              desc: 'Tap ▲ THRUST to accelerate with realistic zero-gravity inertia.'
-            },
-            {
-              icon: '💥',
-              desc: 'Tap [FIRE] to shoot laser bolts and split giant "70" asteroids into smaller chunks.'
+              desc: 'Drag outside the touch ring (or tap ▲ THRUST) to accelerate with zero-G inertia.'
             },
             {
               icon: '🌀',

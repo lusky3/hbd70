@@ -115,6 +115,10 @@ export class SpaceInvadersScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.player.body.allowGravity = false;
     this.playerSpeed = 300;
+    this.lastFiredTime = 0;
+    this.fireCooldown = 280;
+    this.reloadGfx = this.add.graphics();
+    this.reloadGfx.setDepth(100);
 
     // 5. Create Milestone Bunkers
     this.createMilestoneBunkers();
@@ -339,20 +343,63 @@ export class SpaceInvadersScene extends Phaser.Scene {
     fireBtn.setInteractive({ useHandCursor: true });
     fireBtn.on('pointerdown', () => { this.firePlayerBullet(); });
 
+    this.fireBtnBg = fBg;
+    this.fireBtnText = fText;
+    this.lastReadyState = true;
     this.touchMoveDir = 0;
 
-    // Optional direct drag on player area
+    // Play-area touch dragging & tap-to-fire
+    this.dragPointerId = null;
+    this.isTouchDragging = false;
+    this.hasMovedDrag = false;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+
+    this.input.on('pointerdown', (pointer) => {
+      if (pointer.y > 68 && pointer.y < height - 75) {
+        this.dragPointerId = pointer.id;
+        this.isTouchDragging = true;
+        this.hasMovedDrag = false;
+        this.dragStartX = pointer.x;
+        this.dragStartY = pointer.y;
+      }
+    });
+
     this.input.on('pointermove', (pointer) => {
-      if (pointer.isDown && pointer.y > 670 && pointer.y < height - 80) {
+      if (this.isTouchDragging && pointer.id === this.dragPointerId) {
+        const dx = Math.abs(pointer.x - this.dragStartX);
+        const dy = Math.abs(pointer.y - this.dragStartY);
+        if (dx > 6 || dy > 6) {
+          this.hasMovedDrag = true;
+        }
+        // Continuous movement tracking: keeps updating even if finger moves over direction buttons
         this.player.x = Phaser.Math.Clamp(pointer.x, 30, width - 30);
       }
     });
+
+    const finishDrag = (pointer) => {
+      if (this.isTouchDragging && pointer.id === this.dragPointerId) {
+        // Quick tap in play area triggers fire
+        if (!this.hasMovedDrag) {
+          this.firePlayerBullet();
+        }
+        this.isTouchDragging = false;
+        this.dragPointerId = null;
+        this.hasMovedDrag = false;
+      }
+    };
+
+    this.input.on('pointerup', finishDrag);
+    this.input.on('pointerupoutside', finishDrag);
   }
 
   firePlayerBullet() {
     if (!this.gameActive) return;
+    const now = this.time.now;
+    if (now - this.lastFiredTime < this.fireCooldown) return;
     if (this.playerBullets.countActive() >= 2) return; // Hard cap of 2 active bullets
 
+    this.lastFiredTime = now;
     audio.playShoot();
     const bullet = this.playerBullets.create(this.player.x, this.player.y - 18, 'invader_bullet');
     bullet.setTint(0x38bdf8);
@@ -360,8 +407,66 @@ export class SpaceInvadersScene extends Phaser.Scene {
     bullet.body.allowGravity = false;
   }
 
+  updateCooldownUI(time) {
+    if (!this.reloadGfx || !this.player || !this.player.active) return;
+    this.reloadGfx.clear();
+
+    const now = time || this.time.now;
+    const elapsed = now - this.lastFiredTime;
+    const cooldownRatio = Math.min(1, elapsed / this.fireCooldown);
+    const bulletsActive = this.playerBullets.countActive();
+    const isReady = cooldownRatio >= 1 && bulletsActive < 2;
+
+    // 1. Sleek reload bar above player cannon
+    const barW = 34;
+    const barH = 3;
+    const barX = this.player.x - barW / 2;
+    const barY = this.player.y - 24;
+
+    if (!isReady) {
+      // Background track
+      this.reloadGfx.fillStyle(0x1e293b, 0.8);
+      this.reloadGfx.fillRect(barX, barY, barW, barH);
+
+      if (bulletsActive >= 2) {
+        // Red indicator for max bullets reached
+        this.reloadGfx.fillStyle(0xef4444, 0.9);
+        this.reloadGfx.fillRect(barX, barY, barW, barH);
+      } else {
+        // Yellow recharge fill
+        this.reloadGfx.fillStyle(0xf59e0b, 0.9);
+        this.reloadGfx.fillRect(barX, barY, barW * cooldownRatio, barH);
+      }
+    }
+
+    // 2. Fire button appearance update
+    if (this.fireBtnBg && this.fireBtnText) {
+      if (this.lastReadyState !== isReady) {
+        this.lastReadyState = isReady;
+        this.fireBtnBg.clear();
+        if (isReady) {
+          this.fireBtnBg.fillStyle(0xe11d48, 1);
+          this.fireBtnBg.fillRoundedRect(-65, -28, 130, 56, 14);
+          this.fireBtnBg.lineStyle(2, 0xfca5a5, 1);
+          this.fireBtnBg.strokeRoundedRect(-65, -28, 130, 56, 14);
+          this.fireBtnText.setText('🔥 FIRE');
+          this.fireBtnText.setColor('#ffffff');
+        } else {
+          this.fireBtnBg.fillStyle(0x475569, 0.85);
+          this.fireBtnBg.fillRoundedRect(-65, -28, 130, 56, 14);
+          this.fireBtnBg.lineStyle(2, 0x94a3b8, 0.8);
+          this.fireBtnBg.strokeRoundedRect(-65, -28, 130, 56, 14);
+          this.fireBtnText.setText(bulletsActive >= 2 ? '⏳ 2/2' : '⏳ RELOAD');
+          this.fireBtnText.setColor('#cbd5e1');
+        }
+      }
+    }
+  }
+
   update(time, delta) {
     if (!this.gameActive) return;
+
+    this.updateCooldownUI(time);
 
     // Player Horizontal Movement
     let vx = 0;
