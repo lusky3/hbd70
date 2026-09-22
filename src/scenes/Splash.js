@@ -96,92 +96,72 @@ export class SplashScene extends Phaser.Scene {
       color: '#94a3b8'
     }).setOrigin(0.5);
 
-    // 5. "TAP TO PLAY" / "RESUME" Interactive Button
-    const btnWidth = 230;
-    const btnHeight = 52;
-    const btnX = width / 2;
-    const btnY = height * 0.70;
+    // 5. Full-Screen "TAP ANYWHERE TO CONTINUE" Interactive Zone
+    const promptY = height * 0.74;
 
-    const btnBg = this.add.graphics();
-    btnBg.fillStyle(0x22c55e, 1);
-    btnBg.fillRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 14);
-    btnBg.lineStyle(3, 0x86efac, 1);
-    btnBg.strokeRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 14);
+    const promptContainer = this.add.container(width / 2, promptY);
 
-    const playLabel = progress.highestLevelBeaten > 0
-      ? `RESUME (L${progress.unlockedLevel})`
-      : 'TAP TO PLAY';
+    const promptBg = this.add.graphics();
+    promptBg.fillStyle(0x22c55e, 0.95);
+    promptBg.fillRoundedRect(-170, -26, 340, 52, 16);
+    promptBg.lineStyle(3, 0x86efac, 1);
+    promptBg.strokeRoundedRect(-170, -26, 340, 52, 16);
+    promptContainer.add(promptBg);
 
-    const btnText = this.add.text(btnX, btnY, playLabel, {
+    const promptText = this.add.text(0, 0, '★ TAP ANYWHERE TO PLAY ★', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '20px',
+      fontSize: '18px',
       fontWeight: 'bold',
-      color: '#ffffff'
+      color: '#ffffff',
+      letterSpacing: 1
     }).setOrigin(0.5);
+    promptContainer.add(promptText);
 
-    const hitZone = this.add.zone(btnX, btnY, btnWidth, btnHeight)
-      .setInteractive({ useHandCursor: true });
-
-    // Pulse button animation
+    // Pulse animation
     this.tweens.add({
-      targets: [btnBg, btnText],
-      scale: 1.03,
-      duration: 700,
+      targets: promptContainer,
+      scale: 1.05,
+      duration: 650,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
 
-    // Play/Resume handler
-    hitZone.on('pointerdown', () => {
+    this.add.text(width / 2, height * 0.83, 'Allan\'s Retro Arcade Collection • 4 Classic Games', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: '600',
+      color: '#38bdf8',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, height * 0.87, 'Tanks • Pong • Space Invaders • Asteroids', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      color: '#94a3b8'
+    }).setOrigin(0.5);
+
+    // Full screen interactive zone (blocks nothing, unlocks Web Audio immediately)
+    const fullScreenZone = this.add.zone(width / 2, height / 2, width, height)
+      .setInteractive({ useHandCursor: true });
+
+    let started = false;
+    const launchGameSelect = () => {
+      if (started) return;
+      started = true;
       audio.init();
       audio.playShoot();
 
-      this.cameras.main.fadeOut(300, 0, 0, 0);
-      this.time.delayedCall(300, () => {
-        this.scene.start('LevelCard', {
-          levelNum: progress.unlockedLevel,
-          lives: 3,
-          tanksDefeated: 0
-        });
+      this.cameras.main.fadeOut(250, 0, 0, 0);
+      this.time.delayedCall(250, () => {
+        this.scene.start('GameSelect');
       });
-    });
+    };
 
-    // 6. "LEVELS" Button (Stage select & progress tracker)
-    const levelsBtnWidth = 210;
-    const levelsBtnHeight = 44;
-    const levelsBtnY = height * 0.80;
+    fullScreenZone.on('pointerdown', launchGameSelect);
+    this.input.keyboard?.on('keydown', launchGameSelect);
 
-    const levelsBtnBg = this.add.graphics();
-    levelsBtnBg.fillStyle(0x1e293b, 0.95);
-    levelsBtnBg.fillRoundedRect(btnX - levelsBtnWidth / 2, levelsBtnY - levelsBtnHeight / 2, levelsBtnWidth, levelsBtnHeight, 12);
-    levelsBtnBg.lineStyle(2, 0x38bdf8, 1);
-    levelsBtnBg.strokeRoundedRect(btnX - levelsBtnWidth / 2, levelsBtnY - levelsBtnHeight / 2, levelsBtnWidth, levelsBtnHeight, 12);
-
-    const beatenCount = progress.beatenLevels.length;
-    const levelsBtnText = this.add.text(btnX, levelsBtnY, `LEVELS (${beatenCount}/70)`, {
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '15px',
-      fontWeight: 'bold',
-      color: '#38bdf8',
-      letterSpacing: 1
-    }).setOrigin(0.5);
-
-    const levelsHitZone = this.add.zone(btnX, levelsBtnY, levelsBtnWidth, levelsBtnHeight)
-      .setInteractive({ useHandCursor: true });
-
-    levelsHitZone.on('pointerdown', () => {
-      audio.init();
-      this.scene.start('LevelSelect');
-    });
-
-    this.add.text(width / 2, height * 0.88, '70 Levels • 1956 to 2026', {
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '12px',
-      color: '#64748b'
-    }).setOrigin(0.5);
-
-    // 7. Small "Credits" Link in Bottom Right
+    // 6. Small "Credits" Link in Bottom Right
     const creditsLink = this.add.container(width - 20, height - 22);
     const creditsText = this.add.text(0, 0, 'Credits 📜', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -193,8 +173,10 @@ export class SplashScene extends Phaser.Scene {
     creditsLink.add(creditsText);
     creditsLink.setSize(75, 40);
     creditsLink.setInteractive({ useHandCursor: true });
+    creditsLink.setDepth(100);
 
-    creditsLink.on('pointerdown', () => {
+    creditsLink.on('pointerdown', (pointer, localX, localY, event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
       audio.init();
       this.scene.start('Credits');
     });

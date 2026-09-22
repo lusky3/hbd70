@@ -10,6 +10,7 @@ import { TerrainBuilder } from '../systems/TerrainBuilder.js';
 import { TouchControls } from '../systems/TouchControls.js';
 import { audio } from '../systems/AudioManager.js';
 import { storage } from '../systems/Storage.js';
+import { ControlsOverlay } from './ControlsOverlay.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -26,6 +27,7 @@ export class GameScene extends Phaser.Scene {
     this.isInvincibleCheat = data.isInvincibleCheat || false;
     this.rapidFireCheat = data.rapidFireCheat || false;
     this.cpuSpeedMultiplier = data.cpuSpeedMultiplier !== undefined ? data.cpuSpeedMultiplier : 1.0;
+    this.isPausedForControls = false;
   }
 
   create() {
@@ -76,6 +78,14 @@ export class GameScene extends Phaser.Scene {
     // 6. Setup Controls & HUD
     this.controls = new TouchControls(this);
     this.scene.launch('HUD');
+
+    // Show Controls Overlay on Level 1
+    if (this.levelNum === 1) {
+      this.isPausedForControls = true;
+      ControlsOverlay.show(this, 'tanks', () => {
+        this.isPausedForControls = false;
+      });
+    }
 
     // Handle CPU speed adjustment from HUD
     this.events.on('set-cpu-speed', (mult) => {
@@ -197,6 +207,7 @@ export class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     if (this.isGameOver) return;
+    if (this.isPausedForControls) return;
 
     if (this.isLevelClearing) {
       if (this.player && this.player.active) {

@@ -38,6 +38,21 @@ export class HUDScene extends Phaser.Scene {
       this.muteBtn.setText(isMuted ? '🔇' : '🔊');
     });
 
+    // Arcade Menu Button (Returns to GameSelect)
+    this.menuBtn = this.add.text(112, 18, '🎮', {
+      fontSize: '15px'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    this.menuBtn.on('pointerdown', () => {
+      audio.playShoot();
+      const g = this.scene.get('Game');
+      if (g) {
+        g.scene.stop();
+      }
+      this.scene.stop();
+      this.scene.start('GameSelect');
+    });
+
     // 2. Level & Year Center Text
     this.titleText = this.add.text(width / 2, 18, 'L1/70 • 1956', {
       fontFamily: 'system-ui, -apple-system, sans-serif',

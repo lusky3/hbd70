@@ -10,6 +10,10 @@ import { GameOverScene } from './scenes/GameOver.js';
 import { VictoryScene } from './scenes/Victory.js';
 import { LevelSelectScene } from './scenes/LevelSelect.js';
 import { CreditsScene } from './scenes/Credits.js';
+import { GameSelectScene } from './scenes/GameSelect.js';
+import { PongScene } from './scenes/Pong.js';
+import { SpaceInvadersScene } from './scenes/SpaceInvaders.js';
+import { AsteroidsScene } from './scenes/Asteroids.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -31,6 +35,10 @@ const config = {
   scene: [
     BootScene,
     SplashScene,
+    GameSelectScene,
+    PongScene,
+    SpaceInvadersScene,
+    AsteroidsScene,
     LevelSelectScene,
     LevelCardScene,
     GameScene,

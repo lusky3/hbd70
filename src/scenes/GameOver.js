@@ -106,15 +106,15 @@ export class GameOverScene extends Phaser.Scene {
       });
     });
 
-    // 6. Return to Splash link
-    const homeBtn = this.add.text(width / 2, height * 0.83, 'Return to Title', {
+    // 6. Return to Arcade Menu link
+    const homeBtn = this.add.text(width / 2, height * 0.83, 'Return to Arcade Menu', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '14px',
       color: '#64748b'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     homeBtn.on('pointerdown', () => {
-      this.scene.start('Splash');
+      this.scene.start('GameSelect');
     });
   }
 }

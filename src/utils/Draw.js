@@ -23,6 +23,9 @@ export function generateTextures(scene) {
   generateGiftBoxTexture(scene);
   generateWaterTexture(scene);
   generateConfettiTexture(scene);
+  generatePongTextures(scene);
+  generateInvaderTextures(scene);
+  generateAsteroidTextures(scene);
 }
 
 function generateMotorcycleTexture(scene) {
@@ -722,4 +725,297 @@ function generateConfettiTexture(scene) {
   ctx.fillRect(0, 0, 8, 8);
 
   canvas.refresh();
+}
+
+function generatePongTextures(scene) {
+  // 1. Birthday Cake Puck (Pong Ball)
+  if (!scene.textures.exists('pong_ball')) {
+    const canvas = scene.textures.createCanvas('pong_ball', 20, 20);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.arc(10, 10, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(10, 10, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(10, 10, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    canvas.refresh();
+  }
+
+  // 2. Player Paddle
+  if (!scene.textures.exists('pong_paddle_player')) {
+    const canvas = scene.textures.createCanvas('pong_paddle_player', 90, 16);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 90, 16, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Center alignment line
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(43, 2, 4, 12);
+    canvas.refresh();
+  }
+
+  // 3. AI Opponent Paddle
+  if (!scene.textures.exists('pong_paddle_ai')) {
+    const canvas = scene.textures.createCanvas('pong_paddle_ai', 90, 16);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#be185d';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 90, 16, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#f472b6';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(43, 2, 4, 12);
+    canvas.refresh();
+  }
+
+  // 4. Extended Touch Grip Handle (placed below player paddle)
+  if (!scene.textures.exists('pong_grip')) {
+    const canvas = scene.textures.createCanvas('pong_grip', 110, 36);
+    const ctx = canvas.getContext();
+    // Outer rounded tab
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 110, 36, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 3 Grip ridges
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(25, 12, 60, 3);
+    ctx.fillRect(20, 18, 70, 3);
+    ctx.fillRect(25, 24, 60, 3);
+    canvas.refresh();
+  }
+}
+
+function generateInvaderTextures(scene) {
+  // 1. Invader Cake (Row 1)
+  if (!scene.textures.exists('invader_cake')) {
+    const canvas = scene.textures.createCanvas('invader_cake', 30, 24);
+    const ctx = canvas.getContext();
+    // Candle on top
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(13, 1, 4, 4);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(14, 5, 2, 5);
+    // Cake base
+    ctx.fillStyle = '#ec4899';
+    ctx.fillRect(5, 10, 20, 12);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(3, 13, 24, 4);
+    canvas.refresh();
+  }
+
+  // 2. Invader Present (Row 2)
+  if (!scene.textures.exists('invader_present')) {
+    const canvas = scene.textures.createCanvas('invader_present', 28, 24);
+    const ctx = canvas.getContext();
+    // Ribbon bow
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.arc(11, 4, 3, 0, Math.PI * 2);
+    ctx.arc(17, 4, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Box
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(4, 7, 20, 16);
+    // Cross ribbons
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(12, 7, 4, 16);
+    ctx.fillRect(4, 13, 20, 4);
+    canvas.refresh();
+  }
+
+  // 3. Invader Candle (Row 3)
+  if (!scene.textures.exists('invader_candle')) {
+    const canvas = scene.textures.createCanvas('invader_candle', 24, 28);
+    const ctx = canvas.getContext();
+    // Flame
+    ctx.fillStyle = '#eab308';
+    ctx.beginPath();
+    ctx.ellipse(12, 5, 4, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.ellipse(12, 6, 2, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Candle wax
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(8, 10, 8, 16);
+    canvas.refresh();
+  }
+
+  // 4. Invader Train (Row 4 - Vintage Locomotive)
+  if (!scene.textures.exists('invader_train')) {
+    const canvas = scene.textures.createCanvas('invader_train', 32, 22);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(4, 6, 24, 12);
+    ctx.fillStyle = '#e11d48';
+    ctx.fillRect(18, 2, 10, 6);
+    // Smokestack
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(6, 2, 4, 5);
+    // Wheels
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.arc(8, 19, 3, 0, Math.PI * 2);
+    ctx.arc(16, 19, 3, 0, Math.PI * 2);
+    ctx.arc(24, 19, 3, 0, Math.PI * 2);
+    ctx.fill();
+    canvas.refresh();
+  }
+
+  // 5. Mystery CN Railcar UFO
+  if (!scene.textures.exists('invader_ufo')) {
+    const canvas = scene.textures.createCanvas('invader_ufo', 44, 20);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#dc2626'; // CN Rail Red
+    ctx.fillRect(2, 4, 40, 14);
+    ctx.fillStyle = '#ffffff';
+    // CN letters / Windows
+    ctx.fillRect(6, 7, 6, 6);
+    ctx.fillRect(16, 7, 6, 6);
+    ctx.fillRect(26, 7, 6, 6);
+    ctx.fillRect(36, 7, 4, 6);
+    canvas.refresh();
+  }
+
+  // 6. Milestone Bunker Block
+  if (!scene.textures.exists('bunker_block')) {
+    const canvas = scene.textures.createCanvas('bunker_block', 12, 12);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(0, 0, 12, 12);
+    ctx.strokeStyle = '#059669';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(1, 1, 10, 10);
+    canvas.refresh();
+  }
+
+  // 7. Invader Bullet
+  if (!scene.textures.exists('invader_bullet')) {
+    const canvas = scene.textures.createCanvas('invader_bullet', 4, 12);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#f43f5e';
+    ctx.fillRect(0, 0, 4, 12);
+    canvas.refresh();
+  }
+}
+
+function generateAsteroidTextures(scene) {
+  // 1. Vector Space Cruiser Ship
+  if (!scene.textures.exists('asteroid_ship')) {
+    const canvas = scene.textures.createCanvas('asteroid_ship', 28, 28);
+    const ctx = canvas.getContext();
+    // Pointing right (0 rad in Phaser)
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(26, 14); // Nose
+    ctx.lineTo(4, 4);   // Left wingtip
+    ctx.lineTo(8, 14);  // Engine inset
+    ctx.lineTo(4, 24);  // Right wingtip
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Cockpit jewel
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.arc(16, 14, 3, 0, Math.PI * 2);
+    ctx.fill();
+    canvas.refresh();
+  }
+
+  // 2. Large Birthday Asteroid ("70" Crater)
+  if (!scene.textures.exists('asteroid_large')) {
+    const canvas = scene.textures.createCanvas('asteroid_large', 64, 64);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#334155';
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Craggy polygon
+    const points = [
+      [32, 4], [48, 10], [60, 24], [58, 44], [46, 58],
+      [28, 60], [12, 52], [4, 38], [6, 18], [20, 8]
+    ];
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i][0], points[i][1]);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Golden "70" crater mark
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('70', 32, 32);
+    canvas.refresh();
+  }
+
+  // 3. Medium Asteroid
+  if (!scene.textures.exists('asteroid_medium')) {
+    const canvas = scene.textures.createCanvas('asteroid_medium', 36, 36);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#475569';
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const points = [
+      [18, 3], [30, 8], [34, 22], [26, 33], [12, 32], [2, 22], [4, 10]
+    ];
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i][0], points[i][1]);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    canvas.refresh();
+  }
+
+  // 4. Small Asteroid
+  if (!scene.textures.exists('asteroid_small')) {
+    const canvas = scene.textures.createCanvas('asteroid_small', 20, 20);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#64748b';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(10, 10, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    canvas.refresh();
+  }
+
+  // 5. Laser Bolt
+  if (!scene.textures.exists('laser_bolt')) {
+    const canvas = scene.textures.createCanvas('laser_bolt', 16, 4);
+    const ctx = canvas.getContext();
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(0, 0, 16, 4);
+    ctx.fillStyle = '#86efac';
+    ctx.fillRect(4, 1, 8, 2);
+    canvas.refresh();
+  }
 }
