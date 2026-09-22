@@ -4,9 +4,11 @@
 import { leaderboardService } from '../systems/LeaderboardService.js';
 import { audio } from '../systems/AudioManager.js';
 
-const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789★!? ';
+export const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789★!? ';
 
-export class InitialsEntryOverlayScene extends Phaser.Scene {
+const SceneBase = typeof Phaser !== 'undefined' ? Phaser.Scene : class {};
+
+export class InitialsEntryOverlayScene extends SceneBase {
   constructor() {
     super('InitialsEntryOverlay');
   }
@@ -140,13 +142,27 @@ export class InitialsEntryOverlayScene extends Phaser.Scene {
       slotBox.add(upBtn);
       slotBox.add(downBtn);
 
-      // Tap slot to activate
+      // Tap slot to activate or swipe up/down to cycle
       slotBox.setSize(52, 60);
       slotBox.setInteractive({ useHandCursor: true });
-      slotBox.on('pointerdown', () => {
+      let startY = 0;
+      let isDragging = false;
+      slotBox.on('pointerdown', (pointer) => {
         this.activeSlot = i;
         this.updateSlotHighlights();
+        startY = pointer.y;
+        isDragging = true;
       });
+      slotBox.on('pointermove', (pointer) => {
+        if (!isDragging) return;
+        const dy = pointer.y - startY;
+        if (Math.abs(dy) >= 20) {
+          this.cycleChar(i, dy < 0 ? 1 : -1);
+          startY = pointer.y;
+        }
+      });
+      slotBox.on('pointerup', () => { isDragging = false; });
+      slotBox.on('pointerout', () => { isDragging = false; });
 
       this.slotContainers.push(slotBox);
       this.slotLetters.push(lText);
@@ -215,8 +231,6 @@ export class InitialsEntryOverlayScene extends Phaser.Scene {
       this.scene.stop();
       if (this.returnScene && this.scene.isSleeping(this.returnScene)) {
         this.scene.wake(this.returnScene);
-      } else {
-        this.scene.start('GameSelect');
       }
     });
 

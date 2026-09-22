@@ -64,6 +64,9 @@ class StorageManager {
       // Arcade Stats persistence (AC-8)
       const rawArcade = data.arcadeStats || {};
       const arcadeStats = {
+        tanks: {
+          highScore: Number(rawArcade.tanks?.highScore) || 0
+        },
         pong: {
           wins: Number(rawArcade.pong?.wins) || 0,
           losses: Number(rawArcade.pong?.losses) || 0,
@@ -148,6 +151,45 @@ class StorageManager {
 
   getArcadeStats() {
     return this.getProgress().arcadeStats;
+  }
+
+  recordTanksScore(score = 0) {
+    const current = this.getProgress();
+    const stats = current.arcadeStats?.tanks || { highScore: 0 };
+    const num = Number(score) || 0;
+    if (num <= stats.highScore) return current.arcadeStats;
+
+    const updated = {
+      ...current,
+      arcadeStats: {
+        ...current.arcadeStats,
+        tanks: {
+          highScore: Math.max(stats.highScore, num)
+        }
+      }
+    };
+    this.saveData(updated);
+    return updated.arcadeStats;
+  }
+
+  recordPongRally(rally = 0) {
+    const current = this.getProgress();
+    const stats = current.arcadeStats.pong;
+    const longestRally = Math.max(stats.longestRally, Number(rally) || 0);
+    if (longestRally === stats.longestRally) return current.arcadeStats;
+
+    const updated = {
+      ...current,
+      arcadeStats: {
+        ...current.arcadeStats,
+        pong: {
+          ...stats,
+          longestRally
+        }
+      }
+    };
+    this.saveData(updated);
+    return updated.arcadeStats;
   }
 
   recordPongMatch({ won, rally = 0 }) {

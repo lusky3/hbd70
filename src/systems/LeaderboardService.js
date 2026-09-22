@@ -64,11 +64,12 @@ export class LeaderboardService {
 
     if (gameId === 'tanks') {
       const highest = progress.highestLevelBeaten || 0;
-      if (highest > 0) {
+      const score = Math.max(stats.tanks?.highScore || 0, highest * 1000);
+      if (score > 0) {
         fallbackResults.push({
           rank: 1,
           initials,
-          score: highest * 1000,
+          score,
           detail: `Level ${highest}`,
           createdAt: new Date().toISOString()
         });
@@ -135,7 +136,7 @@ export class LeaderboardService {
       return {
         online: true,
         gameId,
-        results: Array.isArray(data.results) ? data.results : []
+        results: Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : [])
       };
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
@@ -154,7 +155,9 @@ export class LeaderboardService {
     const numScore = Math.max(0, parseInt(score, 10) || 0);
 
     // Keep local storage stats in sync
-    if (gameId === 'invaders' && typeof storage.recordInvadersScore === 'function') {
+    if (gameId === 'tanks' && typeof storage.recordTanksScore === 'function') {
+      storage.recordTanksScore(numScore);
+    } else if (gameId === 'invaders' && typeof storage.recordInvadersScore === 'function') {
       const waveMatch = String(detail).match(/Wave\s*(\d+)/i);
       const wave = waveMatch ? parseInt(waveMatch[1], 10) : 1;
       storage.recordInvadersScore({ score: numScore, wave });
@@ -162,8 +165,8 @@ export class LeaderboardService {
       const waveMatch = String(detail).match(/Wave\s*(\d+)/i);
       const wave = waveMatch ? parseInt(waveMatch[1], 10) : 1;
       storage.recordAsteroidsScore({ score: numScore, wave });
-    } else if (gameId === 'pong' && typeof storage.recordPongMatch === 'function') {
-      storage.recordPongMatch({ won: true, rally: numScore });
+    } else if (gameId === 'pong' && typeof storage.recordPongRally === 'function') {
+      storage.recordPongRally(numScore);
     }
 
     const baseUrl = getApiBaseUrl();

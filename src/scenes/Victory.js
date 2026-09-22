@@ -130,21 +130,52 @@ export class VictoryScene extends Phaser.Scene {
       color: '#38bdf8'
     }).setOrigin(0.5);
 
-    // 7. Play Again Button
+    // 7. Leaderboard Record Score Button
+    const lbBtnWidth = 240;
+    const lbBtnHeight = 42;
+    const lbBtnY = height * 0.80;
+    const lbBtn = this.add.container(width / 2, lbBtnY);
+    const lbBg = this.add.graphics();
+    lbBg.fillStyle(0x0f172a, 1);
+    lbBg.fillRoundedRect(-lbBtnWidth / 2, -lbBtnHeight / 2, lbBtnWidth, lbBtnHeight, 12);
+    lbBg.lineStyle(2, 0xfacc15, 1);
+    lbBg.strokeRoundedRect(-lbBtnWidth / 2, -lbBtnHeight / 2, lbBtnWidth, lbBtnHeight, 12);
+    lbBtn.add(lbBg);
+
+    const lbText = this.add.text(0, 0, '🏆 RECORD HIGH SCORE 🏆', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: 'bold',
+      color: '#facc15'
+    }).setOrigin(0.5);
+    lbBtn.add(lbText);
+    lbBtn.setSize(lbBtnWidth, lbBtnHeight);
+    lbBtn.setInteractive({ useHandCursor: true });
+    lbBtn.on('pointerdown', () => {
+      audio.playShoot?.();
+      this.scene.launch('InitialsEntryOverlay', {
+        gameId: 'tanks',
+        score: 70000 + (this.tanksDefeated || 0) * 50,
+        detail: 'Campaign Victory 70/70',
+        returnScene: 'Victory'
+      });
+    });
+
+    // 8. Play Again Button
     const btnWidth = 240;
-    const btnHeight = 54;
+    const btnHeight = 42;
     const btnX = width / 2;
-    const btnY = height * 0.83;
+    const btnY = height * 0.88;
 
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0x22c55e, 1);
-    btnBg.fillRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 16);
-    btnBg.lineStyle(3, 0x86efac, 1);
-    btnBg.strokeRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 16);
+    btnBg.fillRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 12);
+    btnBg.lineStyle(2, 0x86efac, 1);
+    btnBg.strokeRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, 12);
 
-    const btnText = this.add.text(btnX, btnY, 'PLAY AGAIN', {
+    const btnText = this.add.text(btnX, btnY, 'PLAY AGAIN ▶', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '22px',
+      fontSize: '16px',
       fontWeight: 'bold',
       color: '#ffffff'
     }).setOrigin(0.5);

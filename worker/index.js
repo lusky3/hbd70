@@ -3,6 +3,39 @@
 
 export const VALID_GAMES = ['tanks', 'pong', 'invaders', 'asteroids'];
 
+export const SCORE_LIMITS = {
+  tanks: 300000,
+  pong: 1000,
+  invaders: 500000,
+  asteroids: 2000000,
+};
+
+const ipRateMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60000;
+const MAX_REQUESTS_PER_WINDOW = 15;
+
+export function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = ipRateMap.get(ip) || [];
+  const validTimestamps = entry.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  if (validTimestamps.length >= MAX_REQUESTS_PER_WINDOW) {
+    ipRateMap.set(ip, validTimestamps);
+    return false;
+  }
+  validTimestamps.push(now);
+  ipRateMap.set(ip, validTimestamps);
+
+  // Evict stale entries if map grows large
+  if (ipRateMap.size > 1000) {
+    for (const [key, times] of ipRateMap.entries()) {
+      if (times.every(t => now - t >= RATE_LIMIT_WINDOW_MS)) {
+        ipRateMap.delete(key);
+      }
+    }
+  }
+  return true;
+}
+
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -93,6 +126,11 @@ export async function handleRequest(request, env) {
 
   // POST: Submit a score
   if (request.method === 'POST') {
+    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
+    if (!checkRateLimit(clientIp)) {
+      return jsonResponse({ error: 'Too many requests. Please slow down.' }, 429);
+    }
+
     let payload = {};
     try {
       payload = await request.json();
@@ -106,8 +144,9 @@ export async function handleRequest(request, env) {
     if (isNaN(rawScore) || rawScore < 0) {
       return jsonResponse({ error: 'Score must be a positive integer' }, 400);
     }
-    if (rawScore > 5000000) {
-      return jsonResponse({ error: 'Score exceeds plausible threshold' }, 400);
+    const maxScore = SCORE_LIMITS[rawGameId] || 5000000;
+    if (rawScore > maxScore) {
+      return jsonResponse({ error: `Score exceeds plausible threshold for ${rawGameId}` }, 400);
     }
 
     const rawDetail = typeof payload.detail === 'string' ? payload.detail.trim().slice(0, 32) : '';
@@ -116,14 +155,24 @@ export async function handleRequest(request, env) {
       const insertStmt = env.DB.prepare(
         `INSERT INTO leaderboards (game_id, initials, score, detail) VALUES (?, ?, ?, ?)`
       );
-      await insertStmt.bind(rawGameId, initials, rawScore, rawDetail).run();
+      const insertResult = await insertStmt.bind(rawGameId, initials, rawScore, rawDetail).run();
+      const lastId = insertResult?.meta?.last_row_id;
 
-      // Compute player rank
-      const rankStmt = env.DB.prepare(
-        `SELECT COUNT(*) + 1 as rank FROM leaderboards WHERE game_id = ? AND score > ?`
-      );
-      const rankResult = await rankStmt.bind(rawGameId, rawScore).first();
-      const rank = rankResult ? rankResult.rank : 1;
+      // Compute player rank including tiebreaker
+      let rank = 1;
+      if (lastId) {
+        const rankStmt = env.DB.prepare(
+          `SELECT COUNT(*) as better_count FROM leaderboards WHERE game_id = ? AND (score > ? OR (score = ? AND id < ?))`
+        );
+        const rankResult = await rankStmt.bind(rawGameId, rawScore, rawScore, lastId).first();
+        rank = (rankResult?.better_count || 0) + 1;
+      } else {
+        const rankStmt = env.DB.prepare(
+          `SELECT COUNT(*) + 1 as rank FROM leaderboards WHERE game_id = ? AND score > ?`
+        );
+        const rankResult = await rankStmt.bind(rawGameId, rawScore).first();
+        rank = rankResult ? rankResult.rank : 1;
+      }
 
       return jsonResponse({
         success: true,

@@ -11,7 +11,9 @@ const GAMES = [
   { id: 'asteroids', label: 'ASTEROIDS' }
 ];
 
-export class LeaderboardModalScene extends Phaser.Scene {
+const SceneBase = typeof Phaser !== 'undefined' ? Phaser.Scene : class {};
+
+export class LeaderboardModalScene extends SceneBase {
   constructor() {
     super('LeaderboardModal');
   }
@@ -102,30 +104,37 @@ export class LeaderboardModalScene extends Phaser.Scene {
     headerBg.fillStyle(0x1e293b, 0.8);
     headerBg.fillRect(modalX + 16, tableHeaderY - 12, modalW - 32, 24);
 
-    this.add.text(modalX + 26, tableHeaderY, 'RANK', {
+    this.add.text(modalX + 24, tableHeaderY, 'RANK', {
       fontFamily: 'monospace',
-      fontSize: '11px',
+      fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(0, 0.5);
 
-    this.add.text(modalX + 78, tableHeaderY, 'NAME', {
+    this.add.text(modalX + 72, tableHeaderY, 'NAME', {
       fontFamily: 'monospace',
-      fontSize: '11px',
+      fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(0, 0.5);
 
-    this.add.text(modalX + 140, tableHeaderY, 'SCORE', {
+    this.add.text(modalX + 120, tableHeaderY, 'SCORE', {
       fontFamily: 'monospace',
-      fontSize: '11px',
+      fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(0, 0.5);
 
-    this.add.text(modalX + modalW - 26, tableHeaderY, 'DETAIL', {
+    this.add.text(modalX + modalW - 74, tableHeaderY, 'DETAIL', {
       fontFamily: 'monospace',
-      fontSize: '11px',
+      fontSize: '10px',
+      fontWeight: 'bold',
+      color: '#94a3b8'
+    }).setOrigin(1, 0.5);
+
+    this.add.text(modalX + modalW - 24, tableHeaderY, 'DATE', {
+      fontFamily: 'monospace',
+      fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(1, 0.5);
@@ -302,34 +311,55 @@ export class LeaderboardModalScene extends Phaser.Scene {
         rankPrefix = `🥉 #3`;
       }
 
-      const rankText = this.add.text(modalX + 26, ry, rankPrefix, {
+      const rankText = this.add.text(modalX + 24, ry, rankPrefix, {
         fontFamily: 'monospace',
-        fontSize: '12px',
+        fontSize: '11px',
         fontWeight: 'bold',
         color: rankColor
       }).setOrigin(0, 0.5);
 
-      const nameText = this.add.text(modalX + 80, ry, row.initials || '???', {
+      const nameText = this.add.text(modalX + 72, ry, row.initials || '???', {
         fontFamily: 'monospace',
-        fontSize: '13px',
+        fontSize: '12px',
         fontWeight: 'bold',
         color: '#ffffff'
       }).setOrigin(0, 0.5);
 
-      const scoreText = this.add.text(modalX + 140, ry, Number(row.score).toLocaleString(), {
+      const scoreText = this.add.text(modalX + 120, ry, Number(row.score).toLocaleString(), {
         fontFamily: 'monospace',
-        fontSize: '13px',
+        fontSize: '12px',
         fontWeight: 'bold',
         color: i === 0 ? '#facc15' : '#38bdf8'
       }).setOrigin(0, 0.5);
 
-      const detailText = this.add.text(modalX + modalW - 26, ry, row.detail || '', {
+      const detailText = this.add.text(modalX + modalW - 74, ry, String(row.detail || '').slice(0, 16), {
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '11px',
+        fontSize: '10px',
         color: '#a855f7'
       }).setOrigin(1, 0.5);
 
-      this.tableRowsContainer.add([rankText, nameText, scoreText, detailText]);
+      let dateStr = '';
+      const rawDate = row.createdAt || row.created_at;
+      if (rawDate) {
+        try {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            dateStr = `${m}/${day}`;
+          }
+        } catch {
+          dateStr = '';
+        }
+      }
+
+      const dateText = this.add.text(modalX + modalW - 24, ry, dateStr, {
+        fontFamily: 'monospace',
+        fontSize: '10px',
+        color: '#64748b'
+      }).setOrigin(1, 0.5);
+
+      this.tableRowsContainer.add([rankText, nameText, scoreText, detailText, dateText]);
     });
   }
 

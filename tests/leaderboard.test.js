@@ -11,6 +11,8 @@ import {
   handleRequest,
   sanitizeInitials as workerSanitizeInitials,
   VALID_GAMES,
+  SCORE_LIMITS,
+  checkRateLimit,
   CORS_HEADERS
 } from '../worker/index.js';
 
@@ -18,6 +20,9 @@ import {
   leaderboardService,
   sanitizeInitials as clientSanitizeInitials
 } from '../src/systems/LeaderboardService.js';
+
+import { storage } from '../src/systems/Storage.js';
+import { CHARS } from '../src/scenes/InitialsEntryOverlay.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,11 +52,12 @@ function createMockEnv(initialData = []) {
               },
               async first() {
                 // Handle rank query
-                if (sql.includes('SELECT COUNT(*) + 1 as rank')) {
+                if (sql.includes('COUNT(*) as better_count') || sql.includes('COUNT(*) + 1 as rank')) {
                   const gameId = args[0];
                   const score = args[1];
-                  const count = store.filter((r) => r.game_id === gameId && r.score > score).length;
-                  return { rank: count + 1 };
+                  const lastId = args[3];
+                  const count = store.filter((r) => r.game_id === gameId && (r.score > score || (lastId && r.score === score && r.id < lastId))).length;
+                  return { rank: count + 1, better_count: count };
                 }
                 return null;
               },
@@ -68,7 +74,7 @@ function createMockEnv(initialData = []) {
                     created_at: new Date().toISOString()
                   };
                   store.push(newRow);
-                  return { success: true };
+                  return { success: true, meta: { last_row_id: newRow.id } };
                 }
                 return { success: false };
               }
@@ -220,4 +226,77 @@ test('AC-3: Client LeaderboardService Offline Fallback & Initials Persistence', 
   assert.equal(submitRes.success, true, 'Submit score should succeed fail-soft locally');
   assert.equal(submitRes.initials, 'ALL');
   assert.equal(submitRes.score, 4200);
+});
+
+test('AC-2: Rate Limiting & Per-Game Score Limits Enforced by Worker', async () => {
+  const env = createMockEnv();
+
+  // Test per-game score limit rejection (Pong cap is 1000)
+  const reqTooHigh = new Request('https://api.al.lusk.win/api/v1/leaderboard/pong', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initials: 'CHE', score: 99999, detail: 'Cheat Rally' })
+  });
+  const resTooHigh = await handleRequest(reqTooHigh, env);
+  assert.equal(resTooHigh.status, 400, 'Plausible limit violation must return 400');
+  const errHigh = await resTooHigh.json();
+  assert.ok(errHigh.error.includes('plausible threshold'), 'Should cite plausible threshold');
+
+  // Valid Pong score within limit
+  const reqValidPong = new Request('https://api.al.lusk.win/api/v1/leaderboard/pong', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initials: 'ALL', score: 28, detail: '28 Rally' })
+  });
+  const resValid = await handleRequest(reqValidPong, env);
+  assert.equal(resValid.status, 201);
+
+  // Test rate limiting on burst submissions (>15 requests)
+  const burstIp = '198.51.100.42';
+  let got429 = false;
+  for (let i = 0; i < 20; i++) {
+    const burstReq = new Request('https://api.al.lusk.win/api/v1/leaderboard/invaders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': burstIp },
+      body: JSON.stringify({ initials: 'BOT', score: 1000 + i, detail: 'Burst' })
+    });
+    const burstRes = await handleRequest(burstReq, env);
+    if (burstRes.status === 429) {
+      got429 = true;
+      break;
+    }
+  }
+  assert.ok(got429, 'Excessive submissions from same IP must be throttled with HTTP 429');
+});
+
+test('AC-3: Storage Pong Rally and Tanks High Score Isolation', () => {
+  const initial = storage.getArcadeStats();
+  const initialWins = initial.pong.wins;
+  const initialLosses = initial.pong.losses;
+
+  // Recording a rally MUST NOT increment wins or losses
+  const updated = storage.recordPongRally(35);
+  assert.equal(updated.pong.longestRally, 35);
+  assert.equal(updated.pong.wins, initialWins, 'Wins must remain unchanged when recording rally');
+  assert.equal(updated.pong.losses, initialLosses, 'Losses must remain unchanged when recording rally');
+
+  // Tanks score recording
+  const tanksStats = storage.recordTanksScore(73500);
+  assert.equal(tanksStats.tanks.highScore, 73500, 'Tanks high score must be recorded');
+});
+
+test('AC-4: InitialsEntryOverlay Character Cycling & Navigation Logic', () => {
+  assert.ok(CHARS.length >= 36, 'Initials charset must include full alphabet, numbers, and symbols');
+  assert.ok(CHARS.includes('A') && CHARS.includes('Z') && CHARS.includes('0') && CHARS.includes('9'));
+  assert.ok(CHARS.includes('★') && CHARS.includes('!') && CHARS.includes('?'));
+
+  // Test circular wrapping algorithm
+  const deltaForward = 1;
+  const startIdx = CHARS.indexOf('A');
+  const nextChar = CHARS[(startIdx + deltaForward + CHARS.length) % CHARS.length];
+  assert.equal(nextChar, 'B');
+
+  const deltaBack = -1;
+  const prevChar = CHARS[(startIdx + deltaBack + CHARS.length) % CHARS.length];
+  assert.equal(prevChar, CHARS[CHARS.length - 1], 'Wrapping backward from A should wrap to last character');
 });

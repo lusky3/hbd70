@@ -36,18 +36,32 @@ def run_arcade_e2e():
             page.on("console", lambda msg: errors.append(f"CONSOLE_ERROR: {msg.text}") if msg.type == "error" else None)
 
             def handle_lb_route(route):
-                route.fulfill(
-                    status=200,
-                    content_type="application/json",
-                    body=json.dumps({
-                        "success": True,
-                        "gameId": "tanks",
-                        "results": [
-                            {"rank": 1, "initials": "AL7", "score": 70000, "detail": "Level 70 Beaten", "created_at": "2026-09-22T00:00:00Z"},
-                            {"rank": 2, "initials": "COD", "score": 65000, "detail": "Level 65", "created_at": "2026-09-22T00:00:00Z"}
-                        ]
-                    })
-                )
+                if route.request.method == "POST":
+                    route.fulfill(
+                        status=201,
+                        content_type="application/json",
+                        body=json.dumps({
+                            "success": True,
+                            "gameId": "tanks",
+                            "rank": 1,
+                            "initials": "AL7",
+                            "score": 70000,
+                            "detail": "Level 70 Beaten"
+                        })
+                    )
+                else:
+                    route.fulfill(
+                        status=200,
+                        content_type="application/json",
+                        body=json.dumps({
+                            "success": True,
+                            "gameId": "tanks",
+                            "results": [
+                                {"rank": 1, "initials": "AL7", "score": 70000, "detail": "Level 70 Beaten", "created_at": "2026-09-22T00:00:00Z"},
+                                {"rank": 2, "initials": "COD", "score": 65000, "detail": "Level 65", "created_at": "2026-09-22T00:00:00Z"}
+                            ]
+                        })
+                    )
             page.route("**/api/v1/leaderboard/*", handle_lb_route)
 
             # 1. Navigate to Game
@@ -121,15 +135,18 @@ def run_arcade_e2e():
                 if (!lb || !lb.scene.isActive()) return { active: false };
                 const texts = lb.children.list.filter(c => c.type === 'Text').map(t => t.text);
                 const hasTitle = texts.some(t => t && t.includes('ALLAN ARCADE TOP 10'));
+                const hasDate = texts.some(t => t && t.includes('DATE'));
                 return {
                     active: true,
                     hasTitle: hasTitle,
+                    hasDate: hasDate,
                     activeGameId: lb.activeGameId,
                     tabCount: lb.tabButtons ? lb.tabButtons.length : 0
                 };
             }""")
             assert lb_modal_state["active"], "LeaderboardModal must be active after clicking High Scores button"
             assert lb_modal_state["hasTitle"], "LeaderboardModal must render top title"
+            assert lb_modal_state["hasDate"], "LeaderboardModal must render DATE column header"
             assert lb_modal_state["tabCount"] == 4, f"LeaderboardModal must feature 4 tabs, got {lb_modal_state['tabCount']}"
 
             # Switch tabs to Asteroids
@@ -152,6 +169,54 @@ def run_arcade_e2e():
             time.sleep(0.4)
             lb_closed = page.evaluate("() => !window.game.scene.isActive('LeaderboardModal')")
             assert lb_closed, "LeaderboardModal should close and return to GameSelect"
+
+            # 3d. Test InitialsEntryOverlay launch, typing, and submission
+            print("[E2E] Testing InitialsEntryOverlay Flow...")
+            page.evaluate("""() => {
+                const gs = window.game.scene.getScene('GameSelect');
+                gs.scene.launch('InitialsEntryOverlay', {
+                    gameId: 'tanks',
+                    score: 70000,
+                    detail: 'Level 70 Beaten',
+                    returnScene: 'GameSelect'
+                });
+            }""")
+            time.sleep(0.4)
+            overlay_state = page.evaluate("""() => {
+                const ov = window.game.scene.getScene('InitialsEntryOverlay');
+                if (!ov || !ov.scene.isActive()) return { active: false };
+                ov.initials = ['A', 'L', '7'];
+                ov.updateSlotDisplay();
+                return {
+                    active: true,
+                    initials: ov.initials.join(''),
+                    slotCount: ov.slotContainers.length
+                };
+            }""")
+            assert overlay_state["active"], "InitialsEntryOverlay must be active"
+            assert overlay_state["slotCount"] == 3, "InitialsEntryOverlay must feature 3 letter slots"
+            assert overlay_state["initials"] == "AL7", f"Initials should be AL7, got {overlay_state['initials']}"
+
+            # Submit score
+            page.evaluate("""async () => {
+                const ov = window.game.scene.getScene('InitialsEntryOverlay');
+                await ov.submit();
+            }""")
+            time.sleep(0.5)
+
+            # Check that LeaderboardModal launched with submission
+            post_submit_lb = page.evaluate("""() => {
+                const lb = window.game.scene.getScene('LeaderboardModal');
+                return lb && lb.scene.isActive();
+            }""")
+            assert post_submit_lb, "LeaderboardModal should be active after score submission"
+
+            # Close Leaderboard Modal
+            page.evaluate("""() => {
+                const lb = window.game.scene.getScene('LeaderboardModal');
+                lb.closeModal();
+            }""")
+            time.sleep(0.4)
 
             # 4. Test Pong Scene Flow
             print("[E2E] Testing Birthday Pong Scene...")

@@ -397,7 +397,7 @@ export class PongScene extends Phaser.Scene {
       this.scene.launch('InitialsEntryOverlay', {
         gameId: 'pong',
         score: this.maxRally,
-        detail: `${this.maxRally} Rally (${this.playerScore}-${this.cpuScore})`,
+        detail: `${this.maxRally} Rally (${this.playerScore}-${this.aiScore})`,
         returnScene: 'Pong'
       });
     });
