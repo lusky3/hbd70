@@ -4,6 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ControlsOverlay } from '../src/scenes/ControlsOverlay.js';
+import { storage } from '../src/systems/Storage.js';
 
 // --- Test Suite 1: Controls Overlay Configuration ---
 test('AC-3: ControlsOverlay provides complete, validated configurations for all 4 arcade games', () => {
@@ -204,4 +205,101 @@ test('AC-6: Space Cruiser Newtonian inertia applies drag damping to velocity', (
   assert.ok(Math.abs(vx) < 100, 'Velocity must decay due to drag');
   assert.ok(Math.abs(vy) < 70, 'Velocity must decay due to drag');
   assert.ok(vx > 0, 'Direction must be preserved during drift');
+});
+
+// --- Test Suite 5: Arcade Stats & High Score Persistence (AC-8) ---
+test('AC-8: getArcadeStats returns clean defaults when uninitialized', () => {
+  storage.clearProgress();
+  const stats = storage.getArcadeStats();
+
+  assert.ok(stats, 'Arcade stats must exist');
+  assert.deepEqual(stats.pong, { wins: 0, losses: 0, longestRally: 0 });
+  assert.deepEqual(stats.invaders, { highScore: 0, highestWave: 1 });
+  assert.deepEqual(stats.asteroids, { highScore: 0, highestWave: 1 });
+});
+
+test('AC-8: Pong stats track wins, losses, and maximum longest rally', () => {
+  storage.clearProgress();
+
+  // Record a win with rally 5
+  storage.recordPongMatch({ won: true, rally: 5 });
+  let stats = storage.getArcadeStats().pong;
+  assert.equal(stats.wins, 1);
+  assert.equal(stats.losses, 0);
+  assert.equal(stats.longestRally, 5);
+
+  // Record a loss with lower rally (3) -> longestRally must remain 5
+  storage.recordPongMatch({ won: false, rally: 3 });
+  stats = storage.getArcadeStats().pong;
+  assert.equal(stats.wins, 1);
+  assert.equal(stats.losses, 1);
+  assert.equal(stats.longestRally, 5);
+
+  // Record a loss with higher rally (12) -> longestRally updates to 12
+  storage.recordPongMatch({ won: false, rally: 12 });
+  stats = storage.getArcadeStats().pong;
+  assert.equal(stats.wins, 1);
+  assert.equal(stats.losses, 2);
+  assert.equal(stats.longestRally, 12);
+});
+
+test('AC-8: Space Invaders stats track highest wave and high score monotonically', () => {
+  storage.clearProgress();
+
+  storage.recordInvadersScore({ score: 1200, wave: 2 });
+  let stats = storage.getArcadeStats().invaders;
+  assert.equal(stats.highScore, 1200);
+  assert.equal(stats.highestWave, 2);
+
+  // Lower score / wave does not downgrade
+  storage.recordInvadersScore({ score: 800, wave: 1 });
+  stats = storage.getArcadeStats().invaders;
+  assert.equal(stats.highScore, 1200);
+  assert.equal(stats.highestWave, 2);
+
+  // Higher score updates
+  storage.recordInvadersScore({ score: 3500, wave: 4 });
+  stats = storage.getArcadeStats().invaders;
+  assert.equal(stats.highScore, 3500);
+  assert.equal(stats.highestWave, 4);
+});
+
+test('AC-8: Asteroids stats track highest wave and high score monotonically', () => {
+  storage.clearProgress();
+
+  storage.recordAsteroidsScore({ score: 2400, wave: 3 });
+  let stats = storage.getArcadeStats().asteroids;
+  assert.equal(stats.highScore, 2400);
+  assert.equal(stats.highestWave, 3);
+
+  // Partial update preserves maximums
+  storage.recordAsteroidsScore({ score: 1500, wave: 5 });
+  stats = storage.getArcadeStats().asteroids;
+  assert.equal(stats.highScore, 2400);
+  assert.equal(stats.highestWave, 5);
+});
+
+test('AC-8: Recording arcade stats preserves existing 70-level Tanks progress without data loss', () => {
+  storage.clearProgress();
+  storage.recordLevelBeaten(1);
+  storage.recordLevelBeaten(2);
+
+  const initialProgress = storage.getProgress();
+  assert.equal(initialProgress.highestLevelBeaten, 2);
+  assert.deepEqual(initialProgress.beatenLevels, [1, 2]);
+  assert.equal(initialProgress.unlockedLevel, 3);
+
+  // Mutate arcade stats across all 3 mini-games
+  storage.recordPongMatch({ won: true, rally: 8 });
+  storage.recordInvadersScore({ score: 4200, wave: 3 });
+  storage.recordAsteroidsScore({ score: 5800, wave: 4 });
+
+  const updatedProgress = storage.getProgress();
+  assert.equal(updatedProgress.highestLevelBeaten, 2, 'Tank progress highestLevelBeaten preserved');
+  assert.deepEqual(updatedProgress.beatenLevels, [1, 2], 'Tank progress beatenLevels preserved');
+  assert.equal(updatedProgress.unlockedLevel, 3, 'Tank progress unlockedLevel preserved');
+
+  assert.equal(updatedProgress.arcadeStats.pong.wins, 1);
+  assert.equal(updatedProgress.arcadeStats.invaders.highScore, 4200);
+  assert.equal(updatedProgress.arcadeStats.asteroids.highScore, 5800);
 });

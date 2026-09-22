@@ -234,6 +234,40 @@ def run_arcade_e2e():
             }""")
             assert final_gs_active, "Should have successfully returned to GameSelect from Tanks"
 
+            # 8. Test AC-8 Arcade Stats Persistence & Dynamic Card Badges
+            print("[E2E] Testing AC-8 Arcade Stats Persistence & GameSelect...")
+            stats_verification = page.evaluate("""async () => {
+                const module = await import('./src/systems/Storage.js');
+                const st = module.storage;
+                st.recordPongMatch({ won: true, rally: 9 });
+                st.recordInvadersScore({ score: 1450, wave: 3 });
+                st.recordAsteroidsScore({ score: 3200, wave: 4 });
+
+                const stats = st.getArcadeStats();
+                return {
+                    pong: stats.pong,
+                    invaders: stats.invaders,
+                    asteroids: stats.asteroids
+                };
+            }""")
+            assert stats_verification["pong"]["wins"] >= 1, f"Pong wins not recorded: {stats_verification}"
+            assert stats_verification["pong"]["longestRally"] >= 9, f"Pong rally not recorded: {stats_verification}"
+            assert stats_verification["invaders"]["highScore"] >= 1450, f"Invaders score not recorded: {stats_verification}"
+            assert stats_verification["asteroids"]["highScore"] >= 3200, f"Asteroids score not recorded: {stats_verification}"
+
+            # Restart GameSelect to verify cards render updated stats without errors
+            page.evaluate("""() => {
+                const gs = window.game.scene.getScene('GameSelect');
+                gs.scene.restart();
+            }""")
+            time.sleep(0.5)
+
+            cards_rendered = page.evaluate("""() => {
+                const gs = window.game.scene.getScene('GameSelect');
+                return gs && gs.scene.isActive();
+            }""")
+            assert cards_rendered, "GameSelect must restart cleanly with updated stats"
+
             browser.close()
 
             print(f"[E2E] All tests passed! Console errors count: {len(errors)}")

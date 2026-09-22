@@ -2,6 +2,7 @@
 // Touch-friendly Birthday Pong clone with under-paddle grip handle
 
 import { audio } from '../systems/AudioManager.js';
+import { storage } from '../systems/Storage.js';
 import { ControlsOverlay } from './ControlsOverlay.js';
 
 export class PongScene extends Phaser.Scene {
@@ -16,6 +17,7 @@ export class PongScene extends Phaser.Scene {
     this.playerScore = 0;
     this.aiScore = 0;
     this.rallyCount = 0;
+    this.maxRally = 0;
     this.gameActive = false;
     this.ballBaseSpeed = 340;
     this.ballSpeed = this.ballBaseSpeed;
@@ -220,6 +222,7 @@ export class PongScene extends Phaser.Scene {
   hitPlayerPaddle(ball, paddle) {
     audio.playPongPaddleHit();
     this.rallyCount++;
+    this.maxRally = Math.max(this.maxRally, this.rallyCount);
     this.rallyText.setText(`Rally: ${this.rallyCount} • First to 7 Wins!`);
 
     // Calculate deflection angle based on hit location (-60 to +60 deg)
@@ -237,6 +240,7 @@ export class PongScene extends Phaser.Scene {
   hitAiPaddle(ball, paddle) {
     audio.playPongPaddleHit();
     this.rallyCount++;
+    this.maxRally = Math.max(this.maxRally, this.rallyCount);
     this.rallyText.setText(`Rally: ${this.rallyCount} • First to 7 Wins!`);
 
     const diff = (ball.x - paddle.x) / (paddle.width / 2);
@@ -304,6 +308,9 @@ export class PongScene extends Phaser.Scene {
       audio.playGameOver();
     }
 
+    // Persist Pong stats (AC-8)
+    storage.recordPongMatch({ won: playerWon, rally: this.maxRally });
+
     const modal = this.add.container(width / 2, height / 2);
     modal.setDepth(2000);
 
@@ -322,23 +329,30 @@ export class PongScene extends Phaser.Scene {
       color: playerWon ? '#ffd700' : '#ef4444'
     }).setOrigin(0.5);
 
-    const sub = this.add.text(0, -40, playerWon
+    const sub = this.add.text(0, -42, playerWon
       ? 'Allan defeated the Decades!\nHappy 70th Birthday!'
       : 'Good rally! The Decades took this one.', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '14px',
+      fontSize: '13px',
       color: '#cbd5e1',
       align: 'center'
     }).setOrigin(0.5);
 
-    const finalScore = this.add.text(0, 0, `Final Score: ${this.playerScore} - ${this.aiScore}`, {
+    const finalScore = this.add.text(0, -4, `Final Score: ${this.playerScore} - ${this.aiScore}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '16px',
       fontWeight: 'bold',
       color: '#38bdf8'
     }).setOrigin(0.5);
 
-    modal.add([title, sub, finalScore]);
+    const rallyStat = this.add.text(0, 20, `Match Longest Rally: ${this.maxRally}`, {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      color: '#ffd700'
+    }).setOrigin(0.5);
+
+    modal.add([title, sub, finalScore, rallyStat]);
 
     // Play Again Button
     const playAgainBtn = this.add.container(0, 50);

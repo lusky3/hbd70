@@ -2,6 +2,7 @@
 // Birthday Asteroids clone with 360° rotation, Newtonian thrust, and splitting "70" meteorites
 
 import { audio } from '../systems/AudioManager.js';
+import { storage } from '../systems/Storage.js';
 import { ControlsOverlay } from './ControlsOverlay.js';
 
 export class AsteroidsScene extends Phaser.Scene {
@@ -68,9 +69,11 @@ export class AsteroidsScene extends Phaser.Scene {
       this.scene.start('GameSelect');
     });
 
-    this.scoreText = this.add.text(width / 2 - 30, 26, 'SCORE: 0000', {
+    this.highScore = storage.getArcadeStats().asteroids.highScore || 0;
+    const hiFormatted = String(this.highScore).padStart(4, '0');
+    this.scoreText = this.add.text(width / 2 - 30, 26, `SCORE: 0000  HI: ${hiFormatted}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '14px',
+      fontSize: '13px',
       fontWeight: 'bold',
       color: '#ffd700'
     });
@@ -345,7 +348,7 @@ export class AsteroidsScene extends Phaser.Scene {
     this.createExplosionParticles(ax, ay, size === 'large' ? 12 : 8);
 
     if (size === 'large') {
-      this.score += 20;
+      this.addScore(20);
       // Spawn 2 medium asteroids
       const angle1 = Phaser.Math.FloatBetween(0, Math.PI * 2);
       const angle2 = angle1 + Math.PI + Phaser.Math.FloatBetween(-0.5, 0.5);
@@ -353,7 +356,7 @@ export class AsteroidsScene extends Phaser.Scene {
       this.createAsteroid(ax, ay, 'medium', Math.cos(angle1) * speed, Math.sin(angle1) * speed);
       this.createAsteroid(ax, ay, 'medium', Math.cos(angle2) * speed, Math.sin(angle2) * speed);
     } else if (size === 'medium') {
-      this.score += 50;
+      this.addScore(50);
       // Spawn 2 small asteroids
       const angle1 = Phaser.Math.FloatBetween(0, Math.PI * 2);
       const angle2 = angle1 + Math.PI + Phaser.Math.FloatBetween(-0.6, 0.6);
@@ -361,10 +364,8 @@ export class AsteroidsScene extends Phaser.Scene {
       this.createAsteroid(ax, ay, 'small', Math.cos(angle1) * speed, Math.sin(angle1) * speed);
       this.createAsteroid(ax, ay, 'small', Math.cos(angle2) * speed, Math.sin(angle2) * speed);
     } else {
-      this.score += 100;
+      this.addScore(100);
     }
-
-    this.scoreText.setText(`SCORE: ${String(this.score).padStart(4, '0')}`);
 
     // Check wave complete
     if (this.asteroids.countActive() === 0) {
@@ -372,11 +373,23 @@ export class AsteroidsScene extends Phaser.Scene {
     }
   }
 
+  addScore(pts) {
+    this.score += pts;
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+    }
+    const s = String(this.score).padStart(4, '0');
+    const hi = String(this.highScore).padStart(4, '0');
+    this.scoreText.setText(`SCORE: ${s}  HI: ${hi}`);
+  }
+
   handleWaveClear() {
     this.wave++;
-    this.score += 500;
-    this.scoreText.setText(`SCORE: ${String(this.score).padStart(4, '0')}`);
+    this.addScore(500);
     this.waveText.setText(`WAVE: ${this.wave}`);
+
+    // Persist milestone wave/score (AC-8)
+    storage.recordAsteroidsScore({ score: this.score, wave: this.wave });
 
     audio.playPongScore();
 
@@ -476,6 +489,9 @@ export class AsteroidsScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // Persist Asteroids score and wave (AC-8)
+    const stats = storage.recordAsteroidsScore({ score: this.score, wave: this.wave });
+
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.75);
     overlay.setDepth(200);
 
@@ -484,12 +500,12 @@ export class AsteroidsScene extends Phaser.Scene {
 
     const panel = this.add.graphics();
     panel.fillStyle(0x0f172a, 0.95);
-    panel.fillRoundedRect(-170, -130, 340, 260, 16);
+    panel.fillRoundedRect(-170, -140, 340, 280, 16);
     panel.lineStyle(2, 0xef4444, 1);
-    panel.strokeRoundedRect(-170, -130, 340, 260, 16);
+    panel.strokeRoundedRect(-170, -140, 340, 280, 16);
     box.add(panel);
 
-    const title = this.add.text(0, -90, 'MISSION OVER', {
+    const title = this.add.text(0, -96, 'MISSION OVER', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '24px',
       fontWeight: 'bold',
@@ -497,12 +513,12 @@ export class AsteroidsScene extends Phaser.Scene {
     }).setOrigin(0.5);
     box.add(title);
 
-    const summary = this.add.text(0, -35, `Final Score: ${this.score}\nWaves Defended: ${this.wave - 1}`, {
+    const summary = this.add.text(0, -42, `Final Score: ${this.score}\nWaves Defended: ${this.wave - 1}\nAll-Time High: ${stats.highScore}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '16px',
+      fontSize: '14px',
       color: '#f8fafc',
       align: 'center',
-      lineSpacing: 8
+      lineSpacing: 6
     }).setOrigin(0.5);
     box.add(summary);
 

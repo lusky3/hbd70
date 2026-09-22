@@ -77,6 +77,17 @@ Expand *Birthday Tanks!* into a retro arcade celebration cabinet ("Allan's 70th 
 - All sound effects and music generated 100% via Web Audio API in `AudioManager.js`.
 - Responsive layout adapting to mobile portrait (FIT mode 480x854).
 
+### AC-8: Arcade Stats & High Score Persistence
+- Extend `Storage.js` to persist player records for all retro arcade mini-games across browser sessions in `localStorage`:
+  - **Birthday Pong**: Tracks total player wins, losses against CPU, and longest rally record.
+  - **Space Invaders**: Tracks all-time high score and highest wave reached.
+  - **Birthday Asteroids**: Tracks all-time high score and highest wave reached.
+- `GameSelectScene` dynamically surfaces these persistent records on each mini-game's menu card:
+  - Pong: `Record: XW - YL • Best Rally: Z` (or default callout if no matches played yet).
+  - Space Invaders: `High Score: XXXX • Wave Y` (or default callout if unplayed).
+  - Asteroids: `High Score: XXXX • Wave Y` (or default callout if unplayed).
+- Backward compatibility: Existing player storage schemas preserve all 70-level Tanks progress and gain default zeroed arcade stats automatically without corruption.
+
 ---
 
 ## 2. Constraints & Non-Goals
@@ -90,3 +101,4 @@ Expand *Birthday Tanks!* into a retro arcade celebration cabinet ("Allan's 70th 
 - [DECISION] Adopt a central `GameSelectScene` hub to cleanly isolate the 4 games while sharing common audio, controls, and rendering systems.
 - [DECISION] Implement an extended under-paddle touch grip handle for Pong to solve the finger-obscuring-ball mobile touch problem.
 - [DECISION] Standardize an instructional How-to-Play overlay on Level 1 across all games before active gameplay starts.
+- [DECISION] Store arcade mini-game stats in a dedicated 'arcadeStats' key within existing storage for clean backward compatibility.

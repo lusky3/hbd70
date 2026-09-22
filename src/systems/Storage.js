@@ -1,7 +1,13 @@
 // src/systems/Storage.js
-// LocalStorage session persistence manager for Allan's Birthday Tanks
+// LocalStorage session persistence manager for Allan's Birthday Tanks and Retro Arcade
 
 const STORAGE_KEY = 'hbd70_progress';
+
+const DEFAULT_ARCADE_STATS = {
+  pong: { wins: 0, losses: 0, longestRally: 0 },
+  invaders: { highScore: 0, highestWave: 1 },
+  asteroids: { highScore: 0, highestWave: 1 }
+};
 
 class StorageManager {
   constructor() {
@@ -9,7 +15,8 @@ class StorageManager {
       highestLevelBeaten: 0,
       beatenLevels: [],
       unlockedLevel: 1,
-      revealedLevels: []
+      revealedLevels: [],
+      arcadeStats: JSON.parse(JSON.stringify(DEFAULT_ARCADE_STATS))
     };
     this.isStorageAvailable = this.checkStorageAvailability();
   }
@@ -54,15 +61,45 @@ class StorageManager {
       const unlockedLevel = Math.max(1, Math.min(70, Math.max(Number(data.unlockedLevel) || 1, minimumUnlocked)));
       const revealedLevels = Array.isArray(data.revealedLevels) ? data.revealedLevels.map(Number) : [];
 
+      // Arcade Stats persistence (AC-8)
+      const rawArcade = data.arcadeStats || {};
+      const arcadeStats = {
+        pong: {
+          wins: Number(rawArcade.pong?.wins) || 0,
+          losses: Number(rawArcade.pong?.losses) || 0,
+          longestRally: Number(rawArcade.pong?.longestRally) || 0
+        },
+        invaders: {
+          highScore: Number(rawArcade.invaders?.highScore) || 0,
+          highestWave: Math.max(1, Number(rawArcade.invaders?.highestWave) || 1)
+        },
+        asteroids: {
+          highScore: Number(rawArcade.asteroids?.highScore) || 0,
+          highestWave: Math.max(1, Number(rawArcade.asteroids?.highestWave) || 1)
+        }
+      };
+
       return {
         highestLevelBeaten,
         beatenLevels,
         unlockedLevel,
-        revealedLevels
+        revealedLevels,
+        arcadeStats
       };
     } catch (err) {
       console.warn('Could not read saved progress from localStorage:', err);
       return { ...this.memoryState };
+    }
+  }
+
+  saveData(data) {
+    this.memoryState = { ...data };
+    if (this.isStorageAvailable) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (err) {
+        console.warn('Could not save progress to localStorage:', err);
+      }
     }
   }
 
@@ -80,22 +117,14 @@ class StorageManager {
     const revealedLevels = current.revealedLevels || [];
 
     const updated = {
+      ...current,
       highestLevelBeaten,
       beatenLevels,
       unlockedLevel,
       revealedLevels
     };
 
-    this.memoryState = { ...updated };
-
-    if (this.isStorageAvailable) {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (err) {
-        console.warn('Could not save progress to localStorage:', err);
-      }
-    }
-
+    this.saveData(updated);
     return updated;
   }
 
@@ -113,17 +142,76 @@ class StorageManager {
       revealedLevels
     };
 
-    this.memoryState = { ...updated };
-
-    if (this.isStorageAvailable) {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (err) {
-        console.warn('Could not save progress to localStorage:', err);
-      }
-    }
-
+    this.saveData(updated);
     return updated;
+  }
+
+  getArcadeStats() {
+    return this.getProgress().arcadeStats;
+  }
+
+  recordPongMatch({ won, rally = 0 }) {
+    const current = this.getProgress();
+    const stats = current.arcadeStats.pong;
+
+    const updatedPong = {
+      wins: won ? stats.wins + 1 : stats.wins,
+      losses: won ? stats.losses : stats.losses + 1,
+      longestRally: Math.max(stats.longestRally, Number(rally) || 0)
+    };
+
+    const updated = {
+      ...current,
+      arcadeStats: {
+        ...current.arcadeStats,
+        pong: updatedPong
+      }
+    };
+
+    this.saveData(updated);
+    return updated.arcadeStats;
+  }
+
+  recordInvadersScore({ score = 0, wave = 1 }) {
+    const current = this.getProgress();
+    const stats = current.arcadeStats.invaders;
+
+    const updatedInvaders = {
+      highScore: Math.max(stats.highScore, Number(score) || 0),
+      highestWave: Math.max(stats.highestWave, Number(wave) || 1)
+    };
+
+    const updated = {
+      ...current,
+      arcadeStats: {
+        ...current.arcadeStats,
+        invaders: updatedInvaders
+      }
+    };
+
+    this.saveData(updated);
+    return updated.arcadeStats;
+  }
+
+  recordAsteroidsScore({ score = 0, wave = 1 }) {
+    const current = this.getProgress();
+    const stats = current.arcadeStats.asteroids;
+
+    const updatedAsteroids = {
+      highScore: Math.max(stats.highScore, Number(score) || 0),
+      highestWave: Math.max(stats.highestWave, Number(wave) || 1)
+    };
+
+    const updated = {
+      ...current,
+      arcadeStats: {
+        ...current.arcadeStats,
+        asteroids: updatedAsteroids
+      }
+    };
+
+    this.saveData(updated);
+    return updated.arcadeStats;
   }
 
   isLevelUnlocked(levelNum) {
@@ -146,7 +234,8 @@ class StorageManager {
       highestLevelBeaten: 0,
       beatenLevels: [],
       unlockedLevel: 1,
-      revealedLevels: []
+      revealedLevels: [],
+      arcadeStats: JSON.parse(JSON.stringify(DEFAULT_ARCADE_STATS))
     };
     if (this.isStorageAvailable) {
       try {

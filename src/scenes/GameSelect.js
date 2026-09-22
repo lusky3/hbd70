@@ -91,6 +91,26 @@ export class GameSelectScene extends Phaser.Scene {
     });
 
     // 3. Game Cards Container / Layout
+    const arcadeStats = storage.getArcadeStats();
+
+    const pongStats = arcadeStats.pong;
+    const pongPlayed = (pongStats.wins + pongStats.losses) > 0;
+    const pongStatus = pongPlayed
+      ? `Record: ${pongStats.wins}W - ${pongStats.losses}L • Best Rally: ${pongStats.longestRally}`
+      : 'Rally Tennis • First to 7 Points Wins!';
+
+    const invStats = arcadeStats.invaders;
+    const invPlayed = invStats.highScore > 0;
+    const invStatus = invPlayed
+      ? `High Score: ${invStats.highScore.toLocaleString()} • Wave ${invStats.highestWave}`
+      : 'Cakes, Candles & Mystery Railcars';
+
+    const astStats = arcadeStats.asteroids;
+    const astPlayed = astStats.highScore > 0;
+    const astStatus = astPlayed
+      ? `High Score: ${astStats.highScore.toLocaleString()} • Wave ${astStats.highestWave}`
+      : 'Shatter Giant 70 Deep Space Rocks';
+
     const cards = [
       {
         id: 'tanks',
@@ -122,7 +142,7 @@ export class GameSelectScene extends Phaser.Scene {
         subtitle: 'Allan vs The Decades • Touch Grip Handle',
         accentColor: 0x0284c7,
         borderColor: 0x38bdf8,
-        statusText: 'Rally Tennis • First to 7 Points Wins!',
+        statusText: pongStatus,
         onPlay: () => {
           audio.playShoot();
           this.scene.start('Pong');
@@ -135,7 +155,7 @@ export class GameSelectScene extends Phaser.Scene {
         subtitle: 'Defend Milestone Bunkers (1956-2026)',
         accentColor: 0xa855f7,
         borderColor: 0xc084fc,
-        statusText: 'Cakes, Candles & Mystery Railcars',
+        statusText: invStatus,
         onPlay: () => {
           audio.playShoot();
           this.scene.start('SpaceInvaders');
@@ -148,7 +168,7 @@ export class GameSelectScene extends Phaser.Scene {
         subtitle: "Allan's Space Cruiser • 360° Vector Thrust",
         accentColor: 0xeab308,
         borderColor: 0xfde047,
-        statusText: 'Shatter Giant 70 Deep Space Rocks',
+        statusText: astStatus,
         onPlay: () => {
           audio.playShoot();
           this.scene.start('Asteroids');

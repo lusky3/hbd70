@@ -2,6 +2,7 @@
 // Birthday Space Invaders clone with milestone decade bunkers
 
 import { audio } from '../systems/AudioManager.js';
+import { storage } from '../systems/Storage.js';
 import { ControlsOverlay } from './ControlsOverlay.js';
 
 export class SpaceInvadersScene extends Phaser.Scene {
@@ -67,9 +68,11 @@ export class SpaceInvadersScene extends Phaser.Scene {
       this.scene.start('GameSelect');
     });
 
-    this.scoreText = this.add.text(width / 2 - 30, 26, 'SCORE: 0000', {
+    this.highScore = storage.getArcadeStats().invaders.highScore || 0;
+    const hiFormatted = String(this.highScore).padStart(4, '0');
+    this.scoreText = this.add.text(width / 2 - 30, 26, `SCORE: 0000  HI: ${hiFormatted}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '15px',
+      fontSize: '13px',
       fontWeight: 'bold',
       color: '#ffd700'
     }).setOrigin(0.5);
@@ -460,8 +463,12 @@ export class SpaceInvadersScene extends Phaser.Scene {
 
   addScore(pts) {
     this.score += pts;
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+    }
     const s = String(this.score).padStart(4, '0');
-    this.scoreText.setText(`SCORE: ${s}`);
+    const hi = String(this.highScore).padStart(4, '0');
+    this.scoreText.setText(`SCORE: ${s}  HI: ${hi}`);
   }
 
   handleWaveCleared() {
@@ -471,6 +478,9 @@ export class SpaceInvadersScene extends Phaser.Scene {
     this.showToast(`WAVE ${this.wave - 1} CLEARED! +500 BONUS`);
     this.addScore(500);
     this.waveText.setText(`WAVE ${this.wave}`);
+
+    // Persist milestone wave/score (AC-8)
+    storage.recordInvadersScore({ score: this.score, wave: this.wave });
 
     this.time.delayedCall(1600, () => {
       this.setupWave();
@@ -485,37 +495,47 @@ export class SpaceInvadersScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // Persist Invaders score and wave (AC-8)
+    const stats = storage.recordInvadersScore({ score: this.score, wave: this.wave });
+
     const modal = this.add.container(width / 2, height / 2);
     modal.setDepth(2000);
 
     const mBg = this.add.graphics();
     mBg.fillStyle(0x0f172a, 0.96);
-    mBg.fillRoundedRect(-180, -120, 360, 240, 16);
+    mBg.fillRoundedRect(-180, -130, 360, 260, 16);
     mBg.lineStyle(3, 0xef4444, 1);
-    mBg.strokeRoundedRect(-180, -120, 360, 240, 16);
+    mBg.strokeRoundedRect(-180, -130, 360, 260, 16);
     modal.add(mBg);
 
-    const title = this.add.text(0, -75, 'GAME OVER', {
+    const title = this.add.text(0, -82, 'GAME OVER', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '24px',
       fontWeight: 'bold',
       color: '#ef4444'
     }).setOrigin(0.5);
 
-    const finalScore = this.add.text(0, -35, `Final Score: ${this.score}`, {
+    const finalScore = this.add.text(0, -48, `Final Score: ${this.score}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '16px',
       fontWeight: 'bold',
       color: '#ffd700'
     }).setOrigin(0.5);
 
-    const waveReached = this.add.text(0, -10, `Waves Survived: ${this.wave}`, {
+    const waveReached = this.add.text(0, -24, `Waves Survived: ${this.wave}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '13px',
       color: '#cbd5e1'
     }).setOrigin(0.5);
 
-    modal.add([title, finalScore, waveReached]);
+    const bestScore = this.add.text(0, -4, `All-Time High: ${stats.highScore}`, {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      color: '#38bdf8'
+    }).setOrigin(0.5);
+
+    modal.add([title, finalScore, waveReached, bestScore]);
 
     // Try Again
     const retryBtn = this.add.container(0, 35);
