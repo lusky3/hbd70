@@ -1,5 +1,5 @@
 ---
-status: frozen
+status: shipped
 title: Allan's 70th Birthday Arcade: Multi-Game Collection & Touch Usability
 source: internal
 source_doc: user_request

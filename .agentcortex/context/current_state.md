@@ -15,9 +15,9 @@
   - Task Isolation: `.agentcortex/context/work/<worklog-key>.md`
   - Active Work Log Path: derive <worklog-key> from the raw branch name using filesystem-safe normalization before any gate checks.
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
-- **Last Updated**: 2026-09-19
-- **Last Verified**: 2026-09-19
-- **Update Sequence**: 4
+- **Last Updated**: 2026-09-22
+- **Last Verified**: 2026-09-22
+- **Update Sequence**: 5
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -26,6 +26,7 @@
   - docs/specs/decade-bosses-and-control-tuning.md: Decade Bosses & Control Usability Tuning [status: shipped] [Updated: 2026-09-19]
   - docs/specs/level-select-persistence-credits.md: Level Select, Game Progress Persistence & Allan Lusk Star Wars Credits [status: shipped] [Updated: 2026-09-19]
   - docs/specs/cheats-difficulty-and-selection.md: Secret Cheats, Level Select Discovery, Spawn Invincibility & CPU Speed Control [status: shipped] [Updated: 2026-09-19]
+  - docs/specs/birthday-arcade-multigame.md: Allan's 70th Birthday Arcade: Multi-Game Collection & Touch Usability [status: shipped] [Updated: 2026-09-22]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -70,6 +71,10 @@
 (none yet)
 
 ## Ship History
+
+### Ship-main-2026-09-22-arcade-multigame
+- Feature shipped: Allan's 70th Birthday Retro Arcade Collection — 4 playable retro games (Birthday Tanks, Birthday Pong with under-paddle touch grip handle, Space Invaders with milestone decade bunkers, Asteroids with vector Newtonian mechanics), Level 1 ControlsOverlay across all games, tap-anywhere Web Audio unlock splash screen, and AC-8 persistent high scores and stat tracking across sessions.
+- Tests: Pass (48/48 node unit tests + Playwright headless browser E2E 2/2 suites passing with 0 console errors)
 
 ### Ship-main-2026-09-19-player-status
 - Feature shipped: Player Progress Retention & Level Select Status Preservation — Complete backwards compatibility for stored player progress in `localStorage`, auto-repair of legacy profiles with missing `beatenLevels`, in-place title discovery persistence via `revealedLevels`, fixed `LevelSelectScene` to correctly treat all unlocked levels as playable with milestone titles and `PLAY ▶` tag, and preserved difficulty/cheat settings across game over retries.

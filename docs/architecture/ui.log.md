@@ -21,3 +21,12 @@ source_sha: 0c50c9766dbedeba2cf94599a17554b331614d5d
 ### [ui][2026-09-19][main]
 cross-ref: See [gameplay][2026-09-19][main] in docs/architecture/gameplay.log.md
 
+### [ui][2026-09-22][main]
+source_spec: docs/specs/birthday-arcade-multigame.md
+source_sha: 292aea986e2fdc82b4b26b00a121a7bbcc926d16
+
+- [DECISION] Adopt a central `GameSelectScene` hub to cleanly isolate the 4 games while sharing common audio, controls, and rendering systems.
+- [DECISION] Implement an extended under-paddle touch grip handle for Pong to solve the finger-obscuring-ball mobile touch problem.
+- [DECISION] Standardize an instructional How-to-Play overlay on Level 1 across all games before active gameplay starts.
+- [DECISION] Store arcade mini-game stats in a dedicated 'arcadeStats' key within existing storage for clean backward compatibility.
+
