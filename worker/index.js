@@ -1,6 +1,8 @@
 // worker/index.js
 // Cloudflare Worker API for Allan's 70th Birthday Retro Arcade Leaderboards
 
+import { validatePlayerIdentity, isProfaneText } from './profanity.js';
+
 export const VALID_GAMES = ['tanks', 'pong', 'invaders', 'asteroids'];
 
 export const SCORE_LIMITS = {
@@ -98,7 +100,7 @@ export async function handleRequest(request, env) {
 
     try {
       const stmt = env.DB.prepare(
-        `SELECT id, game_id, initials, score, detail, created_at 
+        `SELECT id, game_id, initials, score, detail, full_name, created_at 
          FROM leaderboards 
          WHERE game_id = ? 
          ORDER BY score DESC, created_at ASC 
@@ -116,6 +118,7 @@ export async function handleRequest(request, env) {
           initials: row.initials,
           score: row.score,
           detail: row.detail || '',
+          fullName: row.full_name || '',
           createdAt: row.created_at,
         })),
       });
@@ -139,6 +142,14 @@ export async function handleRequest(request, env) {
     }
 
     const initials = sanitizeInitials(payload.initials);
+    const rawFullName = payload.fullName || payload.full_name || '';
+    const fullName = typeof rawFullName === 'string' ? rawFullName.replace(/[\r\n\t]/g, ' ').trim().slice(0, 24) : '';
+
+    const validation = validatePlayerIdentity(initials, fullName);
+    if (!validation.valid) {
+      return jsonResponse({ error: validation.error || 'Initials or name contains disallowed language' }, 400);
+    }
+
     const rawScore = parseInt(payload.score, 10);
 
     if (isNaN(rawScore) || rawScore < 0) {
@@ -149,13 +160,16 @@ export async function handleRequest(request, env) {
       return jsonResponse({ error: `Score exceeds plausible threshold for ${rawGameId}` }, 400);
     }
 
-    const rawDetail = typeof payload.detail === 'string' ? payload.detail.trim().slice(0, 32) : '';
+    const rawDetail = typeof payload.detail === 'string' ? payload.detail.replace(/[\r\n\t]/g, ' ').trim().slice(0, 32) : '';
+    if (rawDetail && isProfaneText(rawDetail)) {
+      return jsonResponse({ error: 'Detail text contains disallowed language' }, 400);
+    }
 
     try {
       const insertStmt = env.DB.prepare(
-        `INSERT INTO leaderboards (game_id, initials, score, detail) VALUES (?, ?, ?, ?)`
+        `INSERT INTO leaderboards (game_id, initials, score, detail, full_name) VALUES (?, ?, ?, ?, ?)`
       );
-      const insertResult = await insertStmt.bind(rawGameId, initials, rawScore, rawDetail).run();
+      const insertResult = await insertStmt.bind(rawGameId, initials, rawScore, rawDetail, fullName).run();
       const lastId = insertResult?.meta?.last_row_id;
 
       // Compute player rank including tiebreaker
@@ -181,6 +195,7 @@ export async function handleRequest(request, env) {
         initials,
         score: rawScore,
         detail: rawDetail,
+        fullName,
       }, 201);
     } catch (err) {
       return jsonResponse({ error: 'Failed to record leaderboard score', message: err.message }, 500);

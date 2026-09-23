@@ -5,6 +5,15 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-22
+
+### Added
+- **Optional Larger Full Name / Nickname**: Support for entering an optional full name (up to 24 characters, e.g. "Allan") associated with the retro 3-letter arcade initials tag (e.g. "ALL").
+- **Set Tag & Name Button on High Scores**: Dedicated interactive button (`[ 👤 SET TAG/NAME ]`) on the Leaderboard modal allowing players to configure and save their player profile anytime without waiting for a game over screen.
+- **Leaderboard Hover & Tap Reveal**: In `LeaderboardModalScene`, entries with an attached full name display a cyan dot indicator (`ALL •`). Hovering (desktop pointer) or tapping (mobile touch) reveals a retro arcade tooltip displaying the full name (e.g. `★ ALL ➜ Allan`) without disrupting the monospace table layout.
+- **Family-Friendly Profanity Filter**: Dual-layer client (`ProfanityFilter.js`) and server-side (`worker/profanity.js`) validation checking both 3-letter initials tags and full names against offensive acronyms, vulgarities, and slurs with friendly UI warnings and HTTP 400 API protection.
+- **Cloudflare D1 Worker Schema & API Update**: Added `full_name TEXT` column to `leaderboards` table; updated `GET` and `POST` endpoints to store and deliver `fullName`.
+
 ## [1.2.0] - 2026-09-22
 
 ### Added

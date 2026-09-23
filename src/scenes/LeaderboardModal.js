@@ -1,5 +1,5 @@
 // src/scenes/LeaderboardModal.js
-// Monospace retro neon high score modal with game tabs and live/offline status
+// Monospace retro neon high score modal with game tabs, set tag/name button, and full-name hover/tap tooltips
 
 import { leaderboardService } from '../systems/LeaderboardService.js';
 import { audio } from '../systems/AudioManager.js';
@@ -24,6 +24,7 @@ export class LeaderboardModalScene extends SceneBase {
     this.isLoading = false;
     this.scores = [];
     this.isOnline = true;
+    this.activeTooltipRow = -1;
   }
 
   create() {
@@ -33,6 +34,7 @@ export class LeaderboardModalScene extends SceneBase {
     const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.88);
     backdrop.setOrigin(0, 0);
     backdrop.setInteractive();
+    backdrop.on('pointerdown', () => this.hideTooltip());
 
     // Modal frame
     const modalW = Math.min(width - 32, 440);
@@ -86,6 +88,7 @@ export class LeaderboardModalScene extends SceneBase {
       tabContainer.setInteractive({ useHandCursor: true });
       tabContainer.on('pointerdown', () => {
         if (this.activeGameId !== g.id) {
+          this.hideTooltip();
           this.activeGameId = g.id;
           audio.playMenuSelect?.();
           this.updateTabs();
@@ -142,56 +145,147 @@ export class LeaderboardModalScene extends SceneBase {
     // Dynamic Scores Container
     this.tableRowsContainer = this.add.container(0, 0);
 
-    // Bottom Action Buttons: REFRESH and CLOSE
-    const btnY = modalY + modalH - 38;
+    // Bottom Action Buttons: REFRESH, SET TAG/NAME, and CLOSE
+    const btnY = modalY + modalH - 36;
+    const sideBtnW = 84;
+    const centerBtnW = 148;
 
-    // Refresh Button
-    const refreshBtn = this.add.container(modalX + 70, btnY);
+    // 1. Refresh Button (Left)
+    const refreshBtn = this.add.container(modalX + 58, btnY);
     const refBg = this.add.graphics();
     refBg.fillStyle(0x1e293b, 1);
-    refBg.fillRoundedRect(-45, -18, 90, 36, 8);
+    refBg.fillRoundedRect(-sideBtnW / 2, -18, sideBtnW, 36, 8);
     refBg.lineStyle(1.5, 0x475569, 1);
-    refBg.strokeRoundedRect(-45, -18, 90, 36, 8);
+    refBg.strokeRoundedRect(-sideBtnW / 2, -18, sideBtnW, 36, 8);
     refreshBtn.add(refBg);
 
     const refText = this.add.text(0, 0, '🔄 REFRESH', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '11px',
+      fontSize: '10px',
       fontWeight: 'bold',
       color: '#cbd5e1'
     }).setOrigin(0.5);
     refreshBtn.add(refText);
-    refreshBtn.setSize(90, 36);
-    refreshBtn.setInteractive({ useHandCursor: true });
-    refreshBtn.on('pointerdown', () => {
+
+    const refZone = this.add.zone(0, 0, sideBtnW, 36).setInteractive({ useHandCursor: true });
+    refreshBtn.add(refZone);
+    refZone.on('pointerdown', () => {
       audio.playPongPaddle?.();
+      this.hideTooltip();
       this.loadScores();
     });
 
-    // Close Button
-    const closeBtn = this.add.container(modalX + modalW - 70, btnY);
+    // 2. Set Tag & Name Button (Center)
+    const profileBtn = this.add.container(modalX + modalW / 2, btnY);
+    const profBg = this.add.graphics();
+    profBg.fillStyle(0x0284c7, 1);
+    profBg.fillRoundedRect(-centerBtnW / 2, -18, centerBtnW, 36, 8);
+    profBg.lineStyle(1.5, 0x38bdf8, 1);
+    profBg.strokeRoundedRect(-centerBtnW / 2, -18, centerBtnW, 36, 8);
+    profileBtn.add(profBg);
+
+    const profText = this.add.text(0, 0, '👤 SET TAG/NAME', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold',
+      color: '#ffffff'
+    }).setOrigin(0.5);
+    profileBtn.add(profText);
+
+    const profZone = this.add.zone(0, 0, centerBtnW, 36).setInteractive({ useHandCursor: true });
+    profileBtn.add(profZone);
+    profZone.on('pointerdown', () => {
+      audio.playMenuSelect?.();
+      this.hideTooltip();
+      this.scene.launch('InitialsEntryOverlay', {
+        mode: 'profile',
+        returnScene: 'LeaderboardModal'
+      });
+      this.scene.pause();
+    });
+
+    // 3. Close Button (Right)
+    const closeBtn = this.add.container(modalX + modalW - 58, btnY);
     const closeBg = this.add.graphics();
     closeBg.fillStyle(0xe11d48, 1);
-    closeBg.fillRoundedRect(-45, -18, 90, 36, 8);
+    closeBg.fillRoundedRect(-sideBtnW / 2, -18, sideBtnW, 36, 8);
     closeBg.lineStyle(1.5, 0xfca5a5, 1);
-    closeBg.strokeRoundedRect(-45, -18, 90, 36, 8);
+    closeBg.strokeRoundedRect(-sideBtnW / 2, -18, sideBtnW, 36, 8);
     closeBtn.add(closeBg);
 
     const closeText = this.add.text(0, 0, '✕ CLOSE', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '12px',
+      fontSize: '11px',
       fontWeight: 'bold',
       color: '#ffffff'
     }).setOrigin(0.5);
     closeBtn.add(closeText);
-    closeBtn.setSize(90, 36);
-    closeBtn.setInteractive({ useHandCursor: true });
-    closeBtn.on('pointerdown', () => this.closeModal());
+
+    const closeZone = this.add.zone(0, 0, sideBtnW, 36).setInteractive({ useHandCursor: true });
+    closeBtn.add(closeZone);
+    closeZone.on('pointerdown', () => this.closeModal());
+
+    // Tooltip Container (Floating layer for hover/tap name reveal)
+    this.tooltipContainer = this.add.container(0, 0).setDepth(200).setVisible(false);
 
     this.modalBounds = { modalX, modalY, modalW, modalH };
 
+    // Reload scores when waking or resuming from profile edit
+    const onReload = () => {
+      this.hideTooltip();
+      this.loadScores();
+    };
+
+    this.events.on('wake', onReload);
+    this.events.on('resume', onReload);
+
+    this.events.once('shutdown', () => {
+      this.events.off('wake', onReload);
+      this.events.off('resume', onReload);
+    });
+
     // Initial load
     this.loadScores();
+  }
+
+  showTooltip(x, y, initials, fullName) {
+    if (!fullName) return;
+    this.tooltipContainer.removeAll(true);
+
+    const cleanInitials = (initials || '???').trim();
+    const cleanFullName = String(fullName).replace(/[\r\n\t]/g, ' ').trim().slice(0, 24);
+    const textStr = `★ ${cleanInitials} ➜ ${cleanFullName}`;
+
+    const ttText = this.add.text(0, 0, textStr, {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold',
+      color: '#facc15'
+    }).setOrigin(0.5);
+
+    const textW = ttText.width + 20;
+    const textH = Math.max(26, ttText.height + 10);
+
+    const ttBg = this.add.graphics();
+    ttBg.fillStyle(0x0f172a, 0.98);
+    ttBg.fillRoundedRect(-textW / 2, -textH / 2, textW, textH, 6);
+    ttBg.lineStyle(1.5, 0x38bdf8, 1);
+    ttBg.strokeRoundedRect(-textW / 2, -textH / 2, textW, textH, 6);
+
+    this.tooltipContainer.add([ttBg, ttText]);
+
+    const { modalX, modalW } = this.modalBounds;
+    const clampedX = Math.max(modalX + textW / 2 + 10, Math.min(modalX + modalW - textW / 2 - 10, x));
+    this.tooltipContainer.setPosition(clampedX, y);
+    this.tooltipContainer.setVisible(true);
+  }
+
+  hideTooltip() {
+    if (this.tooltipContainer) {
+      this.tooltipContainer.setVisible(false);
+      this.tooltipContainer.removeAll(true);
+    }
+    this.activeTooltipRow = -1;
   }
 
   updateTabs() {
@@ -228,7 +322,6 @@ export class LeaderboardModalScene extends SceneBase {
       data = { online: false, results: [] };
     }
 
-    // Guard against scene shutdown, tab change, or destruction during fetch
     if (!this.sys || !this.sys.isActive() || !this.scene || !this.scene.isActive() || this.activeGameId !== targetGameId) {
       this.isLoading = false;
       return;
@@ -237,7 +330,6 @@ export class LeaderboardModalScene extends SceneBase {
     this.isLoading = false;
     this.isOnline = data.online;
 
-    // Update connection status badge
     if (this.statusBadge && this.statusBadge.active) {
       if (this.isOnline) {
         this.statusBadge.setText('● ONLINE (CLOUDFLARE D1)');
@@ -318,12 +410,35 @@ export class LeaderboardModalScene extends SceneBase {
         color: rankColor
       }).setOrigin(0, 0.5);
 
-      const nameText = this.add.text(modalX + 72, ry, row.initials || '???', {
+      const rowFullName = row.fullName || row.full_name || '';
+      const displayName = rowFullName ? `${row.initials || '???'} •` : (row.initials || '???');
+
+      const nameText = this.add.text(modalX + 72, ry, displayName, {
         fontFamily: 'monospace',
         fontSize: '12px',
         fontWeight: 'bold',
-        color: '#ffffff'
+        color: rowFullName ? '#38bdf8' : '#ffffff'
       }).setOrigin(0, 0.5);
+
+      if (rowFullName) {
+        const hitZone = this.add.zone(modalX + 85, ry, 64, 26).setInteractive({ useHandCursor: true });
+        hitZone.on('pointerover', () => {
+          this.showTooltip(modalX + 115, ry - 20, row.initials, rowFullName);
+        });
+        hitZone.on('pointerout', () => {
+          this.hideTooltip();
+        });
+        hitZone.on('pointerdown', (pointer) => {
+          if (pointer.event?.stopPropagation) pointer.event.stopPropagation();
+          if (this.activeTooltipRow === i) {
+            this.hideTooltip();
+          } else {
+            this.showTooltip(modalX + 115, ry - 20, row.initials, rowFullName);
+            this.activeTooltipRow = i;
+          }
+        });
+        this.tableRowsContainer.add(hitZone);
+      }
 
       const scoreText = this.add.text(modalX + 120, ry, Number(row.score).toLocaleString(), {
         fontFamily: 'monospace',
@@ -365,6 +480,7 @@ export class LeaderboardModalScene extends SceneBase {
 
   closeModal() {
     audio.playMenuSelect?.();
+    this.hideTooltip();
     this.scene.stop();
     if (this.returnScene && this.scene.isSleeping(this.returnScene)) {
       this.scene.wake(this.returnScene);

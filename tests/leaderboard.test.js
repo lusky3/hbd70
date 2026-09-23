@@ -64,13 +64,14 @@ function createMockEnv(initialData = []) {
               async run() {
                 // Handle INSERT
                 if (sql.includes('INSERT INTO leaderboards')) {
-                  const [game_id, initials, score, detail] = args;
+                  const [game_id, initials, score, detail, full_name] = args;
                   const newRow = {
                     id: store.length + 1,
                     game_id,
                     initials,
                     score,
                     detail,
+                    full_name: full_name || '',
                     created_at: new Date().toISOString()
                   };
                   store.push(newRow);
@@ -94,6 +95,7 @@ test('AC-1: Cloudflare D1 Schema & Configuration Integrity', () => {
   assert.match(schema, /game_id TEXT NOT NULL/, 'Schema must have game_id column');
   assert.match(schema, /initials TEXT NOT NULL/, 'Schema must have initials column');
   assert.match(schema, /score INTEGER NOT NULL/, 'Schema must have score column');
+  assert.match(schema, /full_name TEXT/, 'Schema must have full_name column');
   assert.match(schema, /CREATE INDEX IF NOT EXISTS idx_leaderboards_game_score/, 'Schema must define compound ranking index');
 
   const wranglerPath = path.join(rootDir, 'worker/wrangler.toml');
@@ -182,11 +184,11 @@ test('AC-2: Cloudflare Worker POST Score Submission & Ranking', async () => {
   const floodRes = await handleRequest(floodReq, env);
   assert.equal(floodRes.status, 400, 'Absurd score must reject with 400');
 
-  // Valid POST higher than existing
+  // Valid POST higher than existing with fullName
   const postReq1 = new Request('https://api.al.lusk.win/api/v1/leaderboard/invaders', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ initials: 'KEL', score: 15000, detail: 'Wave 6' })
+    body: JSON.stringify({ initials: 'KEL', score: 15000, detail: 'Wave 6', fullName: 'Kelsey Lusk' })
   });
   const postRes1 = await handleRequest(postReq1, env);
   assert.equal(postRes1.status, 201);
@@ -194,6 +196,24 @@ test('AC-2: Cloudflare Worker POST Score Submission & Ranking', async () => {
   assert.equal(postData1.success, true);
   assert.equal(postData1.rank, 1, 'Top score should earn Rank #1');
   assert.equal(postData1.initials, 'KEL');
+  assert.equal(postData1.fullName, 'Kelsey Lusk', 'Should return full name');
+
+  // Profane POST must reject with 400
+  const profaneTagReq = new Request('https://api.al.lusk.win/api/v1/leaderboard/invaders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initials: 'ASS', score: 12000 })
+  });
+  const profaneTagRes = await handleRequest(profaneTagReq, env);
+  assert.equal(profaneTagRes.status, 400, 'Profane tag must reject with 400');
+
+  const profaneNameReq = new Request('https://api.al.lusk.win/api/v1/leaderboard/invaders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initials: 'ALL', score: 12000, fullName: 'Nasty Asshole' })
+  });
+  const profaneNameRes = await handleRequest(profaneNameReq, env);
+  assert.equal(profaneNameRes.status, 400, 'Profane name must reject with 400');
 
   // Valid POST lower than existing
   const postReq2 = new Request('https://api.al.lusk.win/api/v1/leaderboard/invaders', {

@@ -3,6 +3,8 @@
 
 const STORAGE_KEY = 'hbd70_progress';
 const MIGRATION_KEY = 'hbd70_scores_migrated';
+const PLAYER_TAG_KEY = 'hbd70_player_tag';
+const PLAYER_NAME_KEY = 'hbd70_player_name';
 
 const DEFAULT_ARCADE_STATS = {
   pong: { wins: 0, losses: 0, longestRally: 0 },
@@ -17,7 +19,8 @@ class StorageManager {
       beatenLevels: [],
       unlockedLevel: 1,
       revealedLevels: [],
-      arcadeStats: JSON.parse(JSON.stringify(DEFAULT_ARCADE_STATS))
+      arcadeStats: JSON.parse(JSON.stringify(DEFAULT_ARCADE_STATS)),
+      playerProfile: { tag: 'ALL', name: '' }
     };
     this.isStorageAvailable = this.checkStorageAvailability();
   }
@@ -392,6 +395,44 @@ class StorageManager {
     }
 
     return unmigrated;
+  }
+
+  getPlayerProfile() {
+    if (!this.isStorageAvailable) {
+      return { ...this.memoryState.playerProfile };
+    }
+
+    try {
+      const tag = window.localStorage.getItem(PLAYER_TAG_KEY) || 
+                  window.localStorage.getItem('hbd70_player_initials') || 
+                  'ALL';
+      const name = window.localStorage.getItem(PLAYER_NAME_KEY) || '';
+      return {
+        tag: tag.slice(0, 3),
+        name: name.slice(0, 24)
+      };
+    } catch {
+      return { ...this.memoryState.playerProfile };
+    }
+  }
+
+  setPlayerProfile(tag, name) {
+    const cleanTag = (typeof tag === 'string' && tag.trim()) ? tag.trim().toUpperCase().slice(0, 3) : 'ALL';
+    const cleanName = (typeof name === 'string') ? name.trim().slice(0, 24) : '';
+
+    this.memoryState.playerProfile = { tag: cleanTag, name: cleanName };
+
+    if (this.isStorageAvailable) {
+      try {
+        window.localStorage.setItem(PLAYER_TAG_KEY, cleanTag);
+        window.localStorage.setItem('hbd70_player_initials', cleanTag);
+        window.localStorage.setItem(PLAYER_NAME_KEY, cleanName);
+      } catch (err) {
+        console.warn('Failed to save player profile to localStorage:', err);
+      }
+    }
+
+    return { tag: cleanTag, name: cleanName };
   }
 }
 

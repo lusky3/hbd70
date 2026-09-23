@@ -57,7 +57,9 @@ export class LeaderboardService {
   }
 
   getLocalFallback(gameId) {
-    const initials = this.getPlayerInitials();
+    const profile = storage.getPlayerProfile ? storage.getPlayerProfile() : { tag: this.getPlayerInitials(), name: '' };
+    const initials = profile.tag || this.getPlayerInitials();
+    const fullName = profile.name || '';
     const stats = storage.getArcadeStats();
     const progress = storage.getProgress();
     const fallbackResults = [];
@@ -69,6 +71,7 @@ export class LeaderboardService {
         fallbackResults.push({
           rank: 1,
           initials,
+          fullName,
           score,
           detail: `Level ${highest}`,
           createdAt: new Date().toISOString()
@@ -76,33 +79,39 @@ export class LeaderboardService {
       }
     } else if (gameId === 'pong') {
       const p = stats.pong || { longestRally: 0, wins: 0 };
-      if (p.longestRally > 0 || p.wins > 0) {
+      const score = p.longestRally;
+      if (score > 0 || p.wins > 0) {
         fallbackResults.push({
           rank: 1,
           initials,
-          score: p.longestRally,
-          detail: `${p.longestRally} Rally (${p.wins} Wins)`,
+          fullName,
+          score,
+          detail: `${score} Rally (${p.wins} Wins)`,
           createdAt: new Date().toISOString()
         });
       }
     } else if (gameId === 'invaders') {
       const inv = stats.invaders || { highScore: 0, highestWave: 1 };
-      if (inv.highScore > 0) {
+      const score = inv.highScore;
+      if (score > 0) {
         fallbackResults.push({
           rank: 1,
           initials,
-          score: inv.highScore,
+          fullName,
+          score,
           detail: `Wave ${inv.highestWave}`,
           createdAt: new Date().toISOString()
         });
       }
     } else if (gameId === 'asteroids') {
       const ast = stats.asteroids || { highScore: 0, highestWave: 1 };
-      if (ast.highScore > 0) {
+      const score = ast.highScore;
+      if (score > 0) {
         fallbackResults.push({
           rank: 1,
           initials,
-          score: ast.highScore,
+          fullName,
+          score,
           detail: `Wave ${ast.highestWave}`,
           createdAt: new Date().toISOString()
         });
@@ -129,14 +138,14 @@ export class LeaderboardService {
       if (timeoutId) clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
       return {
         online: true,
         gameId,
-        results: Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : [])
+        results: data.results || []
       };
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
@@ -150,19 +159,27 @@ export class LeaderboardService {
     }
   }
 
-  async submitScore(gameId, initialsOrOptions, score, detail = '') {
+  async submitScore(gameId, initialsOrOptions, score, detail = '', fullName = '') {
     let rawInitials = initialsOrOptions;
     let rawScore = score;
     let rawDetail = detail;
+    let rawFullName = fullName;
 
     if (initialsOrOptions && typeof initialsOrOptions === 'object') {
       rawInitials = initialsOrOptions.initials;
       rawScore = initialsOrOptions.score;
       rawDetail = initialsOrOptions.detail || '';
+      rawFullName = initialsOrOptions.fullName || initialsOrOptions.full_name || fullName || '';
     }
 
     const cleanInitials = this.setPlayerInitials(rawInitials);
+    const cleanFullName = typeof rawFullName === 'string' ? rawFullName.trim().slice(0, 24) : '';
     const numScore = Math.max(0, parseInt(rawScore, 10) || 0);
+
+    // Save profile to storage if available
+    if (typeof storage.setPlayerProfile === 'function') {
+      storage.setPlayerProfile(cleanInitials, cleanFullName);
+    }
 
     // Keep local storage stats in sync
     if (gameId === 'tanks' && typeof storage.recordTanksScore === 'function') {
@@ -195,7 +212,8 @@ export class LeaderboardService {
         body: JSON.stringify({
           initials: cleanInitials,
           score: numScore,
-          detail: String(detail || '').slice(0, 32)
+          detail: String(rawDetail || '').slice(0, 32),
+          fullName: cleanFullName
         }),
         signal: controller ? controller.signal : undefined
       });
@@ -203,7 +221,25 @@ export class LeaderboardService {
       if (timeoutId) clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
+        if (response.status >= 400 && response.status < 500) {
+          let errorMsg = `HTTP ${response.status}`;
+          try {
+            const errData = await response.json();
+            if (errData && errData.error) errorMsg = errData.error;
+          } catch {
+            // ignore
+          }
+          return {
+            success: false,
+            online: true,
+            error: errorMsg,
+            initials: cleanInitials,
+            fullName: cleanFullName,
+            score: numScore,
+            detail: rawDetail
+          };
+        }
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
@@ -211,38 +247,53 @@ export class LeaderboardService {
         success: true,
         online: true,
         rank: data.rank || 1,
-        initials: cleanInitials,
-        score: numScore
+        initials: data.initials || cleanInitials,
+        fullName: data.fullName || cleanFullName,
+        score: data.score || numScore,
+        detail: data.detail || rawDetail
       };
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
-      // Soft success on network failure — stored locally
+      // Offline fallback: return rank 1 locally
       return {
         success: true,
         online: false,
         rank: 1,
         initials: cleanInitials,
+        fullName: cleanFullName,
         score: numScore,
+        detail: rawDetail,
+        offline: true,
         error: err.name === 'AbortError' ? 'Network timeout' : (err.message || 'Offline')
       };
     }
   }
 
-  async submitBatchScores(initials, scoreEntries = []) {
+  async submitBatchScores(initials, scoreEntries, fullName = '') {
     const cleanInitials = this.setPlayerInitials(initials);
+    const cleanFullName = typeof fullName === 'string' ? fullName.trim().slice(0, 24) : '';
+    if (typeof storage.setPlayerProfile === 'function') {
+      storage.setPlayerProfile(cleanInitials, cleanFullName);
+    }
     const results = [];
+
     for (const entry of scoreEntries) {
       if (!entry || !entry.gameId || !entry.score) continue;
-      const res = await this.submitScore(entry.gameId, {
-        initials: cleanInitials,
-        score: entry.score,
-        detail: entry.detail
-      });
-      results.push({ gameId: entry.gameId, ...res });
+      try {
+        const res = await this.submitScore(entry.gameId, {
+          initials: cleanInitials,
+          score: entry.score,
+          detail: entry.detail || '',
+          fullName: cleanFullName
+        });
+        results.push({ gameId: entry.gameId, ...res });
+      } catch (err) {
+        results.push({ gameId: entry.gameId, success: false, error: err.message });
+      }
     }
+
     return results;
   }
 }
 
 export const leaderboardService = new LeaderboardService();
-

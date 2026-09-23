@@ -97,19 +97,16 @@ test('AC-3: RetroactiveImportModalScene safely instantiates and defines allowed 
   assert.ok(ALLOWED_CHARS.includes('★'));
 });
 
-test('AC-5: Version 1.2.0 consistency across package.json, src/version.js, and CHANGELOG.md', () => {
-  // Check version.js
-  assert.equal(APP_VERSION, '1.2.0');
-
+test('AC-5: Version consistency across package.json, src/version.js, and CHANGELOG.md', () => {
   // Check package.json
   const pkgPath = path.join(rootDir, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-  assert.equal(pkg.version, '1.2.0');
+  assert.equal(APP_VERSION, pkg.version);
 
   // Check CHANGELOG.md
   const changelogPath = path.join(rootDir, 'CHANGELOG.md');
   const changelog = fs.readFileSync(changelogPath, 'utf8');
-  assert.ok(changelog.includes('## [1.2.0] - 2026-09-22'), 'CHANGELOG.md must document version 1.2.0');
+  assert.ok(changelog.includes(`## [${APP_VERSION}]`), `CHANGELOG.md must document version ${APP_VERSION}`);
   assert.ok(changelog.includes('Retroactive Local High Scores Migration'), 'CHANGELOG.md must describe retroactive scores migration');
   assert.ok(changelog.includes('Full Button Hitbox Fix'), 'CHANGELOG.md must describe button hitbox fix');
 });

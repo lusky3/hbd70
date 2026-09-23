@@ -45,6 +45,7 @@ def run_arcade_e2e():
                             "gameId": "tanks",
                             "rank": 1,
                             "initials": "AL7",
+                            "fullName": "Allan 70th",
                             "score": 70000,
                             "detail": "Level 70 Beaten"
                         })
@@ -57,8 +58,8 @@ def run_arcade_e2e():
                             "success": True,
                             "gameId": "tanks",
                             "results": [
-                                {"rank": 1, "initials": "AL7", "score": 70000, "detail": "Level 70 Beaten", "created_at": "2026-09-22T00:00:00Z"},
-                                {"rank": 2, "initials": "COD", "score": 65000, "detail": "Level 65", "created_at": "2026-09-22T00:00:00Z"}
+                                {"rank": 1, "initials": "AL7", "fullName": "Allan 70th", "score": 70000, "detail": "Level 70 Beaten", "created_at": "2026-09-22T00:00:00Z"},
+                                {"rank": 2, "initials": "COD", "fullName": "Cody Lusk", "score": 65000, "detail": "Level 65", "created_at": "2026-09-22T00:00:00Z"}
                             ]
                         })
                     )
@@ -79,13 +80,13 @@ def run_arcade_e2e():
             page.mouse.click(240, 400)
             time.sleep(0.5)
 
-            # 3. Verify GameSelect Scene & Version v1.2.0
+            # 3. Verify GameSelect Scene & Version v1.3.0
             game_select_state = page.evaluate("""() => {
                 const gs = window.game.scene.getScene('GameSelect');
                 if (!gs || !gs.scene.isActive()) return { active: false };
                 const textObjects = gs.children.list.filter(c => c.type === 'Text');
                 const texts = textObjects.map(t => t.text);
-                const hasVersion = texts.some(t => t.includes('v1.2.0'));
+                const hasVersion = texts.some(t => t.includes('v1.3.0'));
                 return {
                     active: true,
                     hasVersion: hasVersion,
@@ -93,7 +94,7 @@ def run_arcade_e2e():
                 };
             }""")
             assert game_select_state["active"], f"GameSelectScene must be active after splash tap, got {game_select_state}"
-            assert game_select_state["hasVersion"], f"GameSelectScene must display v1.2.0 in footer, got {game_select_state}"
+            assert game_select_state["hasVersion"], f"GameSelectScene must display v1.3.0 in footer, got {game_select_state}"
 
             # 3b. Verify Credits Scene strings (Parry Sound, [IN SPIRIT], QA Testers)
             print("[E2E] Testing Credits Scene Strings...")
@@ -133,13 +134,22 @@ def run_arcade_e2e():
             lb_modal_state = page.evaluate("""() => {
                 const lb = window.game.scene.getScene('LeaderboardModal');
                 if (!lb || !lb.scene.isActive()) return { active: false };
-                const texts = lb.children.list.filter(c => c.type === 'Text').map(t => t.text);
+                const texts = [];
+                function findTexts(obj) {
+                    if (obj.text) texts.push(obj.text);
+                    if (obj.list && Array.isArray(obj.list)) {
+                        obj.list.forEach(findTexts);
+                    }
+                }
+                lb.children.list.forEach(findTexts);
                 const hasTitle = texts.some(t => t && t.includes('ALLAN ARCADE TOP 10'));
                 const hasDate = texts.some(t => t && t.includes('DATE'));
+                const hasSetTagBtn = texts.some(t => t && t.includes('SET TAG/NAME'));
                 return {
                     active: true,
                     hasTitle: hasTitle,
                     hasDate: hasDate,
+                    hasSetTagBtn: hasSetTagBtn,
                     activeGameId: lb.activeGameId,
                     tabCount: lb.tabButtons ? lb.tabButtons.length : 0
                 };
@@ -147,7 +157,41 @@ def run_arcade_e2e():
             assert lb_modal_state["active"], "LeaderboardModal must be active after clicking High Scores button on left edge"
             assert lb_modal_state["hasTitle"], "LeaderboardModal must render top title"
             assert lb_modal_state["hasDate"], "LeaderboardModal must render DATE column header"
+            assert lb_modal_state["hasSetTagBtn"], "LeaderboardModal must feature SET TAG/NAME action button"
             assert lb_modal_state["tabCount"] == 4, f"LeaderboardModal must feature 4 tabs, got {lb_modal_state['tabCount']}"
+
+            # Verify tooltip display
+            tooltip_visible = page.evaluate("""() => {
+                const lb = window.game.scene.getScene('LeaderboardModal');
+                lb.showTooltip(240, 300, 'AL7', 'Allan 70th');
+                return lb.tooltipContainer && lb.tooltipContainer.visible;
+            }""")
+            assert tooltip_visible, "Leaderboard tooltip must become visible on showTooltip call"
+            page.evaluate("() => window.game.scene.getScene('LeaderboardModal').hideTooltip()")
+
+            # Test launching InitialsEntryOverlay in profile mode
+            page.evaluate("""() => {
+                const lb = window.game.scene.getScene('LeaderboardModal');
+                lb.scene.launch('InitialsEntryOverlay', { mode: 'profile', returnScene: 'LeaderboardModal' });
+            }""")
+            time.sleep(0.4)
+
+            profile_overlay_state = page.evaluate("""() => {
+                const overlay = window.game.scene.getScene('InitialsEntryOverlay');
+                if (!overlay || !overlay.scene.isActive()) return { active: false };
+                return {
+                    active: true,
+                    mode: overlay.mode,
+                    hasProfileHeader: !!overlay.children.list.find(c => c.text && c.text.includes('PLAYER PROFILE'))
+                };
+            }""")
+            assert profile_overlay_state["active"], "InitialsEntryOverlay must open from LeaderboardModal"
+            assert profile_overlay_state["mode"] == "profile", "InitialsEntryOverlay must be in profile mode"
+            assert profile_overlay_state["hasProfileHeader"], "InitialsEntryOverlay must display PLAYER PROFILE header"
+
+            # Close profile overlay
+            page.evaluate("() => window.game.scene.getScene('InitialsEntryOverlay').scene.stop()")
+            time.sleep(0.3)
 
             # Switch tabs to Asteroids
             page.evaluate("""() => {
