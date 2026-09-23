@@ -6,8 +6,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#1a1a24" />
-  <title>Birthday Tanks! — Allan's 70th Birthday</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>" />
+  <title>Classic Arcade</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <meta name="application-name" content="Classic Arcade" />
+  <meta name="apple-mobile-web-app-title" content="Classic Arcade" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
   <style>
     * {
       box-sizing: border-box;
@@ -45,7 +49,25 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.87.0/dist/phaser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="./vendor/qrcode.min.js"></script>
+  <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.warn('[PWA] SW register warning:', err);
+        });
+      });
+    }
+
+    // PWA Native Install Prompt Hook
+    window.deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.deferredInstallPrompt = e;
+      window.dispatchEvent(new CustomEvent('pwa-install-ready'));
+    });
+  </script>
 </head>
 <body>
   <div id="game-container"></div>

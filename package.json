@@ -1,8 +1,8 @@
 {
   "name": "hbd70",
   "private": true,
-  "version": "1.4.2",
-  "description": "Birthday Tanks! — Allan Lusk's 70th Birthday Edition",
+  "version": "1.5.0",
+  "description": "Classic Arcade — Allan Lusk's 70th Birthday Retro Collection",
   "type": "module",
   "scripts": {
     "start": "npx serve .",

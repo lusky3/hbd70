@@ -15,9 +15,9 @@
   - Task Isolation: `.agentcortex/context/work/<worklog-key>.md`
   - Active Work Log Path: derive <worklog-key> from the raw branch name using filesystem-safe normalization before any gate checks.
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
-- **Last Updated**: 2026-09-22
-- **Last Verified**: 2026-09-22
-- **Update Sequence**: 12
+- **Last Updated**: 2026-09-23
+- **Last Verified**: 2026-09-23
+- **Update Sequence**: 13
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -32,6 +32,7 @@
   - docs/specs/arcade-retroactive-scores-and-button-hitbox.md: Allan's 70th Birthday Arcade: Retroactive Scores Import & Button Hitbox Polish [status: shipped] [Updated: 2026-09-22]
   - docs/specs/arcade-player-name-and-profanity-filter.md: Allan's 70th Birthday Arcade: Player Full Name, Tag Setting & Profanity Filter [status: shipped] [Updated: 2026-09-22]
   - docs/specs/multi-device-multiplayer.md: Allan's 70th Birthday Arcade: Multi-Device Real-Time Multiplayer [status: shipped] [Updated: 2026-09-22]
+  - docs/specs/multiplayer-lobby-polish-and-pwa.md: Allan's 70th Birthday Arcade: Multiplayer Lobby Polish, Host Controls & PWA [status: shipped] [Updated: 2026-09-23]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -77,6 +78,10 @@
 
 ## Ship History
 
+### Ship-main-2026-09-23-multiplayer-polish-pwa
+- Feature shipped: Allan's 70th Birthday Arcade: Multiplayer Lobby Polish, Host Controls & PWA (v1.5.0) — Alphanumeric keyboard input and mouse wheel slot scrolling for 4-character join code; local vendored QRCode library (vendor/qrcode.min.js) with Canvas rendering and URL query auto-join; title unified to "Classic Arcade"; mobile PWA web app manifest with standalone display, service worker caching (sw.js), and beforeinstallprompt install button in SplashScene; fixed Create Room vs Join Room mode switch loopback; decoupled Start Match interactive zone in MultiplayerLobbyScene; derived host profile from High Score storage (tag + name); live lobby chat box with timestamps, quick-chat chips, and profanity filtering; host kick controls with non-occluded hitbox, right-click, and long-press; version bump to v1.5.0 in package.json, version.js, and CHANGELOG.md.
+- Tests: Pass (96/96 node unit tests + Playwright dual-browser multiplayer E2E + Playwright 9-gap verification suite + single-player arcade E2E regression suite passing with 0 errors + ACX validator 113 PASS)
+
 ### Ship-main-2026-09-22-back-button-hotspot
 - Feature shipped: Allan's 70th Birthday Arcade: Back Button & UI Control Hotspot Geometry Polish — Replaced container setSize/setInteractive with centered Phaser.GameObjects.Zone instances across GameSelect, Credits, LevelSelect, Pong, SpaceInvaders, Asteroids, LeaderboardModal, and Splash scenes, eliminating coordinate clipping and restoring 100% surface area clickability across all Back, Menu, Mute, and navigation controls; bumped version to v1.4.2 in package.json, version.js, and CHANGELOG.md.
 - Tests: Pass (91/91 node unit tests + Playwright dual-browser multiplayer E2E + single-player arcade E2E regression passing with 0 console errors + ACX validator 113 PASS)
@@ -112,9 +117,3 @@
 ### Ship-main-2026-09-19-player-status
 - Feature shipped: Player Progress Retention & Level Select Status Preservation — Complete backwards compatibility for stored player progress in `localStorage`, auto-repair of legacy profiles with missing `beatenLevels`, in-place title discovery persistence via `revealedLevels`, fixed `LevelSelectScene` to correctly treat all unlocked levels as playable with milestone titles and `PLAY ▶` tag, and preserved difficulty/cheat settings across game over retries.
 - Tests: Pass (34/34 node unit tests + headless browser module validation + ACX validator 113 PASS)
-
-### Ship-main-2026-09-19-cheats
-- Feature shipped: Secret Cheats, Level Select Discovery, Spawn Invincibility & CPU Speed Control — Triple-tap level select milestone discovery in-place, secret 3-tap godmode invincibility cheat in top-right corner with golden aura and toast, secret downward swipe auto rapid-fire cheat (80ms cooldown, 12 bullet cap), 3000ms spawn/respawn invulnerability with flashing indicator, and interactive CPU speed slider (0.25x - 2.0x) scaling enemy speed and firing rates.
-- Tests: Pass (31/31 node unit tests + headless browser HTTP 200 canvas validation + ACX validator 113 PASS)
-
-

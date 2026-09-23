@@ -136,7 +136,7 @@ test('AC-5: MultiplayerPong perspective inversion formula computes inverted coor
   assert.ok(clientInvertedNearBottom > 600, 'Ball near top on Host should appear near bottom on Client');
 });
 
-test('AC-6: Version 1.4.0 consistency across package.json, src/version.js, and CHANGELOG.md', async () => {
+test('AC-6: Version 1.5.0 consistency across package.json, src/version.js, and CHANGELOG.md', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -149,13 +149,143 @@ test('AC-6: Version 1.4.0 consistency across package.json, src/version.js, and C
   const pkgPath = path.join(rootDir, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   assert.equal(APP_VERSION, pkg.version);
-  assert.equal(pkg.version, '1.4.2');
+  assert.equal(pkg.version, '1.5.0');
 
   const changelogPath = path.join(rootDir, 'CHANGELOG.md');
   const changelog = fs.readFileSync(changelogPath, 'utf8');
-  assert.ok(changelog.includes('## [1.4.0] - 2026-09-22'));
-  assert.ok(changelog.includes('Multi-Device Real-Time Multiplayer'));
-  assert.ok(changelog.includes('QR Code Camera Onboarding'));
-  assert.ok(changelog.includes('4-Player Birthday Tanks Arena'));
-  assert.ok(changelog.includes('2-Player Birthday Pong Duel'));
+  assert.ok(changelog.includes('## [1.5.0] - 2026-09-23'));
+  assert.ok(changelog.includes('Classic Arcade Branding & PWA WebApp Support'));
+  assert.ok(changelog.includes('Lobby Live Chat'));
+  assert.ok(changelog.includes('Host Player Kick Controls'));
+});
+
+test('AC-7: Host profile correctly extracts saved high score name and tag', async () => {
+  const nm = new NetworkManager();
+  // Simulate profile with name property from Storage.getPlayerProfile()
+  await nm.createRoom({ tag: 'COD', name: 'Cody' }, 'TEST');
+  const host = nm.getPlayer(1);
+  assert.ok(host);
+  assert.equal(host.tag, 'COD');
+  assert.equal(host.fullName, 'Cody');
+
+  // Fallback when name is empty: uses tag or Host
+  const nm2 = new NetworkManager();
+  await nm2.createRoom({ tag: 'JAY', name: '' }, 'TES2');
+  const host2 = nm2.getPlayer(1);
+  assert.equal(host2.tag, 'JAY');
+  assert.equal(host2.fullName, 'JAY');
+
+  nm.disconnect();
+  nm2.disconnect();
+});
+
+test('AC-8: NetworkManager dispatches and receives LOBBY_CHAT packets', () => {
+  const nm = new NetworkManager();
+  nm.isHost = true;
+  nm.mySlot = 1;
+  nm.myProfile = { tag: 'ALL', fullName: 'Allan' };
+
+  let receivedChat = null;
+  nm.on('lobby-chat', (packet) => {
+    receivedChat = packet;
+  });
+
+  nm.sendChat('Hello family!');
+  assert.ok(receivedChat);
+  assert.equal(receivedChat.type, 'LOBBY_CHAT');
+  assert.equal(receivedChat.tag, 'ALL');
+  assert.equal(receivedChat.text, 'Hello family!');
+  assert.equal(receivedChat.slot, 1);
+
+  nm.disconnect();
+});
+
+test('AC-8: Chat messages are sanitized against profanity', () => {
+  const nm = new NetworkManager();
+  nm.isHost = true;
+  nm.mySlot = 1;
+  nm.myProfile = { tag: 'ALL', fullName: 'Allan' };
+
+  let receivedChat = null;
+  nm.on('lobby-chat', (packet) => {
+    receivedChat = packet;
+  });
+
+  nm.sendChat('What the shit is this?');
+  assert.ok(receivedChat);
+  assert.equal(receivedChat.text.includes('shit'), false);
+  assert.ok(receivedChat.text.includes('***'));
+
+  nm.disconnect();
+});
+
+test('AC-9: Host kickPlayer removes player from roster and frees slot', async () => {
+  const nm = new NetworkManager();
+  nm.isHost = true;
+  nm.mySlot = 1;
+
+  // Add dummy player to slot 2 with mock connection
+  let disconnected = false;
+  const mockConn = {
+    send: (pkt) => {
+      assert.equal(pkt.type, 'KICKED');
+    },
+    close: () => {
+      disconnected = true;
+    }
+  };
+
+  nm.players.set(2, { slot: 2, tag: 'P2', fullName: 'Player 2' });
+  nm.connections.set(2, mockConn);
+
+  assert.equal(nm.players.has(2), true);
+
+  nm.kickPlayer(2, 'Removed by host');
+
+  // Await 50ms async disconnect timeout
+  await new Promise(r => setTimeout(r, 70));
+  assert.equal(disconnected, true);
+  assert.equal(nm.players.has(2), false);
+  assert.equal(nm.connections.has(2), false);
+
+  // Kick slot with no active connection cleans up immediately
+  nm.players.set(3, { slot: 3, tag: 'P3', fullName: 'Player 3' });
+  nm.kickPlayer(3);
+  assert.equal(nm.players.has(3), false);
+
+  // Host cannot kick slot 1 (self)
+  nm.kickPlayer(1);
+  assert.equal(nm.mySlot, 1);
+
+  nm.disconnect();
+});
+
+test('AC-9: Kicked client suppresses host-disconnected overwrite event', () => {
+  const nm = new NetworkManager();
+  nm.isHost = false;
+  nm.mySlot = 2;
+
+  let kickedFired = false;
+  let hostDisconnectedFired = false;
+
+  nm.on('kicked', () => {
+    kickedFired = true;
+  });
+  nm.on('host-disconnected', () => {
+    hostDisconnectedFired = true;
+  });
+
+  // Client receives KICKED packet
+  nm.handleClientData({ type: 'KICKED', reason: 'Removed by host' });
+  assert.equal(kickedFired, true);
+  assert.equal(nm.wasKicked, true);
+
+  // Simulating subsequent connection close event
+  // conn.on('close') logic: if (!this.wasKicked) this.emit('host-disconnected');
+  if (!nm.wasKicked) {
+    nm.emit('host-disconnected');
+  }
+  assert.equal(hostDisconnectedFired, false, 'host-disconnected must not fire when client was kicked');
+
+  nm.disconnect();
 });

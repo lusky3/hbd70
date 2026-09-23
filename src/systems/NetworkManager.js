@@ -2,6 +2,8 @@
 // PeerJS WebRTC P2P DataChannel networking manager for Allan's 70th Birthday Arcade
 // Implements Host-Authoritative Star Topology, room code generation, and heartbeat
 
+import { censorText } from '../utils/ProfanityFilter.js';
+
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excludes 0, O, 1, I
 const PEER_PREFIX = 'hbd70-room-';
 const HEARTBEAT_INTERVAL = 2000;
@@ -21,6 +23,7 @@ export class NetworkManager {
     this.heartbeatTimer = null;
     this.lastReceivedTime = new Map(); // slot => timestamp
     this.clientInputs = new Map(); // slot => latest input packet
+    this.wasKicked = false;
   }
 
   // --- Event Emitter ---
@@ -67,11 +70,14 @@ export class NetworkManager {
   // --- Host Room Creation ---
   async createRoom(profile = {}, requestedCode = null) {
     this.disconnect();
+    this.wasKicked = false;
     this.isHost = true;
     this.mySlot = 1;
+    const hostTag = (profile.tag || 'ALL').toUpperCase().slice(0, 3);
+    const hostName = (profile.fullName || profile.name || '').trim();
     this.myProfile = {
-      tag: (profile.tag || 'ALL').toUpperCase().slice(0, 3),
-      fullName: (profile.fullName || 'Allan').slice(0, 24)
+      tag: hostTag,
+      fullName: (hostName || (hostTag !== 'ALL' ? hostTag : 'Allan')).slice(0, 24)
     };
 
     this.roomCode = requestedCode ? NetworkManager.sanitizeRoomCode(requestedCode) : NetworkManager.generateRoomCode();
@@ -138,11 +144,14 @@ export class NetworkManager {
   // --- Join Room as Client ---
   async joinRoom(roomCode, profile = {}) {
     this.disconnect();
+    this.wasKicked = false;
     this.isHost = false;
     this.roomCode = NetworkManager.sanitizeRoomCode(roomCode);
+    const clientTag = (profile.tag || 'P2').toUpperCase().slice(0, 3);
+    const clientName = (profile.fullName || profile.name || '').trim();
     this.myProfile = {
-      tag: (profile.tag || 'P2').toUpperCase().slice(0, 3),
-      fullName: (profile.fullName || '').slice(0, 24)
+      tag: clientTag,
+      fullName: (clientName || (clientTag !== 'P2' ? clientTag : 'Guest')).slice(0, 24)
     };
 
     const hostPeerId = `${PEER_PREFIX}${this.roomCode}`;
@@ -188,7 +197,9 @@ export class NetworkManager {
           });
 
           conn.on('close', () => {
-            this.emit('host-disconnected');
+            if (!this.wasKicked) {
+              this.emit('host-disconnected');
+            }
             this.disconnect();
           });
 
@@ -307,6 +318,24 @@ export class NetworkManager {
         return;
       }
 
+      if (packet.type === 'LOBBY_CHAT') {
+        const verifiedSlot = this.getSlotByConnection(conn);
+        if (!verifiedSlot) return;
+        const sender = this.players.get(verifiedSlot);
+        const rawText = String(packet.text || '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, 50);
+        const chatPacket = {
+          type: 'LOBBY_CHAT',
+          slot: verifiedSlot,
+          tag: sender?.tag || `P${verifiedSlot}`,
+          name: sender?.fullName || '',
+          text: censorText(rawText),
+          timestamp: Date.now()
+        };
+        this.broadcast(chatPacket);
+        this.emit('lobby-chat', chatPacket);
+        return;
+      }
+
       // Custom game events (H-01 defense)
       if (packet.type === 'EVENT') {
         const verifiedSlot = this.getSlotByConnection(conn);
@@ -393,6 +422,18 @@ export class NetworkManager {
       return;
     }
 
+    if (packet.type === 'LOBBY_CHAT') {
+      this.emit('lobby-chat', packet);
+      return;
+    }
+
+    if (packet.type === 'KICKED') {
+      this.wasKicked = true;
+      this.emit('kicked', packet);
+      this.disconnect();
+      return;
+    }
+
     if (packet.type === 'EVENT') {
       this.emit('network-event', packet);
     }
@@ -427,6 +468,53 @@ export class NetworkManager {
     };
     this.broadcast(packet);
     this.emit('game-start', packet);
+  }
+
+  kickPlayer(slot, reason = 'Removed by host') {
+    if (!this.isHost || slot <= 1) return;
+    const conn = this.connections.get(slot);
+    const player = this.players.get(slot);
+    if (conn) {
+      try {
+        conn.send({ type: 'KICKED', reason });
+      } catch {}
+      setTimeout(() => {
+        try { conn.close(); } catch {}
+        this.players.delete(slot);
+        this.connections.delete(slot);
+        this.clientInputs.delete(slot);
+        this.lastReceivedTime.delete(slot);
+        this.broadcastLobbyState();
+        this.emit('player-left', { slot, player });
+      }, 50);
+    } else {
+      this.players.delete(slot);
+      this.connections.delete(slot);
+      this.clientInputs.delete(slot);
+      this.lastReceivedTime.delete(slot);
+      this.broadcastLobbyState();
+      this.emit('player-left', { slot, player });
+    }
+  }
+
+  sendChat(text) {
+    let cleanText = (typeof text === 'string' ? text.replace(/[\r\n\t]+/g, ' ').trim() : '').slice(0, 50);
+    if (!cleanText) return;
+    cleanText = censorText(cleanText);
+    const packet = {
+      type: 'LOBBY_CHAT',
+      slot: this.mySlot,
+      tag: this.myProfile?.tag || (this.isHost ? 'HOST' : `P${this.mySlot}`),
+      name: this.myProfile?.fullName || '',
+      text: cleanText,
+      timestamp: Date.now()
+    };
+    if (this.isHost) {
+      this.broadcast(packet);
+      this.emit('lobby-chat', packet);
+    } else if (this.hostConn && this.hostConn.open) {
+      this.hostConn.send(packet);
+    }
   }
 
   broadcastSnapshot(snapshot) {
@@ -538,6 +626,7 @@ export class NetworkManager {
     }
     this.players.clear();
     this.clientInputs.clear();
+    this.lastReceivedTime.clear();
     this.isHost = false;
     this.roomCode = null;
     this.mySlot = 1;

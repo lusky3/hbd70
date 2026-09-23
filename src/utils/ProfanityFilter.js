@@ -127,5 +127,28 @@ export function validatePlayerIdentity(tag, fullName) {
   return { valid: true };
 }
 
+export function censorText(text) {
+  if (!text || typeof text !== 'string') return '';
+  if (isProfaneText(text)) {
+    const tokens = text.split(/(\s+|[.,!?;:])/);
+    let replacedAny = false;
+    const censored = tokens.map(token => {
+      if (!token || !token.trim()) return token;
+      const stripped = token.replace(/[^a-zA-Z0-9@$4501!387]/g, '');
+      if (stripped && (isProfaneText(stripped) || isProfaneTag(stripped))) {
+        replacedAny = true;
+        return '***';
+      }
+      return token;
+    });
+    if (replacedAny) {
+      return censored.join('');
+    }
+    return '***';
+  }
+  return text;
+}
+
 // AC-4 alias requirement
 export const validate = validatePlayerIdentity;
+

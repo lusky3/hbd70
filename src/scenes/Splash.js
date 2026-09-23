@@ -161,6 +161,53 @@ export class SplashScene extends Phaser.Scene {
     fullScreenZone.on('pointerdown', launchGameSelect);
     this.input.keyboard?.on('keydown', launchGameSelect);
 
+    // 5.5 PWA "Install as App" Button (Mobile browser install prompt)
+    const checkInstallPrompt = () => {
+      if (typeof window !== 'undefined' && window.deferredInstallPrompt && !this.installBtn) {
+        const iBtnW = 180;
+        const iBtnH = 32;
+        this.installBtn = this.add.container(width / 2, height - 58);
+        const iBg = this.add.graphics();
+        iBg.fillStyle(0x0284c7, 1);
+        iBg.fillRoundedRect(-iBtnW / 2, -iBtnH / 2, iBtnW, iBtnH, 8);
+        iBg.lineStyle(1.5, 0x38bdf8, 1);
+        iBg.strokeRoundedRect(-iBtnW / 2, -iBtnH / 2, iBtnW, iBtnH, 8);
+        this.installBtn.add(iBg);
+
+        const iText = this.add.text(0, 0, '📲 INSTALL AS APP', {
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          color: '#ffffff',
+          letterSpacing: 1
+        }).setOrigin(0.5);
+        this.installBtn.add(iText);
+
+        const iZone = this.add.zone(0, 0, iBtnW, iBtnH).setInteractive({ useHandCursor: true });
+        this.installBtn.add(iZone);
+        iZone.on('pointerdown', (pointer) => {
+          pointer?.event?.stopPropagation?.();
+          if (window.deferredInstallPrompt) {
+            window.deferredInstallPrompt.prompt().then(() => {
+              window.deferredInstallPrompt = null;
+              if (this.installBtn) {
+                this.installBtn.destroy();
+                this.installBtn = null;
+              }
+            });
+          }
+        });
+      }
+    };
+
+    checkInstallPrompt();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pwa-install-ready', checkInstallPrompt);
+      this.events.once('shutdown', () => {
+        window.removeEventListener('pwa-install-ready', checkInstallPrompt);
+      });
+    }
+
     // 6. Small "Credits" Link in Bottom Right
     const creditsLink = this.add.container(width - 20, height - 22);
     const creditsText = this.add.text(0, 0, 'Credits 📜', {

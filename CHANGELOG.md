@@ -5,6 +5,20 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-23
+
+### Added
+- **Classic Arcade Branding & PWA WebApp Support**: Updated title to "Classic Arcade", added PWA manifest (`manifest.webmanifest`), offline service worker (`sw.js`), high-resolution app icons, and native mobile "Install as App" prompt integration on the Splash screen.
+- **Lobby Live Chat**: Bi-directional real-time lobby chat over WebRTC DataChannels with quick-chat reaction bubbles (`👋 Hello!`, `👍 Ready!`, `🔥 Let's play!`, `🕹️ Change game!`) and custom message input with profanity filtering.
+- **Host Player Kick Controls**: Room host can remove unwanted players from slots 2-4 via explicit `✕` button, desktop right-click, or mobile long-press (500ms).
+- **Keyboard & Mouse Wheel Room Code Input**: Players joining a multiplayer game can type directly via physical PC keyboard or mobile keyboard, navigate slots with arrow keys, and scroll the mouse wheel over slots to cycle characters.
+- **Host Screen QR Code Rendering**: Vendored `vendor/qrcode.min.js` to ensure the host screen renders an instant high-contrast QR code for seamless camera scanning on mobile phones.
+
+### Fixed
+- **Host Player Profile Identity**: Host slot 1 now accurately displays the player's saved high score profile name and tag (from `Storage.getPlayerProfile()`) rather than defaulting to "Allan".
+- **Multiplayer Start Game Button**: Fixed bug where clicking "START GAME" was unresponsive due to `removeAll(true)` wiping out the button's interactive zone; decoupled visual state from the persistent click zone.
+- **Create Room vs Join Room Mode Switching**: Fixed bug where switching from Join Room to Create Room kept displaying the Join screen due to an internal `host-disconnected` loopback trigger.
+
 ## [1.4.2] - 2026-09-22
 
 ### Fixed

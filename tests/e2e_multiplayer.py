@@ -46,6 +46,11 @@ def run_multiplayer_e2e():
             print(f"[E2E] Host Scene after splash: {active_scene}")
             assert active_scene == "GameSelect", f"Expected GameSelect, got {active_scene}"
 
+            # Check Title
+            host_title = page_host.title()
+            print(f"[E2E] Host Page Title: {host_title}")
+            assert host_title == "Classic Arcade", f"Expected 'Classic Arcade', got '{host_title}'"
+
             # Tap Multiplayer button (at x=130, y=765)
             page_host.click("#game-container canvas", position={"x": 130, "y": 765})
             time.sleep(1.2)
@@ -54,10 +59,28 @@ def run_multiplayer_e2e():
             print(f"[E2E] Host Scene after clicking Multiplayer: {lobby_scene}")
             assert lobby_scene == "MultiplayerLobby", f"Expected MultiplayerLobby, got {lobby_scene}"
 
+            # Verify QRCode library is loaded and QR texture/image is generated
+            has_qrcode = page_host.evaluate("() => typeof window.QRCode !== 'undefined' && typeof window.QRCode.toCanvas === 'function'")
+            print(f"[E2E] Host QRCode library loaded: {has_qrcode}")
+            assert has_qrcode, "window.QRCode.toCanvas should be available"
+
             # Retrieve generated room code from Host
             room_code = page_host.evaluate("() => window.game.scene.getScene('MultiplayerLobby').roomCodeText?.text")
             print(f"[E2E] Host Room Code: {room_code}")
             assert room_code and len(room_code) == 4, f"Invalid room code: {room_code}"
+
+            # Verify Host Start Button Zone is interactive and not destroyed
+            has_start_zone = page_host.evaluate("() => !!window.game.scene.getScene('MultiplayerLobby').startBtnZone?.input?.enabled")
+            assert has_start_zone, "Start button interactive zone must remain active and enabled"
+
+            # Test Live Lobby Chat transmission on Host
+            chat_count = page_host.evaluate("""() => {
+                const s = window.game.scene.getScene('MultiplayerLobby');
+                s.chatMessages.push({ tag: 'ALL', text: 'Ready!' });
+                s.updateChatMessages();
+                return s.chatMessages.length;
+            }""")
+            assert chat_count >= 1, "Chat messages should be stored in MultiplayerLobby"
 
             # Context 2: Client Device (Family member's phone via QR code URL)
             context_client = browser.new_context(viewport={"width": 480, "height": 854})

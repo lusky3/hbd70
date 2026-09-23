@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#facc15" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+    <linearGradient id="cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="104" fill="url(#bg)" stroke="#38bdf8" stroke-width="12" />
+
+  <!-- Arcade Screen Border -->
+  <rect x="56" y="56" width="400" height="400" rx="48" fill="#090d16" stroke="#475569" stroke-width="6" />
+
+  <!-- Neon Glowing Header Line -->
+  <line x1="80" y1="120" x2="432" y2="120" stroke="#38bdf8" stroke-width="4" stroke-dasharray="8 4" />
+
+  <!-- Arcade Joystick Base -->
+  <rect x="180" y="320" width="152" height="72" rx="16" fill="#1e293b" stroke="#38bdf8" stroke-width="4" />
+  <circle cx="216" cy="356" r="16" fill="#f87171" stroke="#ef4444" stroke-width="3" />
+  <circle cx="260" cy="356" r="16" fill="#4ade80" stroke="#22c55e" stroke-width="3" />
+  <circle cx="304" cy="356" r="16" fill="#facc15" stroke="#eab308" stroke-width="3" />
+
+  <!-- Joystick Stick & Ball -->
+  <rect x="250" y="240" width="12" height="70" rx="6" fill="#94a3b8" />
+  <circle cx="256" cy="226" r="28" fill="#ef4444" stroke="#f87171" stroke-width="4" />
+
+  <!-- "70" Pixel/Retro Typography -->
+  <text x="256" y="180" font-family="system-ui, -apple-system, sans-serif" font-size="80" font-weight="900" fill="url(#gold)" text-anchor="middle" letter-spacing="4">70</text>
+
+  <!-- Subtitle -->
+  <text x="256" y="440" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold" fill="#38bdf8" text-anchor="middle" letter-spacing="6">ARCADE</text>
+</svg>
