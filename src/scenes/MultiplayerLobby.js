@@ -126,8 +126,14 @@ export class MultiplayerLobbyScene extends SceneBase {
     this.hostTabBtn = this.add.container(width / 2 - btnW / 2 - 6, y);
     this.joinTabBtn = this.add.container(width / 2 + btnW / 2 + 6, y);
 
-    this.updateModeToggleVisuals();
-
+    this.hostTabBg = this.add.graphics();
+    this.hostTabBtn.add(this.hostTabBg);
+    this.hostTabLabel = this.add.text(0, 0, '👑 CREATE ROOM', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      fontWeight: 'bold'
+    }).setOrigin(0.5);
+    this.hostTabBtn.add(this.hostTabLabel);
     const hostZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
     this.hostTabBtn.add(hostZone);
     hostZone.on('pointerdown', () => {
@@ -139,6 +145,14 @@ export class MultiplayerLobbyScene extends SceneBase {
       }
     });
 
+    this.joinTabBg = this.add.graphics();
+    this.joinTabBtn.add(this.joinTabBg);
+    this.joinTabLabel = this.add.text(0, 0, '📱 JOIN ROOM', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      fontWeight: 'bold'
+    }).setOrigin(0.5);
+    this.joinTabBtn.add(this.joinTabLabel);
     const joinZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
     this.joinTabBtn.add(joinZone);
     joinZone.on('pointerdown', () => {
@@ -149,47 +163,33 @@ export class MultiplayerLobbyScene extends SceneBase {
         this.showJoinPanel(this.scale.width, this.scale.height);
       }
     });
+
+    this.updateModeToggleVisuals();
   }
 
   updateModeToggleVisuals() {
     const btnW = 160;
     const btnH = 34;
-
-    // Host Tab
-    this.hostTabBtn.removeAll(true);
-    const hostBg = this.add.graphics();
     const isHostActive = this.currentMode === 'host';
-    hostBg.fillStyle(isHostActive ? 0x0369a1 : 0x1e293b, 1);
-    hostBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-    hostBg.lineStyle(1.5, isHostActive ? 0x38bdf8 : 0x475569, 1);
-    hostBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-    this.hostTabBtn.add(hostBg);
-
-    const hostLabel = this.add.text(0, 0, '👑 CREATE ROOM', {
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '12px',
-      fontWeight: 'bold',
-      color: isHostActive ? '#ffffff' : '#94a3b8'
-    }).setOrigin(0.5);
-    this.hostTabBtn.add(hostLabel);
-
-    // Join Tab
-    this.joinTabBtn.removeAll(true);
-    const joinBg = this.add.graphics();
     const isJoinActive = this.currentMode === 'join';
-    joinBg.fillStyle(isJoinActive ? 0x0369a1 : 0x1e293b, 1);
-    joinBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-    joinBg.lineStyle(1.5, isJoinActive ? 0x38bdf8 : 0x475569, 1);
-    joinBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-    this.joinTabBtn.add(joinBg);
 
-    const joinLabel = this.add.text(0, 0, '📱 JOIN ROOM', {
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '12px',
-      fontWeight: 'bold',
-      color: isJoinActive ? '#ffffff' : '#94a3b8'
-    }).setOrigin(0.5);
-    this.joinTabBtn.add(joinLabel);
+    if (this.hostTabBg && this.hostTabLabel) {
+      this.hostTabBg.clear();
+      this.hostTabBg.fillStyle(isHostActive ? 0x0369a1 : 0x1e293b, 1);
+      this.hostTabBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+      this.hostTabBg.lineStyle(1.5, isHostActive ? 0x38bdf8 : 0x475569, 1);
+      this.hostTabBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+      this.hostTabLabel.setColor(isHostActive ? '#ffffff' : '#94a3b8');
+    }
+
+    if (this.joinTabBg && this.joinTabLabel) {
+      this.joinTabBg.clear();
+      this.joinTabBg.fillStyle(isJoinActive ? 0x0369a1 : 0x1e293b, 1);
+      this.joinTabBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+      this.joinTabBg.lineStyle(1.5, isJoinActive ? 0x38bdf8 : 0x475569, 1);
+      this.joinTabBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+      this.joinTabLabel.setColor(isJoinActive ? '#ffffff' : '#94a3b8');
+    }
   }
 
   // ==========================================
@@ -299,46 +299,48 @@ export class MultiplayerLobbyScene extends SceneBase {
     const tanksBtn = this.add.container(width / 2 - btnW / 2 - 4, y);
     const pongBtn = this.add.container(width / 2 + btnW / 2 + 4, y);
 
+    const tBg = this.add.graphics();
+    tanksBtn.add(tBg);
+    const tLabel = this.add.text(0, 0, '🎮 TANKS ARENA (2-4P)', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold'
+    }).setOrigin(0.5);
+    tanksBtn.add(tLabel);
+    const tZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
+    tanksBtn.add(tZone);
+
+    const pBg = this.add.graphics();
+    pongBtn.add(pBg);
+    const pLabel = this.add.text(0, 0, '🏓 PONG DUEL (2P)', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold'
+    }).setOrigin(0.5);
+    pongBtn.add(pLabel);
+    const pZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
+    pongBtn.add(pZone);
+
     const updateSelectorVisuals = () => {
-      // Tanks Mode
-      tanksBtn.removeAll(true);
       const isTanks = this.selectedGame === 'tanks';
-      const tBg = this.add.graphics();
+      tBg.clear();
       tBg.fillStyle(isTanks ? 0x0369a1 : 0x1e293b, 1);
       tBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
       tBg.lineStyle(1.5, isTanks ? 0x38bdf8 : 0x475569, 1);
       tBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-      tanksBtn.add(tBg);
+      tLabel.setColor(isTanks ? '#ffffff' : '#94a3b8');
 
-      tanksBtn.add(this.add.text(0, 0, '🎮 TANKS ARENA (2-4P)', {
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '11px',
-        fontWeight: 'bold',
-        color: isTanks ? '#ffffff' : '#94a3b8'
-      }).setOrigin(0.5));
-
-      // Pong Mode
-      pongBtn.removeAll(true);
       const isPong = this.selectedGame === 'pong';
-      const pBg = this.add.graphics();
+      pBg.clear();
       pBg.fillStyle(isPong ? 0x0369a1 : 0x1e293b, 1);
       pBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
       pBg.lineStyle(1.5, isPong ? 0x38bdf8 : 0x475569, 1);
       pBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-      pongBtn.add(pBg);
-
-      pongBtn.add(this.add.text(0, 0, '🏓 PONG DUEL (2P)', {
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '11px',
-        fontWeight: 'bold',
-        color: isPong ? '#ffffff' : '#94a3b8'
-      }).setOrigin(0.5));
+      pLabel.setColor(isPong ? '#ffffff' : '#94a3b8');
     };
 
     updateSelectorVisuals();
 
-    const tZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
-    tanksBtn.add(tZone);
     tZone.on('pointerdown', () => {
       audio.playShoot?.();
       this.selectedGame = 'tanks';
@@ -347,8 +349,6 @@ export class MultiplayerLobbyScene extends SceneBase {
       this.updateStartButtonVisuals();
     });
 
-    const pZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
-    pongBtn.add(pZone);
     pZone.on('pointerdown', () => {
       audio.playShoot?.();
       this.selectedGame = 'pong';

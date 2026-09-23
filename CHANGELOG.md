@@ -5,6 +5,12 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-09-22
+
+### Fixed
+- **Set Tag/Name Modal Layering**: Fixed issue where clicking `[ 👤 SET TAG/NAME ]` inside the High Scores leaderboard modal left the `InitialsEntryOverlayScene` hidden behind the leaderboard modal backdrop; added explicit `bringToTop()` lifecycle handling.
+- **Multiplayer Lobby Tab Toggling**: Fixed issue where clicking "Join Room" permanently broke the "Create Room" tab due to `removeAll(true)` destroying container interactive click zones; persistent graphics and zones now preserve click responsiveness across unlimited mode and game switches.
+
 ## [1.4.0] - 2026-09-22
 
 ### Added

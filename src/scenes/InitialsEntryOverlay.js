@@ -37,6 +37,7 @@ export class InitialsEntryOverlayScene extends SceneBase {
   }
 
   create() {
+    this.scene.bringToTop();
     const { width, height } = this.cameras.main;
 
     // Semi-transparent backdrop
@@ -318,6 +319,7 @@ export class InitialsEntryOverlayScene extends SceneBase {
         } else {
           this.scene.start(this.returnScene);
         }
+        this.scene.bringToTop(this.returnScene);
       }
     });
 
@@ -408,6 +410,7 @@ export class InitialsEntryOverlayScene extends SceneBase {
         } else {
           this.scene.start(this.returnScene);
         }
+        this.scene.bringToTop(this.returnScene);
       }
       return;
     }

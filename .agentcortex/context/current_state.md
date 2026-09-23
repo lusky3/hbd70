@@ -17,7 +17,7 @@
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
 - **Last Updated**: 2026-09-22
 - **Last Verified**: 2026-09-22
-- **Update Sequence**: 10
+- **Update Sequence**: 11
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -77,6 +77,10 @@
 
 ## Ship History
 
+### Ship-main-2026-09-22-ui-fixes
+- Feature shipped: Allan's 70th Birthday Arcade: Set Tag/Name Modal Layering & Multiplayer Lobby Tab Toggle — Resolved Phaser scene layering issue where opening InitialsEntryOverlayScene from LeaderboardModal rendered behind the modal backdrop by adding explicit bringToTop() calls on scene open and return; resolved MultiplayerLobbyScene tab toggling bug where switching between Create Room (Host) and Join Room (Client) or between Tanks and Pong permanently broke tab buttons by eliminating destructive removeAll(true) and preserving persistent interactive hitboxes and background graphics; bumped version to v1.4.1 in package.json, version.js, and CHANGELOG.md.
+- Tests: Pass (90/90 node unit tests + dual-browser WebRTC E2E suite + single-player arcade E2E suite passing with 0 errors + ACX validator 113 PASS)
+
 ### Ship-main-2026-09-22-multiplayer
 - Feature shipped: Allan's 70th Birthday Arcade: Multi-Device Real-Time Multiplayer — Serverless WebRTC DataChannels P2P transport (PeerJS) using Google STUN signaling for $0 hosting cost; 4-character room codes with Canvas QR code camera scanning for frictionless mobile joining via URL query (?room=XXXX); dedicated 4-player host-authoritative tactical Birthday Tanks Arena with client prediction, remote lerp interpolation, 1.5s spawn shields, frag leaderboard, and destructible block/mine synchronization; 2-player synchronized Pong duel with ball deflection physics and client perspective inversion; disconnect resilience with 2s heartbeat ping and AC-6 compliant modal dialog returning to GameSelect; side-by-side action bar in GameSelect; version bump to v1.4.0 in package.json, version.js, and CHANGELOG.md.
 - Tests: Pass (90/90 node unit tests + Playwright dual-browser multiplayer E2E suite + full arcade regression E2E suite passing with 0 console errors + ACX validator 113 PASS)
@@ -113,6 +117,3 @@
 - Feature shipped: Level Select, Game Progress Persistence & Allan Lusk Star Wars Credits — Home screen LEVELS (X/70) counter, interactive 70-level selection screen across 7 worlds with milestone titles and ???? uncompleted masking, localStorage session persistence (`hbd70_progress`) with fallback, and Star Wars 3D angled auto-scrolling credits crawl with touch/mouse drag scrubbing dedicated to Allan Lusk.
 - Tests: Pass (24/24 node unit tests + Playwright headless browser E2E 11/11 checkpoints + ACX validator 113 PASS)
 
-### Ship-main-2026-09-19-bosses
-- Feature shipped: Decade Bosses & Control Usability Tuning — 7 unique decade climax bosses (Levels 10, 20, 30, 40, 50, 60, 70), forward-locked motorcycle firing with tap-to-aim arena targeting, 3.8s LevelCard pacing with tap-to-skip prompt, untruncated 2-row top HUD header, and player turret anchor fix upon level completion.
-- Tests: Pass (19/19 node tests + Playwright headless browser E2E 10/10 assertions + ACX validator 113 PASS)

@@ -201,6 +201,7 @@ export class LeaderboardModalScene extends SceneBase {
         mode: 'profile',
         returnScene: 'LeaderboardModal'
       });
+      this.scene.bringToTop('InitialsEntryOverlay');
       this.scene.pause();
     });
 

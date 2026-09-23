@@ -29,6 +29,7 @@ export class RetroactiveImportModalScene extends SceneBase {
   }
 
   create() {
+    this.scene.bringToTop();
     const { width, height } = this.scale;
 
     // 1. Semi-transparent Dim Backdrop
