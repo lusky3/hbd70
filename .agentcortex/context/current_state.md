@@ -17,7 +17,7 @@
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
 - **Last Updated**: 2026-09-22
 - **Last Verified**: 2026-09-22
-- **Update Sequence**: 8
+- **Update Sequence**: 9
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -30,6 +30,7 @@
   - docs/specs/arcade-controls-and-credits-polish.md: Allan's 70th Birthday Arcade: Controls, Strings & Visual Polish [status: shipped] [Updated: 2026-09-22]
   - docs/specs/arcade-leaderboards-cloudflare-d1.md: Allan's 70th Birthday Arcade: Cloudflare D1 Leaderboards [status: shipped] [Updated: 2026-09-22]
   - docs/specs/arcade-retroactive-scores-and-button-hitbox.md: Allan's 70th Birthday Arcade: Retroactive Scores Import & Button Hitbox Polish [status: shipped] [Updated: 2026-09-22]
+  - docs/specs/arcade-player-name-and-profanity-filter.md: Allan's 70th Birthday Arcade: Player Full Name, Tag Setting & Profanity Filter [status: shipped] [Updated: 2026-09-22]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -74,6 +75,10 @@
 (none yet)
 
 ## Ship History
+
+### Ship-main-2026-09-22-player-name-profanity-filter
+- Feature shipped: Allan's 70th Birthday Arcade: Player Full Name, Tag Setting & Profanity Filter — Optional full name / nickname entry (up to 24 chars, e.g. "Allan") associated with 3-letter initials (e.g. "ALL"); interactive hover (desktop) and tap (mobile) reveal tooltip in LeaderboardModal; dedicated centered [ 👤 SET TAG/NAME ] button on High Score page with non-locking pause/resume lifecycle; dual-layer client and server-side profanity filtering blocking vulgarities, leetspeak tags, repeated character variants, and compound slurs; Cloudflare D1 schema and API extension with full_name column and parameterized bindings; version bump to v1.3.0 in package.json, version.js, GameSelectScene, and CHANGELOG.md.
+- Tests: Pass (81/81 node unit tests + 9-phase Playwright E2E suite + Tanks E2E suite passing with 0 console errors + ACX validator passing)
 
 ### Ship-main-2026-09-22-retroactive-scores-hitbox
 - Feature shipped: Allan's 70th Birthday Arcade: Retroactive Scores Import & Button Hitbox Polish — Full button hitbox surface area coverage using centered Phaser.GameObjects.Zone instances across GameSelect, GameOver, Pong, SpaceInvaders, and Victory (fixing Phaser container bottom-right quadrant offset bug); retroactive local high score detection across Tanks, Pong, Space Invaders, and Asteroids; RetroactiveImportModalScene with 3-character slot machine initials entry, batch edge worker submission, and offline fallback; version bump to v1.2.0 in package.json, version.js, GameSelectScene, and CHANGELOG.md.
