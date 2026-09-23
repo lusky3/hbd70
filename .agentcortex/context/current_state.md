@@ -17,7 +17,7 @@
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
 - **Last Updated**: 2026-09-22
 - **Last Verified**: 2026-09-22
-- **Update Sequence**: 9
+- **Update Sequence**: 10
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -31,6 +31,7 @@
   - docs/specs/arcade-leaderboards-cloudflare-d1.md: Allan's 70th Birthday Arcade: Cloudflare D1 Leaderboards [status: shipped] [Updated: 2026-09-22]
   - docs/specs/arcade-retroactive-scores-and-button-hitbox.md: Allan's 70th Birthday Arcade: Retroactive Scores Import & Button Hitbox Polish [status: shipped] [Updated: 2026-09-22]
   - docs/specs/arcade-player-name-and-profanity-filter.md: Allan's 70th Birthday Arcade: Player Full Name, Tag Setting & Profanity Filter [status: shipped] [Updated: 2026-09-22]
+  - docs/specs/multi-device-multiplayer.md: Allan's 70th Birthday Arcade: Multi-Device Real-Time Multiplayer [status: shipped] [Updated: 2026-09-22]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -76,6 +77,10 @@
 
 ## Ship History
 
+### Ship-main-2026-09-22-multiplayer
+- Feature shipped: Allan's 70th Birthday Arcade: Multi-Device Real-Time Multiplayer — Serverless WebRTC DataChannels P2P transport (PeerJS) using Google STUN signaling for $0 hosting cost; 4-character room codes with Canvas QR code camera scanning for frictionless mobile joining via URL query (?room=XXXX); dedicated 4-player host-authoritative tactical Birthday Tanks Arena with client prediction, remote lerp interpolation, 1.5s spawn shields, frag leaderboard, and destructible block/mine synchronization; 2-player synchronized Pong duel with ball deflection physics and client perspective inversion; disconnect resilience with 2s heartbeat ping and AC-6 compliant modal dialog returning to GameSelect; side-by-side action bar in GameSelect; version bump to v1.4.0 in package.json, version.js, and CHANGELOG.md.
+- Tests: Pass (90/90 node unit tests + Playwright dual-browser multiplayer E2E suite + full arcade regression E2E suite passing with 0 console errors + ACX validator 113 PASS)
+
 ### Ship-main-2026-09-22-player-name-profanity-filter
 - Feature shipped: Allan's 70th Birthday Arcade: Player Full Name, Tag Setting & Profanity Filter — Optional full name / nickname entry (up to 24 chars, e.g. "Allan") associated with 3-letter initials (e.g. "ALL"); interactive hover (desktop) and tap (mobile) reveal tooltip in LeaderboardModal; dedicated centered [ 👤 SET TAG/NAME ] button on High Score page with non-locking pause/resume lifecycle; dual-layer client and server-side profanity filtering blocking vulgarities, leetspeak tags, repeated character variants, and compound slurs; Cloudflare D1 schema and API extension with full_name column and parameterized bindings; version bump to v1.3.0 in package.json, version.js, GameSelectScene, and CHANGELOG.md.
 - Tests: Pass (81/81 node unit tests + 9-phase Playwright E2E suite + Tanks E2E suite passing with 0 console errors + ACX validator passing)
@@ -111,7 +116,3 @@
 ### Ship-main-2026-09-19-bosses
 - Feature shipped: Decade Bosses & Control Usability Tuning — 7 unique decade climax bosses (Levels 10, 20, 30, 40, 50, 60, 70), forward-locked motorcycle firing with tap-to-aim arena targeting, 3.8s LevelCard pacing with tap-to-skip prompt, untruncated 2-row top HUD header, and player turret anchor fix upon level completion.
 - Tests: Pass (19/19 node tests + Playwright headless browser E2E 10/10 assertions + ACX validator 113 PASS)
-
-### Ship-main-2026-09-19
-- Feature shipped: Birthday Tanks! — 70-level retro arcade mobile browser tribute for Allan Lusk's 70th Birthday. Procedural Canvas vector sprites, Web Audio synthesizer with continuous 32-step chiptune BGM and HUD mute toggle, 7 decade worlds (1956-2026), 7 enemy archetypes, dual touch and desktop controls, GitHub Pages live deployment.
-- Tests: Pass (16/16 node tests + Playwright headless browser E2E)

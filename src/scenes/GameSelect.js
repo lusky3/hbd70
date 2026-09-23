@@ -186,26 +186,69 @@ export class GameSelectScene extends Phaser.Scene {
       this.createGameCard(cardStartX, cy, item);
     });
 
-    // 3.5 Global Leaderboard Button
-    const lbBtnY = 765;
-    const lbBtn = this.add.container(width / 2, lbBtnY);
+    // 3.5 Action Bar: Multiplayer & Global Leaderboard Buttons
+    const btnY = 765;
+    const btnW = 206;
+    const btnH = 38;
+
+    // A. Multiplayer Button (Left)
+    const mpBtn = this.add.container(width / 2 - btnW / 2 - 6, btnY);
+    const mpBg = this.add.graphics();
+    mpBg.fillStyle(0x0f172a, 0.95);
+    mpBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
+    mpBg.lineStyle(1.5, 0x38bdf8, 0.85);
+    mpBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
+    mpBtn.add(mpBg);
+
+    const mpText = this.add.text(0, 0, '🌐 MULTIPLAYER (2-4P)', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold',
+      color: '#38bdf8',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+    mpBtn.add(mpText);
+
+    const mpZone = this.add.zone(0, 0, btnW, btnH + 4).setInteractive({ useHandCursor: true });
+    mpBtn.add(mpZone);
+    mpZone.on('pointerdown', () => {
+      audio.playShoot?.();
+      this.scene.start('MultiplayerLobby', { returnScene: 'GameSelect' });
+    });
+    mpZone.on('pointerover', () => {
+      mpBg.clear();
+      mpBg.fillStyle(0x0369a1, 1);
+      mpBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
+      mpBg.lineStyle(2, 0x38bdf8, 1);
+      mpBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
+    });
+    mpZone.on('pointerout', () => {
+      mpBg.clear();
+      mpBg.fillStyle(0x0f172a, 0.95);
+      mpBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
+      mpBg.lineStyle(1.5, 0x38bdf8, 0.85);
+      mpBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
+    });
+
+    // B. Global Leaderboard Button (Right)
+    const lbBtn = this.add.container(width / 2 + btnW / 2 + 6, btnY);
     const lbBg = this.add.graphics();
     lbBg.fillStyle(0x0f172a, 0.95);
-    lbBg.fillRoundedRect(-135, -19, 270, 38, 10);
+    lbBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
     lbBg.lineStyle(1.5, 0xfacc15, 0.85);
-    lbBg.strokeRoundedRect(-135, -19, 270, 38, 10);
+    lbBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
     lbBtn.add(lbBg);
 
-    const lbText = this.add.text(0, 0, '🏆 HIGH SCORES & RANKS 🏆', {
+    const lbText = this.add.text(0, 0, '🏆 HIGH SCORES', {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '13px',
+      fontSize: '11px',
       fontWeight: 'bold',
       color: '#facc15',
       letterSpacing: 1
     }).setOrigin(0.5);
     lbBtn.add(lbText);
 
-    const lbZone = this.add.zone(0, 0, 270, 42).setInteractive({ useHandCursor: true });
+    const lbZone = this.add.zone(0, 0, btnW, btnH + 4).setInteractive({ useHandCursor: true });
     lbBtn.add(lbZone);
 
     lbZone.on('pointerdown', () => {
@@ -215,16 +258,16 @@ export class GameSelectScene extends Phaser.Scene {
     lbZone.on('pointerover', () => {
       lbBg.clear();
       lbBg.fillStyle(0x1e293b, 1);
-      lbBg.fillRoundedRect(-135, -19, 270, 38, 10);
+      lbBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
       lbBg.lineStyle(2, 0xfacc15, 1);
-      lbBg.strokeRoundedRect(-135, -19, 270, 38, 10);
+      lbBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
     });
     lbZone.on('pointerout', () => {
       lbBg.clear();
       lbBg.fillStyle(0x0f172a, 0.95);
-      lbBg.fillRoundedRect(-135, -19, 270, 38, 10);
+      lbBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
       lbBg.lineStyle(1.5, 0xfacc15, 0.85);
-      lbBg.strokeRoundedRect(-135, -19, 270, 38, 10);
+      lbBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 10);
     });
 
     // 4. Footer with Version & Credits Link
@@ -268,6 +311,18 @@ export class GameSelectScene extends Phaser.Scene {
           if (this.sys && this.sys.isActive() && this.scene.isActive()) {
             this.scene.launch('RetroactiveImportModal', { returnScene: 'GameSelect' });
           }
+        });
+      }
+    }
+
+    // 6. Check for auto-join URL query parameter (?room=XXXX or ?join=XXXX)
+    if (typeof window !== 'undefined' && window.location && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      const roomCode = params.get('room') || params.get('join');
+      if (roomCode) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        this.time.delayedCall(100, () => {
+          this.scene.start('MultiplayerLobby', { mode: 'join', roomCode, returnScene: 'GameSelect' });
         });
       }
     }

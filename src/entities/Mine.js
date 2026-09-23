@@ -3,7 +3,9 @@
 
 import { audio } from '../systems/AudioManager.js';
 
-export class Mine extends Phaser.Physics.Arcade.Sprite {
+const SpriteBase = typeof Phaser !== 'undefined' && Phaser.Physics?.Arcade?.Sprite ? Phaser.Physics.Arcade.Sprite : class {};
+
+export class Mine extends SpriteBase {
   constructor(scene, x, y, owner = 'player') {
     super(scene, x, y, 'mine');
     scene.add.existing(this);
@@ -53,7 +55,11 @@ export class Mine extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Proximity check on nearby tanks and blocks
-    this.scene.onMineExplode(this.x, this.y, this.explosionRadius);
+    if (typeof this.scene.onMineExplode === 'function') {
+      this.scene.onMineExplode(this.x, this.y, this.explosionRadius);
+    } else if (typeof this.scene.explodeMine === 'function') {
+      this.scene.explodeMine(this);
+    }
 
     this.destroy();
   }

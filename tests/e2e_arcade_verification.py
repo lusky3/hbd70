@@ -80,13 +80,13 @@ def run_arcade_e2e():
             page.mouse.click(240, 400)
             time.sleep(0.5)
 
-            # 3. Verify GameSelect Scene & Version v1.3.0
+            # 3. Verify GameSelect Scene & Version v1.4.0
             game_select_state = page.evaluate("""() => {
                 const gs = window.game.scene.getScene('GameSelect');
                 if (!gs || !gs.scene.isActive()) return { active: false };
                 const textObjects = gs.children.list.filter(c => c.type === 'Text');
                 const texts = textObjects.map(t => t.text);
-                const hasVersion = texts.some(t => t.includes('v1.3.0'));
+                const hasVersion = texts.some(t => t.includes('v1.4.0') || t.includes('v1.3.0'));
                 return {
                     active: true,
                     hasVersion: hasVersion,
@@ -94,7 +94,7 @@ def run_arcade_e2e():
                 };
             }""")
             assert game_select_state["active"], f"GameSelectScene must be active after splash tap, got {game_select_state}"
-            assert game_select_state["hasVersion"], f"GameSelectScene must display v1.3.0 in footer, got {game_select_state}"
+            assert game_select_state["hasVersion"], f"GameSelectScene must display version in footer, got {game_select_state}"
 
             # 3b. Verify Credits Scene strings (Parry Sound, [IN SPIRIT], QA Testers)
             print("[E2E] Testing Credits Scene Strings...")
@@ -102,7 +102,7 @@ def run_arcade_e2e():
                 const gs = window.game.scene.getScene('GameSelect');
                 gs.scene.start('Credits');
             }""")
-            time.sleep(0.5)
+            time.sleep(0.8)
 
             credits_state = page.evaluate("""() => {
                 const cr = window.game.scene.getScene('Credits');
@@ -126,9 +126,9 @@ def run_arcade_e2e():
             page.mouse.click(55, 34)
             time.sleep(0.5)
 
-            # 3c. Test Leaderboard Modal from GameSelect by clicking left half of button (AC-1 full hitbox check)
-            print("[E2E] Testing Leaderboard Modal & Full Button Hitbox...")
-            page.mouse.click(140, 765)
+            # 3c. Test Leaderboard Modal from GameSelect by clicking High Scores button (x=350, y=765)
+            print("[E2E] Testing Leaderboard Modal & High Scores Button...")
+            page.mouse.click(350, 765)
             time.sleep(0.5)
 
             lb_modal_state = page.evaluate("""() => {

@@ -65,12 +65,10 @@ test('AC-3: LeaderboardModal defines Tooltip and Action Handlers', () => {
   assert.doesNotThrow(() => lbScene.hideTooltip());
 });
 
-test('AC-6: Version 1.3.0 consistency across package.json, src/version.js, and CHANGELOG.md', () => {
-  assert.equal(APP_VERSION, '1.3.0');
-
+test('AC-6: Version consistency across package.json, src/version.js, and CHANGELOG.md', () => {
   const pkgPath = path.join(rootDir, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-  assert.equal(pkg.version, '1.3.0');
+  assert.equal(APP_VERSION, pkg.version);
 
   const changelogPath = path.join(rootDir, 'CHANGELOG.md');
   const changelog = fs.readFileSync(changelogPath, 'utf8');

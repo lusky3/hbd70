@@ -5,6 +5,16 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-09-22
+
+### Added
+- **Multi-Device Real-Time Multiplayer**: Serverless peer-to-peer browser-to-browser WebRTC DataChannels powered by PeerJS (`peerjs.min.js`) backed by public STUN signaling (`stun:stun.l.google.com:19302`), enabling real-time arcade gameplay across smartphones, tablets, and desktop browsers with 0 app installs and 0 cloud hosting costs.
+- **Room Lifecycle & QR Code Camera Onboarding**: Host generates 4-character room codes (e.g. `AL70`, `HBD7`) and renders a crisp Canvas QR code in `MultiplayerLobbyScene`; players can point their phone camera at the screen to join automatically via URL parameter (`?room=XXXX`).
+- **4-Player Birthday Tanks Arena (`MultiplayerTanksScene`)**: Dedicated 2 to 4 player tactical deathmatch arena with symmetrical layout, destructible birthday present blocks, 1.5s spawn invulnerability shields, and host-authoritative 60 FPS physics simulation.
+- **Client Prediction & Remote Interpolation**: Instant local tank steering with 0ms perceived lag, coupled with smooth linear interpolation (`lerp`) on remote tanks at 25 Hz snapshot broadcast frequency.
+- **2-Player Birthday Pong Duel (`MultiplayerPongScene`)**: Synchronized 2-player paddle rally with inverted coordinate perspective for the client, allowing both players to comfortably play using their under-paddle touch grip handle on their own mobile screens.
+- **Multiplayer Hub Action Bar**: Added dedicated `[ 🌐 MULTIPLAYER (2-4P) ]` button alongside `[ 🏆 HIGH SCORES ]` in `GameSelectScene`.
+
 ## [1.3.0] - 2026-09-22
 
 ### Added

@@ -27,7 +27,8 @@
 .playwright-mcp/
 
 # Framework Tool Bytecode (framework namespace only; project policy untouched)
-.agentcortex/**/__pycache__/
-
 # End Agentic OS Template - Downstream Ignore Defaults
+
+__pycache__/
+*.pyc
 

@@ -3,7 +3,9 @@
 
 import { audio } from '../systems/AudioManager.js';
 
-export class Bullet extends Phaser.Physics.Arcade.Sprite {
+const SpriteBase = typeof Phaser !== 'undefined' && Phaser.Physics?.Arcade?.Sprite ? Phaser.Physics.Arcade.Sprite : class {};
+
+export class Bullet extends SpriteBase {
   constructor(scene, x, y) {
     super(scene, x, y, 'bullet');
     scene.add.existing(this);

@@ -17,6 +17,9 @@ import { AsteroidsScene } from './scenes/Asteroids.js';
 import { InitialsEntryOverlayScene } from './scenes/InitialsEntryOverlay.js';
 import { LeaderboardModalScene } from './scenes/LeaderboardModal.js';
 import { RetroactiveImportModalScene } from './scenes/RetroactiveImportModal.js';
+import { MultiplayerLobbyScene } from './scenes/MultiplayerLobby.js';
+import { MultiplayerTanksScene } from './scenes/MultiplayerTanks.js';
+import { MultiplayerPongScene } from './scenes/MultiplayerPong.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -51,7 +54,10 @@ const config = {
     CreditsScene,
     InitialsEntryOverlayScene,
     LeaderboardModalScene,
-    RetroactiveImportModalScene
+    RetroactiveImportModalScene,
+    MultiplayerLobbyScene,
+    MultiplayerTanksScene,
+    MultiplayerPongScene
   ],
   input: {
     activePointers: 3
