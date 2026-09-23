@@ -170,22 +170,21 @@ export class SplashScene extends Phaser.Scene {
       color: '#94a3b8'
     }).setOrigin(1, 1);
 
-    creditsLink.add(creditsText);
-    creditsLink.setSize(75, 40);
-    creditsLink.setInteractive({ useHandCursor: true });
+    const creditsZone = this.add.zone(-37.5, -15, 75, 40).setInteractive({ useHandCursor: true });
+    creditsLink.add(creditsZone);
     creditsLink.setDepth(100);
 
-    creditsLink.on('pointerdown', (pointer, localX, localY, event) => {
+    creditsZone.on('pointerdown', (pointer, localX, localY, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
       audio.init();
       this.scene.start('Credits', { returnScene: 'Splash' });
     });
 
-    creditsLink.on('pointerover', () => {
+    creditsZone.on('pointerover', () => {
       creditsText.setColor('#ffd700');
     });
 
-    creditsLink.on('pointerout', () => {
+    creditsZone.on('pointerout', () => {
       creditsText.setColor('#94a3b8');
     });
   }

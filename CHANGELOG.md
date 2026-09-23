@@ -5,6 +5,12 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-09-22
+
+### Fixed
+- **Back & Menu Button Full Surface Area Hotspot**: Fixed issue where Back (`< BACK`, `◀ BACK`) and Menu (`< MENU`) buttons across `GameSelect`, `Credits`, `LevelSelect`, `Pong`, `SpaceInvaders`, and `Asteroids` only responded to clicks in the bottom half or bottom-right quadrant; replaced container `setSize` / `setInteractive` with centered `Phaser.GameObjects.Zone` instances ensuring 100% surface area clickability.
+- **UI Control Hitbox Offsets**: Applied the centered `Zone` pattern to Mute buttons, Space Invaders touch controls (`leftBtn`, `rightBtn`, `fireBtn`), `LeaderboardModal` game tabs, and the `Splash` credits link to eliminate all container hit area misalignment across the collection.
+
 ## [1.4.1] - 2026-09-22
 
 ### Fixed

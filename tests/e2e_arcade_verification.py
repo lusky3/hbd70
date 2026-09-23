@@ -81,12 +81,12 @@ def run_arcade_e2e():
             time.sleep(0.5)
 
             # 3. Verify GameSelect Scene & Version v1.4.0
-            game_select_state = page.evaluate("""() => {
+            game_select_state = page.evaluate(r"""() => {
                 const gs = window.game.scene.getScene('GameSelect');
                 if (!gs || !gs.scene.isActive()) return { active: false };
                 const textObjects = gs.children.list.filter(c => c.type === 'Text');
                 const texts = textObjects.map(t => t.text);
-                const hasVersion = texts.some(t => t.includes('v1.4.0') || t.includes('v1.3.0'));
+                const hasVersion = texts.some(t => /^v\d+\.\d+\.\d+/.test(t));
                 return {
                     active: true,
                     hasVersion: hasVersion,

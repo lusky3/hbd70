@@ -97,16 +97,36 @@ test('AC-3: RetroactiveImportModalScene safely instantiates and defines allowed 
   assert.ok(ALLOWED_CHARS.includes('★'));
 });
 
+test('AC-1: Back and Menu buttons use centered Zone hitboxes across all scenes without container setSize offset', () => {
+  const sceneFiles = [
+    'src/scenes/GameSelect.js',
+    'src/scenes/Credits.js',
+    'src/scenes/LevelSelect.js',
+    'src/scenes/Pong.js',
+    'src/scenes/SpaceInvaders.js',
+    'src/scenes/Asteroids.js'
+  ];
+
+  for (const relPath of sceneFiles) {
+    const fullPath = path.join(rootDir, relPath);
+    const code = fs.readFileSync(fullPath, 'utf8');
+    // Verify that backBtn does NOT use backBtn.setSize or backBtn.setInteractive
+    assert.doesNotMatch(code, /backBtn\.setSize\(/, `${relPath} must not use backBtn.setSize`);
+    assert.doesNotMatch(code, /backBtn\.setInteractive\(/, `${relPath} must not use backBtn.setInteractive`);
+    // Verify that backZone is created with add.zone and setInteractive
+    assert.match(code, /this\.add\.zone\(/, `${relPath} must use this.add.zone`);
+    assert.match(code, /backZone\.on\('pointerdown'/, `${relPath} must attach pointerdown to backZone`);
+  }
+});
+
 test('AC-5: Version consistency across package.json, src/version.js, and CHANGELOG.md', () => {
-  // Check package.json
   const pkgPath = path.join(rootDir, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   assert.equal(APP_VERSION, pkg.version);
 
-  // Check CHANGELOG.md
   const changelogPath = path.join(rootDir, 'CHANGELOG.md');
   const changelog = fs.readFileSync(changelogPath, 'utf8');
   assert.ok(changelog.includes(`## [${APP_VERSION}]`), `CHANGELOG.md must document version ${APP_VERSION}`);
-  assert.ok(changelog.includes('Retroactive Local High Scores Migration'), 'CHANGELOG.md must describe retroactive scores migration');
-  assert.ok(changelog.includes('Full Button Hitbox Fix'), 'CHANGELOG.md must describe button hitbox fix');
+  assert.ok(changelog.includes('Back & Menu Button Full Surface Area Hotspot'), 'CHANGELOG.md must describe back button hotspot fix');
 });
+

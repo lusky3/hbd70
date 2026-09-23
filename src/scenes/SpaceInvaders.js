@@ -61,11 +61,27 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#cbd5e1'
     }).setOrigin(0.5);
     backBtn.add(backText);
-    backBtn.setSize(70, 36);
-    backBtn.setInteractive({ useHandCursor: true });
-    backBtn.on('pointerdown', () => {
+    const backZone = this.add.zone(35, 0, 70, 36).setInteractive({ useHandCursor: true });
+    backBtn.add(backZone);
+    backZone.on('pointerdown', () => {
       audio.playShoot();
       this.scene.start('GameSelect');
+    });
+    backZone.on('pointerover', () => {
+      backBg.clear();
+      backBg.fillStyle(0x334155, 1);
+      backBg.fillRoundedRect(0, -18, 70, 36, 8);
+      backBg.lineStyle(1.5, 0x94a3b8, 1);
+      backBg.strokeRoundedRect(0, -18, 70, 36, 8);
+      backText.setColor('#ffffff');
+    });
+    backZone.on('pointerout', () => {
+      backBg.clear();
+      backBg.fillStyle(0x1e293b, 1);
+      backBg.fillRoundedRect(0, -18, 70, 36, 8);
+      backBg.lineStyle(1.5, 0x64748b, 1);
+      backBg.strokeRoundedRect(0, -18, 70, 36, 8);
+      backText.setColor('#cbd5e1');
     });
 
     this.highScore = storage.getArcadeStats().invaders.highScore || 0;
@@ -97,9 +113,9 @@ export class SpaceInvadersScene extends Phaser.Scene {
       fontSize: '18px'
     }).setOrigin(0.5);
     muteBtn.add(muteText);
-    muteBtn.setSize(32, 32);
-    muteBtn.setInteractive({ useHandCursor: true });
-    muteBtn.on('pointerdown', () => {
+    const muteZone = this.add.zone(0, 0, 44, 44).setInteractive({ useHandCursor: true });
+    muteBtn.add(muteZone);
+    muteZone.on('pointerdown', () => {
       audio.toggleMute();
       muteText.setText(audio.isMuted ? '🔇' : '🔊');
     });
@@ -297,11 +313,11 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#ffffff'
     }).setOrigin(0.5);
     leftBtn.add(lText);
-    leftBtn.setSize(90, 56);
-    leftBtn.setInteractive({ useHandCursor: true });
-    leftBtn.on('pointerdown', () => { this.touchMoveDir = -1; });
-    leftBtn.on('pointerup', () => { if (this.touchMoveDir === -1) this.touchMoveDir = 0; });
-    leftBtn.on('pointerout', () => { if (this.touchMoveDir === -1) this.touchMoveDir = 0; });
+    const leftZone = this.add.zone(0, 0, 90, 56).setInteractive({ useHandCursor: true });
+    leftBtn.add(leftZone);
+    leftZone.on('pointerdown', () => { this.touchMoveDir = -1; });
+    leftZone.on('pointerup', () => { if (this.touchMoveDir === -1) this.touchMoveDir = 0; });
+    leftZone.on('pointerout', () => { if (this.touchMoveDir === -1) this.touchMoveDir = 0; });
 
     // Right Button
     const rightBtn = this.add.container(175, height - 45);
@@ -318,11 +334,11 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#ffffff'
     }).setOrigin(0.5);
     rightBtn.add(rText);
-    rightBtn.setSize(90, 56);
-    rightBtn.setInteractive({ useHandCursor: true });
-    rightBtn.on('pointerdown', () => { this.touchMoveDir = 1; });
-    rightBtn.on('pointerup', () => { if (this.touchMoveDir === 1) this.touchMoveDir = 0; });
-    rightBtn.on('pointerout', () => { if (this.touchMoveDir === 1) this.touchMoveDir = 0; });
+    const rightZone = this.add.zone(0, 0, 90, 56).setInteractive({ useHandCursor: true });
+    rightBtn.add(rightZone);
+    rightZone.on('pointerdown', () => { this.touchMoveDir = 1; });
+    rightZone.on('pointerup', () => { if (this.touchMoveDir === 1) this.touchMoveDir = 0; });
+    rightZone.on('pointerout', () => { if (this.touchMoveDir === 1) this.touchMoveDir = 0; });
 
     // Fire Button
     const fireBtn = this.add.container(width - 90, height - 45);
@@ -339,9 +355,9 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#ffffff'
     }).setOrigin(0.5);
     fireBtn.add(fText);
-    fireBtn.setSize(130, 56);
-    fireBtn.setInteractive({ useHandCursor: true });
-    fireBtn.on('pointerdown', () => { this.firePlayerBullet(); });
+    const fireZone = this.add.zone(0, 0, 130, 56).setInteractive({ useHandCursor: true });
+    fireBtn.add(fireZone);
+    fireZone.on('pointerdown', () => { this.firePlayerBullet(); });
 
     this.fireBtnBg = fBg;
     this.fireBtnText = fText;

@@ -149,7 +149,7 @@ test('AC-6: Version 1.4.0 consistency across package.json, src/version.js, and C
   const pkgPath = path.join(rootDir, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   assert.equal(APP_VERSION, pkg.version);
-  assert.equal(pkg.version, '1.4.1');
+  assert.equal(pkg.version, '1.4.2');
 
   const changelogPath = path.join(rootDir, 'CHANGELOG.md');
   const changelog = fs.readFileSync(changelogPath, 'utf8');

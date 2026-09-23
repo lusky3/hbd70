@@ -84,9 +84,9 @@ export class LeaderboardModalScene extends SceneBase {
       }).setOrigin(0.5);
       tabContainer.add(tText);
 
-      tabContainer.setSize(tabW - 4, 32);
-      tabContainer.setInteractive({ useHandCursor: true });
-      tabContainer.on('pointerdown', () => {
+      const tabZone = this.add.zone(0, 0, tabW - 4, 32).setInteractive({ useHandCursor: true });
+      tabContainer.add(tabZone);
+      const onTabSelect = () => {
         if (this.activeGameId !== g.id) {
           this.hideTooltip();
           this.activeGameId = g.id;
@@ -94,9 +94,11 @@ export class LeaderboardModalScene extends SceneBase {
           this.updateTabs();
           this.loadScores();
         }
-      });
+      };
+      tabZone.on('pointerdown', onTabSelect);
+      tabContainer.on('pointerdown', onTabSelect);
 
-      this.tabButtons.push({ id: g.id, container: tabContainer, bg: tBg, text: tText, w: tabW - 4 });
+      this.tabButtons.push({ id: g.id, container: tabContainer, zone: tabZone, bg: tBg, text: tText, w: tabW - 4 });
     });
 
     this.updateTabs();

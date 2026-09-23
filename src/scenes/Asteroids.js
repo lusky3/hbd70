@@ -62,11 +62,27 @@ export class AsteroidsScene extends Phaser.Scene {
       color: '#cbd5e1'
     }).setOrigin(0.5);
     backBtn.add(backText);
-    backBtn.setSize(70, 36);
-    backBtn.setInteractive({ useHandCursor: true });
-    backBtn.on('pointerdown', () => {
+    const backZone = this.add.zone(35, 0, 70, 36).setInteractive({ useHandCursor: true });
+    backBtn.add(backZone);
+    backZone.on('pointerdown', () => {
       audio.playShoot();
       this.scene.start('GameSelect');
+    });
+    backZone.on('pointerover', () => {
+      backBg.clear();
+      backBg.fillStyle(0x334155, 1);
+      backBg.fillRoundedRect(0, -18, 70, 36, 8);
+      backBg.lineStyle(1.5, 0x94a3b8, 1);
+      backBg.strokeRoundedRect(0, -18, 70, 36, 8);
+      backText.setColor('#ffffff');
+    });
+    backZone.on('pointerout', () => {
+      backBg.clear();
+      backBg.fillStyle(0x1e293b, 1);
+      backBg.fillRoundedRect(0, -18, 70, 36, 8);
+      backBg.lineStyle(1.5, 0x64748b, 1);
+      backBg.strokeRoundedRect(0, -18, 70, 36, 8);
+      backText.setColor('#cbd5e1');
     });
 
     this.highScore = storage.getArcadeStats().asteroids.highScore || 0;
