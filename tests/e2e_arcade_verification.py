@@ -79,13 +79,13 @@ def run_arcade_e2e():
             page.mouse.click(240, 400)
             time.sleep(0.5)
 
-            # 3. Verify GameSelect Scene & Version v1.1.0
+            # 3. Verify GameSelect Scene & Version v1.2.0
             game_select_state = page.evaluate("""() => {
                 const gs = window.game.scene.getScene('GameSelect');
                 if (!gs || !gs.scene.isActive()) return { active: false };
                 const textObjects = gs.children.list.filter(c => c.type === 'Text');
                 const texts = textObjects.map(t => t.text);
-                const hasVersion = texts.some(t => t.includes('v1.1.0'));
+                const hasVersion = texts.some(t => t.includes('v1.2.0'));
                 return {
                     active: true,
                     hasVersion: hasVersion,
@@ -93,7 +93,7 @@ def run_arcade_e2e():
                 };
             }""")
             assert game_select_state["active"], f"GameSelectScene must be active after splash tap, got {game_select_state}"
-            assert game_select_state["hasVersion"], f"GameSelectScene must display v1.1.0 in footer, got {game_select_state}"
+            assert game_select_state["hasVersion"], f"GameSelectScene must display v1.2.0 in footer, got {game_select_state}"
 
             # 3b. Verify Credits Scene strings (Parry Sound, [IN SPIRIT], QA Testers)
             print("[E2E] Testing Credits Scene Strings...")
@@ -125,9 +125,9 @@ def run_arcade_e2e():
             page.mouse.click(55, 34)
             time.sleep(0.5)
 
-            # 3c. Test Leaderboard Modal from GameSelect
-            print("[E2E] Testing Leaderboard Modal & Tab Switching...")
-            page.mouse.click(240, 765)
+            # 3c. Test Leaderboard Modal from GameSelect by clicking left half of button (AC-1 full hitbox check)
+            print("[E2E] Testing Leaderboard Modal & Full Button Hitbox...")
+            page.mouse.click(140, 765)
             time.sleep(0.5)
 
             lb_modal_state = page.evaluate("""() => {
@@ -144,7 +144,7 @@ def run_arcade_e2e():
                     tabCount: lb.tabButtons ? lb.tabButtons.length : 0
                 };
             }""")
-            assert lb_modal_state["active"], "LeaderboardModal must be active after clicking High Scores button"
+            assert lb_modal_state["active"], "LeaderboardModal must be active after clicking High Scores button on left edge"
             assert lb_modal_state["hasTitle"], "LeaderboardModal must render top title"
             assert lb_modal_state["hasDate"], "LeaderboardModal must render DATE column header"
             assert lb_modal_state["tabCount"] == 4, f"LeaderboardModal must feature 4 tabs, got {lb_modal_state['tabCount']}"
@@ -216,6 +216,59 @@ def run_arcade_e2e():
                 const lb = window.game.scene.getScene('LeaderboardModal');
                 lb.closeModal();
             }""")
+            time.sleep(0.4)
+
+            # 3e. Test RetroactiveImportModal Flow
+            print("[E2E] Testing RetroactiveImportModal Flow...")
+            page.evaluate("""() => {
+                window.localStorage.setItem('hbd70_progress', JSON.stringify({
+                    highestLevelBeaten: 15,
+                    beatenLevels: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+                    unlockedLevel: 16,
+                    arcadeStats: {
+                        tanks: { highScore: 15000 },
+                        pong: { wins: 3, losses: 1, longestRally: 22 },
+                        invaders: { highScore: 5600, highestWave: 4 },
+                        asteroids: { highScore: 11200, highestWave: 3 }
+                    }
+                }));
+                window.localStorage.removeItem('hbd70_scores_migrated');
+                const gs = window.game.scene.getScene('GameSelect');
+                gs.scene.launch('RetroactiveImportModal', { returnScene: 'GameSelect' });
+            }""")
+            time.sleep(0.5)
+
+            retro_state = page.evaluate("""() => {
+                const rm = window.game.scene.getScene('RetroactiveImportModal');
+                if (!rm || !rm.scene.isActive()) return { active: false };
+                const hasUploadBtn = rm.submitText && rm.submitText.text.includes('UPLOAD TO LEADERBOARD');
+                return {
+                    active: true,
+                    hasHeader: true,
+                    hasUploadBtn: !!hasUploadBtn,
+                    unmigratedCount: rm.unmigrated ? rm.unmigrated.length : 0
+                };
+            }""")
+            assert retro_state["active"], f"RetroactiveImportModal should be active, got {retro_state}"
+            assert retro_state["hasUploadBtn"], f"RetroactiveImportModal should display upload button, got {retro_state}"
+            assert retro_state["unmigratedCount"] == 4, f"Should detect all 4 games, got {retro_state['unmigratedCount']}"
+
+            # Submit scores from modal
+            page.evaluate("""async () => {
+                const rm = window.game.scene.getScene('RetroactiveImportModal');
+                await rm.submitScores();
+            }""")
+            time.sleep(0.8)
+
+            migrated_flag = page.evaluate("() => window.localStorage.getItem('hbd70_scores_migrated')")
+            assert migrated_flag == "true", f"hbd70_scores_migrated should be true after submission, got {migrated_flag}"
+
+            # Verify LeaderboardModal opened
+            lb_from_retro = page.evaluate("() => window.game.scene.isActive('LeaderboardModal')")
+            assert lb_from_retro, "LeaderboardModal should be active after retroactive score submission"
+
+            # Close Leaderboard Modal
+            page.evaluate("() => window.game.scene.getScene('LeaderboardModal').closeModal()")
             time.sleep(0.4)
 
             # 4. Test Pong Scene Flow

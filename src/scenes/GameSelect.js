@@ -205,22 +205,21 @@ export class GameSelectScene extends Phaser.Scene {
     }).setOrigin(0.5);
     lbBtn.add(lbText);
 
-    lbBtn.setSize(270, 38);
-    lbBtn.setInteractive(new Phaser.Geom.Rectangle(-135, -19, 270, 38), Phaser.Geom.Rectangle.Contains);
-    lbBtn.input.cursor = 'pointer';
+    const lbZone = this.add.zone(0, 0, 270, 42).setInteractive({ useHandCursor: true });
+    lbBtn.add(lbZone);
 
-    lbBtn.on('pointerdown', () => {
+    lbZone.on('pointerdown', () => {
       audio.playShoot?.();
       this.scene.launch('LeaderboardModal', { gameId: 'tanks', returnScene: 'GameSelect' });
     });
-    lbBtn.on('pointerover', () => {
+    lbZone.on('pointerover', () => {
       lbBg.clear();
       lbBg.fillStyle(0x1e293b, 1);
       lbBg.fillRoundedRect(-135, -19, 270, 38, 10);
       lbBg.lineStyle(2, 0xfacc15, 1);
       lbBg.strokeRoundedRect(-135, -19, 270, 38, 10);
     });
-    lbBtn.on('pointerout', () => {
+    lbZone.on('pointerout', () => {
       lbBg.clear();
       lbBg.fillStyle(0x0f172a, 0.95);
       lbBg.fillRoundedRect(-135, -19, 270, 38, 10);
@@ -252,14 +251,26 @@ export class GameSelectScene extends Phaser.Scene {
     }).setOrigin(1, 0.5);
 
     creditsLink.add(creditsText);
-    creditsLink.setSize(75, 30);
-    creditsLink.setInteractive({ useHandCursor: true });
-    creditsLink.on('pointerdown', () => {
+    const creditsZone = this.add.zone(-37.5, 0, 85, 36).setInteractive({ useHandCursor: true });
+    creditsLink.add(creditsZone);
+    creditsZone.on('pointerdown', () => {
       audio.playShoot();
       this.scene.start('Credits', { returnScene: 'GameSelect' });
     });
-    creditsLink.on('pointerover', () => creditsText.setColor('#ffd700'));
-    creditsLink.on('pointerout', () => creditsText.setColor('#94a3b8'));
+    creditsZone.on('pointerover', () => creditsText.setColor('#ffd700'));
+    creditsZone.on('pointerout', () => creditsText.setColor('#94a3b8'));
+
+    // 5. Retroactive High Score Import Check
+    if (!storage.isMigrationCompleted() && !storage.isMigrationDismissed()) {
+      const unmigrated = storage.getUnmigratedLocalScores();
+      if (unmigrated.length > 0) {
+        this.time.delayedCall(250, () => {
+          if (this.sys && this.sys.isActive() && this.scene.isActive()) {
+            this.scene.launch('RetroactiveImportModal', { returnScene: 'GameSelect' });
+          }
+        });
+      }
+    }
   }
 
   createGameCard(x, y, data) {

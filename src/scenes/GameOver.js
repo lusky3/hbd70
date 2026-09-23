@@ -123,9 +123,9 @@ export class GameOverScene extends Phaser.Scene {
       color: '#facc15'
     }).setOrigin(0.5);
     lbBtn.add(lbText);
-    lbBtn.setSize(btnWidth, 40);
-    lbBtn.setInteractive({ useHandCursor: true });
-    lbBtn.on('pointerdown', () => {
+    const lbZone = this.add.zone(0, 0, btnWidth, 44).setInteractive({ useHandCursor: true });
+    lbBtn.add(lbZone);
+    lbZone.on('pointerdown', () => {
       audio.playShoot?.();
       this.scene.launch('InitialsEntryOverlay', {
         gameId: 'tanks',
@@ -133,6 +133,20 @@ export class GameOverScene extends Phaser.Scene {
         detail: `Level ${this.levelNum}`,
         returnScene: 'GameOver'
       });
+    });
+    lbZone.on('pointerover', () => {
+      lbBg.clear();
+      lbBg.fillStyle(0x1e293b, 1);
+      lbBg.fillRoundedRect(-btnWidth / 2, -20, btnWidth, 40, 10);
+      lbBg.lineStyle(2, 0xfacc15, 1);
+      lbBg.strokeRoundedRect(-btnWidth / 2, -20, btnWidth, 40, 10);
+    });
+    lbZone.on('pointerout', () => {
+      lbBg.clear();
+      lbBg.fillStyle(0x0f172a, 1);
+      lbBg.fillRoundedRect(-btnWidth / 2, -20, btnWidth, 40, 10);
+      lbBg.lineStyle(1.5, 0xfacc15, 0.9);
+      lbBg.strokeRoundedRect(-btnWidth / 2, -20, btnWidth, 40, 10);
     });
 
     // 6. Return to Arcade Menu link

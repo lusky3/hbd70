@@ -131,10 +131,8 @@ test('AC-6: Asteroids Tap-to-Fire Preserves Ship Heading Invariance', () => {
 });
 
 test('AC-7: Version Consistency across package.json, src/version.js, GameSelect.js, and CHANGELOG.md', () => {
-  assert.equal(APP_VERSION, '1.1.0', 'APP_VERSION must be 1.1.0');
-
   const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
-  assert.equal(pkg.version, '1.1.0', 'package.json version must be 1.1.0');
+  assert.equal(APP_VERSION, pkg.version, 'package.json and src/version.js must match');
 
   const gameSelectContent = fs.readFileSync(path.join(rootDir, 'src/scenes/GameSelect.js'), 'utf-8');
   assert.match(gameSelectContent, /v\$\{APP_VERSION\}/, 'GameSelectScene must render v${APP_VERSION} in footer');

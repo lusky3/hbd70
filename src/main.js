@@ -16,6 +16,7 @@ import { SpaceInvadersScene } from './scenes/SpaceInvaders.js';
 import { AsteroidsScene } from './scenes/Asteroids.js';
 import { InitialsEntryOverlayScene } from './scenes/InitialsEntryOverlay.js';
 import { LeaderboardModalScene } from './scenes/LeaderboardModal.js';
+import { RetroactiveImportModalScene } from './scenes/RetroactiveImportModal.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -49,7 +50,8 @@ const config = {
     VictoryScene,
     CreditsScene,
     InitialsEntryOverlayScene,
-    LeaderboardModalScene
+    LeaderboardModalScene,
+    RetroactiveImportModalScene
   ],
   input: {
     activePointers: 3

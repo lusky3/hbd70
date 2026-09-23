@@ -661,9 +661,9 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#ffffff'
     }).setOrigin(0.5);
     retryBtn.add(rText);
-    retryBtn.setSize(220, 30);
-    retryBtn.setInteractive({ useHandCursor: true });
-    retryBtn.on('pointerdown', () => {
+    const rZone = this.add.zone(0, 0, 220, 36).setInteractive({ useHandCursor: true });
+    retryBtn.add(rZone);
+    rZone.on('pointerdown', () => {
       audio.playShoot();
       this.scene.restart();
     });
@@ -684,9 +684,9 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#facc15'
     }).setOrigin(0.5);
     lbBtn.add(lText);
-    lbBtn.setSize(220, 30);
-    lbBtn.setInteractive({ useHandCursor: true });
-    lbBtn.on('pointerdown', () => {
+    const lZone = this.add.zone(0, 0, 220, 36).setInteractive({ useHandCursor: true });
+    lbBtn.add(lZone);
+    lZone.on('pointerdown', () => {
       audio.playShoot?.();
       this.scene.launch('InitialsEntryOverlay', {
         gameId: 'invaders',
@@ -712,9 +712,9 @@ export class SpaceInvadersScene extends Phaser.Scene {
       color: '#cbd5e1'
     }).setOrigin(0.5);
     menuBtn.add(mText);
-    menuBtn.setSize(220, 30);
-    menuBtn.setInteractive({ useHandCursor: true });
-    menuBtn.on('pointerdown', () => {
+    const mZone = this.add.zone(0, 0, 220, 36).setInteractive({ useHandCursor: true });
+    menuBtn.add(mZone);
+    mZone.on('pointerdown', () => {
       audio.playShoot();
       this.scene.start('GameSelect');
     });

@@ -149,9 +149,9 @@ export class VictoryScene extends Phaser.Scene {
       color: '#facc15'
     }).setOrigin(0.5);
     lbBtn.add(lbText);
-    lbBtn.setSize(lbBtnWidth, lbBtnHeight);
-    lbBtn.setInteractive({ useHandCursor: true });
-    lbBtn.on('pointerdown', () => {
+    const lbZone = this.add.zone(0, 0, lbBtnWidth, lbBtnHeight).setInteractive({ useHandCursor: true });
+    lbBtn.add(lbZone);
+    lbZone.on('pointerdown', () => {
       audio.playShoot?.();
       this.scene.launch('InitialsEntryOverlay', {
         gameId: 'tanks',

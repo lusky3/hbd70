@@ -48,5 +48,10 @@ source_sha: 0e37267
 - [DECISION] Centered LeaderboardModal featuring 4 arcade game tabs, retro cyan/gold typography, online/offline status badge, and date formatting.
 - [DECISION] Expose RECORD HIGH SCORE button in game over and victory screens across Tanks, Pong, Space Invaders, and Asteroids.
 
+### [ui][2026-09-22][main]
+source_spec: docs/specs/arcade-retroactive-scores-and-button-hitbox.md
+source_sha: 6949daa
 
-
+- [DECISION] Centered Phaser.GameObjects.Zone instances provide exact 100% button surface coverage without container quadrant origin clipping.
+- [DECISION] Dedicated RetroactiveImportModal presents a clear list of local achievements and gathers player initials before one-tap batch submission.
+- [DECISION] Version bumped to v1.2.0 across package.json, version.js, GameSelectScene, and CHANGELOG.md.

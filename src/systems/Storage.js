@@ -2,6 +2,7 @@
 // LocalStorage session persistence manager for Allan's Birthday Tanks and Retro Arcade
 
 const STORAGE_KEY = 'hbd70_progress';
+const MIGRATION_KEY = 'hbd70_scores_migrated';
 
 const DEFAULT_ARCADE_STATS = {
   pong: { wins: 0, losses: 0, longestRally: 0 },
@@ -272,22 +273,127 @@ class StorageManager {
   }
 
   clearProgress() {
+    this._migrationDismissed = false;
     this.memoryState = {
       highestLevelBeaten: 0,
       beatenLevels: [],
       unlockedLevel: 1,
       revealedLevels: [],
-      arcadeStats: JSON.parse(JSON.stringify(DEFAULT_ARCADE_STATS))
+      arcadeStats: JSON.parse(JSON.stringify(DEFAULT_ARCADE_STATS)),
+      scoresMigrated: false
     };
     if (this.isStorageAvailable) {
       try {
         window.localStorage.removeItem(STORAGE_KEY);
+        window.localStorage.removeItem(MIGRATION_KEY);
       } catch (err) {
         console.warn('Could not clear localStorage:', err);
       }
     }
     return { ...this.memoryState };
   }
+
+  isMigrationCompleted() {
+    if (this.memoryState?.scoresMigrated) return true;
+    if (!this.isStorageAvailable) return false;
+    try {
+      return window.localStorage.getItem(MIGRATION_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  markMigrationCompleted() {
+    if (!this.memoryState) this.memoryState = {};
+    this.memoryState.scoresMigrated = true;
+    if (this.isStorageAvailable) {
+      try {
+        window.localStorage.setItem(MIGRATION_KEY, 'true');
+      } catch (err) {
+        console.warn('Could not save migration status:', err);
+      }
+    }
+  }
+
+  isMigrationDismissed() {
+    if (this._migrationDismissed) return true;
+    if (!this.isStorageAvailable) return false;
+    try {
+      return typeof window !== 'undefined' && window.sessionStorage?.getItem('hbd70_migration_dismissed') === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  dismissMigration() {
+    this._migrationDismissed = true;
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem('hbd70_migration_dismissed', 'true');
+      }
+    } catch {}
+  }
+
+  getUnmigratedLocalScores() {
+    const progress = this.getProgress();
+    const stats = progress.arcadeStats || {};
+    const unmigrated = [];
+
+    // Tanks
+    const highestLevel = progress.highestLevelBeaten || 0;
+    const tanksScore = Math.max(stats.tanks?.highScore || 0, highestLevel * 1000);
+    if (tanksScore > 0) {
+      unmigrated.push({
+        gameId: 'tanks',
+        name: 'BIRTHDAY TANKS',
+        icon: '🪖',
+        score: tanksScore,
+        detail: `Level ${highestLevel}`
+      });
+    }
+
+    // Pong
+    const pongRally = stats.pong?.longestRally || 0;
+    const pongWins = stats.pong?.wins || 0;
+    if (pongRally > 0 || pongWins > 0) {
+      unmigrated.push({
+        gameId: 'pong',
+        name: 'BIRTHDAY PONG',
+        icon: '🏓',
+        score: pongRally,
+        detail: `${pongRally} Rally (${pongWins} Wins)`
+      });
+    }
+
+    // Space Invaders
+    const invScore = stats.invaders?.highScore || 0;
+    const invWave = stats.invaders?.highestWave || 1;
+    if (invScore > 0) {
+      unmigrated.push({
+        gameId: 'invaders',
+        name: 'SPACE INVADERS',
+        icon: '👾',
+        score: invScore,
+        detail: `Wave ${invWave}`
+      });
+    }
+
+    // Asteroids
+    const astScore = stats.asteroids?.highScore || 0;
+    const astWave = stats.asteroids?.highestWave || 1;
+    if (astScore > 0) {
+      unmigrated.push({
+        gameId: 'asteroids',
+        name: 'BIRTHDAY ASTEROIDS',
+        icon: '🚀',
+        score: astScore,
+        detail: `Wave ${astWave}`
+      });
+    }
+
+    return unmigrated;
+  }
 }
 
 export const storage = new StorageManager();
+

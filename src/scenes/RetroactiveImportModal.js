@@ -1,0 +1,357 @@
+// src/scenes/RetroactiveImportModal.js
+// Modal prompt for retro-actively importing local arcade high scores to Cloudflare D1 leaderboards
+
+import { storage } from '../systems/Storage.js';
+import { leaderboardService, sanitizeInitials } from '../systems/LeaderboardService.js';
+import { audio } from '../systems/AudioManager.js';
+
+const SceneBase = typeof Phaser !== 'undefined' ? Phaser.Scene : class {};
+export const ALLOWED_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?★ ";
+
+export class RetroactiveImportModalScene extends SceneBase {
+  constructor() {
+    super('RetroactiveImportModal');
+  }
+
+  init(data) {
+    this.returnScene = data?.returnScene || 'GameSelect';
+    this.unmigrated = storage.getUnmigratedLocalScores();
+    const stored = leaderboardService.getPlayerInitials();
+    this.initials = stored.padEnd(3, ' ').slice(0, 3).split('');
+    this.selectedSlot = 0;
+    this.isSubmitting = false;
+  }
+
+  create() {
+    const { width, height } = this.scale;
+
+    // 1. Semi-transparent Dim Backdrop
+    const backdrop = this.add.graphics();
+    backdrop.fillStyle(0x000000, 0.85);
+    backdrop.fillRect(0, 0, width, height);
+
+    // Block pointer propagation to underlying scene
+    this.input.topOnly = true;
+
+    // 2. Modal Box
+    const cardWidth = Math.min(width - 32, 420);
+    const cardHeight = Math.min(height - 40, 520);
+    const cardX = (width - cardWidth) / 2;
+    const cardY = (height - cardHeight) / 2;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0a0f1d, 0.98);
+    bg.fillRoundedRect(cardX, cardY, cardWidth, cardHeight, 14);
+    bg.lineStyle(2, 0xfacc15, 0.9);
+    bg.strokeRoundedRect(cardX, cardY, cardWidth, cardHeight, 14);
+
+    // Glow accents
+    bg.lineStyle(1, 0x38bdf8, 0.4);
+    bg.strokeRoundedRect(cardX + 4, cardY + 4, cardWidth - 8, cardHeight - 8, 12);
+
+    let curY = cardY + 28;
+
+    // 3. Header & Subtitle
+    this.add.text(width / 2, curY, '🏆 LOCAL RECORDS FOUND! 🏆', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '18px',
+      fontWeight: '900',
+      color: '#facc15',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+
+    curY += 24;
+    this.add.text(width / 2, curY, 'Upload your local achievements to the Global Leaderboard:', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      color: '#94a3b8',
+      align: 'center',
+      wordWrap: { width: cardWidth - 36 }
+    }).setOrigin(0.5);
+
+    curY += 28;
+
+    // 4. Score Summary Items
+    const rowHeight = 32;
+    this.unmigrated.forEach((item) => {
+      const rowBg = this.add.graphics();
+      rowBg.fillStyle(0x1e293b, 0.8);
+      rowBg.fillRoundedRect(cardX + 16, curY, cardWidth - 32, rowHeight - 4, 6);
+
+      const label = `${item.icon} ${item.name}`;
+      this.add.text(cardX + 26, curY + 6, label, {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        color: '#e2e8f0'
+      });
+
+      const scoreDisplay = `${item.score.toLocaleString()} (${item.detail})`;
+      this.add.text(cardX + cardWidth - 26, curY + 6, scoreDisplay, {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        color: '#38bdf8'
+      }).setOrigin(1, 0);
+
+      curY += rowHeight;
+    });
+
+    curY += 12;
+
+    // 5. Initials Label
+    this.add.text(width / 2, curY, 'ENTER YOUR INITIALS:', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: 'bold',
+      color: '#cbd5e1',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+
+    curY += 56;
+
+    // 6. 3-Slot Initials Spinner
+    this.slotLetters = [];
+    this.slotBgs = [];
+    const slotSpacing = 68;
+    const startX = width / 2 - slotSpacing;
+
+    for (let i = 0; i < 3; i++) {
+      const cx = startX + i * slotSpacing;
+      const slotBox = this.add.container(cx, curY);
+
+      // Chevron UP
+      const upBtn = this.add.text(0, -42, '▲', {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        color: '#38bdf8'
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      upBtn.on('pointerdown', () => this.cycleChar(i, 1));
+
+      // Slot background
+      const sBg = this.add.graphics();
+      sBg.fillStyle(0x1e293b, 1);
+      sBg.fillRoundedRect(-24, -26, 48, 52, 8);
+      sBg.lineStyle(1.5, i === this.selectedSlot ? 0xfacc15 : 0x475569, 1);
+      sBg.strokeRoundedRect(-24, -26, 48, 52, 8);
+      slotBox.add(sBg);
+      this.slotBgs.push(sBg);
+
+      // Letter text
+      const lText = this.add.text(0, 0, this.initials[i] || ' ', {
+        fontFamily: 'monospace',
+        fontSize: '32px',
+        fontWeight: '900',
+        color: '#f8fafc'
+      }).setOrigin(0.5);
+      slotBox.add(lText);
+      this.slotLetters.push(lText);
+
+      // Chevron DOWN
+      const downBtn = this.add.text(0, 42, '▼', {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        color: '#38bdf8'
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      downBtn.on('pointerdown', () => this.cycleChar(i, -1));
+
+      // Touch zone on slot
+      const hitZone = this.add.zone(0, 0, 52, 90).setInteractive({ useHandCursor: true });
+      slotBox.add(hitZone);
+      hitZone.on('pointerdown', () => {
+        this.selectedSlot = i;
+        this.updateSlotHighlights();
+      });
+
+      this.addTouchDragToSlot(hitZone, i);
+    }
+
+    curY += 72;
+
+    // 7. Action Buttons
+    const btnWidth = cardWidth - 48;
+
+    // Submit button
+    const submitBtn = this.add.container(width / 2, curY);
+    const subBg = this.add.graphics();
+    subBg.fillStyle(0x22c55e, 1);
+    subBg.fillRoundedRect(-btnWidth / 2, -19, btnWidth, 38, 8);
+    subBg.lineStyle(1.5, 0x86efac, 1);
+    subBg.strokeRoundedRect(-btnWidth / 2, -19, btnWidth, 38, 8);
+    submitBtn.add(subBg);
+
+    this.submitText = this.add.text(0, 0, '🚀 UPLOAD TO LEADERBOARD 🚀', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: 'bold',
+      color: '#ffffff',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+    submitBtn.add(this.submitText);
+
+    const submitZone = this.add.zone(0, 0, btnWidth, 42).setInteractive({ useHandCursor: true });
+    submitBtn.add(submitZone);
+    submitZone.on('pointerdown', () => this.submitScores());
+
+    curY += 46;
+
+    // Remind me later button
+    const skipBtn = this.add.container(width / 2, curY);
+    const skipBg = this.add.graphics();
+    skipBg.fillStyle(0x1e293b, 1);
+    skipBg.fillRoundedRect(-btnWidth / 2, -17, btnWidth, 34, 8);
+    skipBg.lineStyle(1.5, 0x64748b, 1);
+    skipBg.strokeRoundedRect(-btnWidth / 2, -17, btnWidth, 34, 8);
+    skipBtn.add(skipBg);
+
+    const skipText = this.add.text(0, 0, 'REMIND ME LATER', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      color: '#94a3b8'
+    }).setOrigin(0.5);
+    skipBtn.add(skipText);
+
+    const skipZone = this.add.zone(0, 0, btnWidth, 38).setInteractive({ useHandCursor: true });
+    skipBtn.add(skipZone);
+    skipZone.on('pointerdown', () => this.dismiss());
+
+    // 8. Desktop keyboard support
+    if (this.input?.keyboard) {
+      this.keyHandler = (event) => this.handleKeyboardInput(event);
+      this.input.keyboard.on('keydown', this.keyHandler);
+    }
+  }
+
+  addTouchDragToSlot(zone, slotIndex) {
+    let startY = 0;
+    zone.on('pointerdown', (pointer) => {
+      startY = pointer.y;
+    });
+    zone.on('pointerup', (pointer) => {
+      const deltaY = pointer.y - startY;
+      if (Math.abs(deltaY) > 20) {
+        if (deltaY < 0) {
+          this.cycleChar(slotIndex, 1); // Drag up -> next char
+        } else {
+          this.cycleChar(slotIndex, -1); // Drag down -> prev char
+        }
+      }
+    });
+  }
+
+  cycleChar(slotIndex, direction) {
+    audio.playShoot?.();
+    const currentChar = this.initials[slotIndex] || 'A';
+    let idx = ALLOWED_CHARS.indexOf(currentChar);
+    if (idx === -1) idx = 0;
+
+    idx = (idx + direction + ALLOWED_CHARS.length) % ALLOWED_CHARS.length;
+    this.initials[slotIndex] = ALLOWED_CHARS[idx];
+
+    if (this.slotLetters[slotIndex]) {
+      this.slotLetters[slotIndex].setText(this.initials[slotIndex]);
+    }
+    this.selectedSlot = slotIndex;
+    this.updateSlotHighlights();
+  }
+
+  updateSlotHighlights() {
+    for (let i = 0; i < 3; i++) {
+      const bg = this.slotBgs[i];
+      if (!bg) continue;
+      bg.clear();
+      bg.fillStyle(0x1e293b, 1);
+      bg.fillRoundedRect(-24, -26, 48, 52, 8);
+      bg.lineStyle(1.5, i === this.selectedSlot ? 0xfacc15 : 0x475569, 1);
+      bg.strokeRoundedRect(-24, -26, 48, 52, 8);
+    }
+  }
+
+  handleKeyboardInput(event) {
+    if (this.isSubmitting) return;
+
+    if (event.key === 'Enter') {
+      this.submitScores();
+      return;
+    }
+    if (event.key === 'Escape') {
+      this.dismiss();
+      return;
+    }
+    if (event.key === 'ArrowRight') {
+      this.selectedSlot = (this.selectedSlot + 1) % 3;
+      this.updateSlotHighlights();
+      return;
+    }
+    if (event.key === 'ArrowLeft') {
+      this.selectedSlot = (this.selectedSlot + 2) % 3;
+      this.updateSlotHighlights();
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      this.cycleChar(this.selectedSlot, 1);
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      this.cycleChar(this.selectedSlot, -1);
+      return;
+    }
+
+    const key = event.key.toUpperCase();
+    if (ALLOWED_CHARS.includes(key)) {
+      audio.playShoot?.();
+      this.initials[this.selectedSlot] = key;
+      this.slotLetters[this.selectedSlot].setText(key);
+      this.selectedSlot = (this.selectedSlot + 1) % 3;
+      this.updateSlotHighlights();
+    }
+  }
+
+  async submitScores() {
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
+    audio.playBossHit?.();
+
+    if (this.submitText) {
+      this.submitText.setText('UPLOADING SCORES...');
+    }
+
+    const rawInitials = this.initials.join('');
+    const cleanInitials = sanitizeInitials(rawInitials);
+
+    // Save initials in local storage
+    leaderboardService.setPlayerInitials(cleanInitials);
+
+    // Sequential batch submission
+    await leaderboardService.submitBatchScores(cleanInitials, this.unmigrated);
+
+    // Mark migration completed
+    storage.markMigrationCompleted();
+
+    // Scene lifecycle safety check
+    if (!this.sys || !this.sys.isActive() || !this.scene.isActive()) return;
+
+    if (this.keyHandler && this.input?.keyboard) {
+      this.input.keyboard.off('keydown', this.keyHandler);
+    }
+
+    const firstGameId = this.unmigrated[0]?.gameId || 'tanks';
+    this.scene.stop();
+    this.scene.launch('LeaderboardModal', {
+      gameId: firstGameId,
+      returnScene: this.returnScene
+    });
+  }
+
+  dismiss() {
+    audio.playHit?.();
+    storage.dismissMigration();
+
+    if (this.keyHandler && this.input?.keyboard) {
+      this.input.keyboard.off('keydown', this.keyHandler);
+    }
+
+    this.scene.stop();
+  }
+}

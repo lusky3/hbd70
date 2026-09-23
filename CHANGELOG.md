@@ -5,6 +5,16 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-22
+
+### Added
+- **Retroactive Local High Scores Migration**: Detection of un-uploaded local high scores stored in `localStorage` upon entering the arcade cabinet hub (`GameSelectScene`).
+- **Retroactive Import Modal (`RetroactiveImportModalScene`)**: Arcade modal allowing existing players to review all local records, choose 3-letter initials (with touch chevrons, vertical swipe drag, and desktop keyboard typing), and batch-submit them in 1 tap to the global Cloudflare D1 leaderboard.
+- **Batch Leaderboard Submission API**: Added `submitBatchScores` in `LeaderboardService` for sequential edge worker submission with offline fail-soft resilience.
+
+### Changed
+- **Full Button Hitbox Fix**: Replaced container interaction bounds with centered `Phaser.GameObjects.Zone` instances across `GameSelectScene`, `GameOverScene`, `PongScene`, `SpaceInvadersScene`, and `VictoryScene`, fixing the Phaser bottom-right container quadrant offset bug and ensuring 100% of each button surface registers touches and clicks.
+
 ## [1.1.0] - 2026-09-22
 
 ### Added

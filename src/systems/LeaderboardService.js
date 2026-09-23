@@ -150,19 +150,29 @@ export class LeaderboardService {
     }
   }
 
-  async submitScore(gameId, initials, score, detail = '') {
-    const cleanInitials = this.setPlayerInitials(initials);
-    const numScore = Math.max(0, parseInt(score, 10) || 0);
+  async submitScore(gameId, initialsOrOptions, score, detail = '') {
+    let rawInitials = initialsOrOptions;
+    let rawScore = score;
+    let rawDetail = detail;
+
+    if (initialsOrOptions && typeof initialsOrOptions === 'object') {
+      rawInitials = initialsOrOptions.initials;
+      rawScore = initialsOrOptions.score;
+      rawDetail = initialsOrOptions.detail || '';
+    }
+
+    const cleanInitials = this.setPlayerInitials(rawInitials);
+    const numScore = Math.max(0, parseInt(rawScore, 10) || 0);
 
     // Keep local storage stats in sync
     if (gameId === 'tanks' && typeof storage.recordTanksScore === 'function') {
       storage.recordTanksScore(numScore);
     } else if (gameId === 'invaders' && typeof storage.recordInvadersScore === 'function') {
-      const waveMatch = String(detail).match(/Wave\s*(\d+)/i);
+      const waveMatch = String(rawDetail).match(/Wave\s*(\d+)/i);
       const wave = waveMatch ? parseInt(waveMatch[1], 10) : 1;
       storage.recordInvadersScore({ score: numScore, wave });
     } else if (gameId === 'asteroids' && typeof storage.recordAsteroidsScore === 'function') {
-      const waveMatch = String(detail).match(/Wave\s*(\d+)/i);
+      const waveMatch = String(rawDetail).match(/Wave\s*(\d+)/i);
       const wave = waveMatch ? parseInt(waveMatch[1], 10) : 1;
       storage.recordAsteroidsScore({ score: numScore, wave });
     } else if (gameId === 'pong' && typeof storage.recordPongRally === 'function') {
@@ -217,6 +227,22 @@ export class LeaderboardService {
       };
     }
   }
+
+  async submitBatchScores(initials, scoreEntries = []) {
+    const cleanInitials = this.setPlayerInitials(initials);
+    const results = [];
+    for (const entry of scoreEntries) {
+      if (!entry || !entry.gameId || !entry.score) continue;
+      const res = await this.submitScore(entry.gameId, {
+        initials: cleanInitials,
+        score: entry.score,
+        detail: entry.detail
+      });
+      results.push({ gameId: entry.gameId, ...res });
+    }
+    return results;
+  }
 }
 
 export const leaderboardService = new LeaderboardService();
+

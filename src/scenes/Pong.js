@@ -367,9 +367,9 @@ export class PongScene extends Phaser.Scene {
       color: '#ffffff'
     }).setOrigin(0.5);
     playAgainBtn.add(pText);
-    playAgainBtn.setSize(240, 30);
-    playAgainBtn.setInteractive({ useHandCursor: true });
-    playAgainBtn.on('pointerdown', () => {
+    const pZone = this.add.zone(0, 0, 240, 36).setInteractive({ useHandCursor: true });
+    playAgainBtn.add(pZone);
+    pZone.on('pointerdown', () => {
       audio.playShoot();
       this.scene.restart();
     });
@@ -390,9 +390,9 @@ export class PongScene extends Phaser.Scene {
       color: '#facc15'
     }).setOrigin(0.5);
     lbBtn.add(lText);
-    lbBtn.setSize(240, 30);
-    lbBtn.setInteractive({ useHandCursor: true });
-    lbBtn.on('pointerdown', () => {
+    const lZone = this.add.zone(0, 0, 240, 36).setInteractive({ useHandCursor: true });
+    lbBtn.add(lZone);
+    lZone.on('pointerdown', () => {
       audio.playShoot?.();
       this.scene.launch('InitialsEntryOverlay', {
         gameId: 'pong',
@@ -418,9 +418,9 @@ export class PongScene extends Phaser.Scene {
       color: '#cbd5e1'
     }).setOrigin(0.5);
     menuBtn.add(mText);
-    menuBtn.setSize(240, 30);
-    menuBtn.setInteractive({ useHandCursor: true });
-    menuBtn.on('pointerdown', () => {
+    const mZone = this.add.zone(0, 0, 240, 36).setInteractive({ useHandCursor: true });
+    menuBtn.add(mZone);
+    mZone.on('pointerdown', () => {
       audio.playShoot();
       this.scene.start('GameSelect');
     });
