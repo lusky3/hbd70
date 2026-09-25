@@ -1,7 +1,7 @@
 {
   "name": "hbd70",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Classic Arcade — Allan Lusk's 70th Birthday Retro Collection",
   "type": "module",
   "scripts": {

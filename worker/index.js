@@ -3,13 +3,28 @@
 
 import { validatePlayerIdentity, isProfaneText } from './profanity.js';
 
-export const VALID_GAMES = ['tanks', 'pong', 'invaders', 'asteroids'];
+export const VALID_GAMES = [
+  'tanks',
+  'pong',
+  'invaders',
+  'asteroids',
+  'pool',
+  'pool_8ball',
+  'pool_9ball',
+  'pool_straight',
+  'pool_speed'
+];
 
 export const SCORE_LIMITS = {
   tanks: 300000,
   pong: 1000,
   invaders: 500000,
   asteroids: 2000000,
+  pool: 100000,
+  pool_8ball: 100000,
+  pool_9ball: 100000,
+  pool_straight: 200000,
+  pool_speed: 150000,
 };
 
 const ipRateMap = new Map();

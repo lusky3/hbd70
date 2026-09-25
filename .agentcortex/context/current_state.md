@@ -34,6 +34,7 @@
   - docs/specs/multi-device-multiplayer.md: Allan's 70th Birthday Arcade: Multi-Device Real-Time Multiplayer [status: shipped] [Updated: 2026-09-22]
   - docs/specs/multiplayer-lobby-polish-and-pwa.md: Allan's 70th Birthday Arcade: Multiplayer Lobby Polish, Host Controls & PWA [status: shipped] [Updated: 2026-09-23]
   - docs/specs/tanks-multiplayer-pve-and-modes.md: Allan's 70th Birthday Arcade: Tanks Multiplayer PvP/PvE Modes, Endless Waves & Leaderboard Badges [status: shipped] [Updated: 2026-09-25]
+  - docs/specs/birthday-arcade-pool.md: Allan's 70th Birthday Retro Pool Game [status: shipped] [Updated: 2026-09-25]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -79,6 +80,10 @@
 
 ## Ship History
 
+### Ship-main-2026-09-25-pool
+- Feature shipped: Allan's 70th Birthday Retro Pool Game (v1.7.0) — New retro pocket billiards game featuring green felt, mahogany cushions, 6 brass drop pockets, 16 specular-highlighted balls, and realistic 4-substep 2D physics; 4 game subtypes (8-Ball with open-table rules, 9-Ball with lowest-ball rotation, Straight Pool 14.1 Continuous to 25 points with 14-ball continuous re-racks, and Speed Pool 90s countdown with +10s pot bonus); 4-tier VS CPU AI with cut angle calculations, obstruction raycasting, and victory fanfare on Allan Legend; dedicated Cloudflare D1 leaderboards for each subtype (pool_8ball, pool_9ball, pool_straight, pool_speed) with streak multipliers and trick shot bonuses; real-time 2-player host-authoritative WebRTC multiplayer pool with 25Hz snapshots and turn handoffs; touch drag aiming, fine-angle stepper buttons (◀/▶), and spring pullback power slider; version bump to v1.7.0 in package.json, version.js, and CHANGELOG.md.
+- Tests: Pass (114/114 node unit tests + Playwright E2E pool test suite + dual-browser multiplayer E2E + single-player arcade regression E2E suite passing with 0 console errors + ACX validator 113 PASS)
+
 ### Ship-main-2026-09-25-tanks-multiplayer-pve-and-modes
 - Feature shipped: Allan's 70th Birthday Arcade: Tanks Multiplayer PvP/PvE Modes, Endless Waves & Leaderboard Badges (v1.6.0) — Mode toggle between competitive PvP and cooperative PvE squad play; PvE sub-mode toggle between Decades Campaign (levels 1-70) and Endless Waves; procedural 12x16 arena generation with destructible blocks and water hazard barriers; host-authoritative enemy AI simulation with live snapshot streaming at 25 Hz; friendly fire immunity in PvE squad mode; wave depth move and projectile velocity scaling; real-time client boss health bars; PvP high score submission to Cloudflare D1 with verified ⚔️ MP PvP detail string and leaderboard badge formatting; version bump to v1.6.0 in package.json, version.js, and CHANGELOG.md.
 - Tests: Pass (102/102 node unit tests + dual-browser WebRTC E2E suite + single-player arcade E2E regression suite + 9-gap verification suite + headless PvE browser test suite passing with 0 console errors)
@@ -114,11 +119,3 @@
 ### Ship-main-2026-09-22-controls-credits-polish
 - Feature shipped: Allan's 70th Birthday Arcade: Controls, Strings & Visual Polish — Corrected Al's birthplace to Parry Sound, ON in credits; updated splash dedication to Cody & Carrie; honored Amy, Jennifer & Kelsey in dedicated ★ [IN SPIRIT] ★ credits section; added Kelsey Lusk & Jay as QA Testers; implemented continuous playfield finger drag and tap-to-fire with 250ms cooldown meter in Space Invaders; overhauled procedural CN Railcar sprite with authentic red livery, bogie trucks, and catwalk; added Asteroids tap-to-fire heading invariance and touch steering ring; displayed version v1.1.0 in GameSelect footer, bumped package.json, and created CHANGELOG.md.
 - Tests: Pass (55/55 node unit tests + Playwright headless browser E2E test suite passing with 0 console errors + ACX validator 113 PASS)
-
-### Ship-main-2026-09-22-arcade-multigame
-- Feature shipped: Allan's 70th Birthday Retro Arcade Collection — 4 playable retro games (Birthday Tanks, Birthday Pong with under-paddle touch grip handle, Space Invaders with milestone decade bunkers, Asteroids with vector Newtonian mechanics), Level 1 ControlsOverlay across all games, tap-anywhere Web Audio unlock splash screen, and AC-8 persistent high scores and stat tracking across sessions.
-- Tests: Pass (48/48 node unit tests + Playwright headless browser E2E 2/2 suites passing with 0 console errors)
-
-### Ship-main-2026-09-19-player-status
-- Feature shipped: Player Progress Retention & Level Select Status Preservation — Complete backwards compatibility for stored player progress in `localStorage`, auto-repair of legacy profiles with missing `beatenLevels`, in-place title discovery persistence via `revealedLevels`, fixed `LevelSelectScene` to correctly treat all unlocked levels as playable with milestone titles and `PLAY ▶` tag, and preserved difficulty/cheat settings across game over retries.
-- Tests: Pass (34/34 node unit tests + headless browser module validation + ACX validator 113 PASS)

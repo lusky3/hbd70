@@ -116,6 +116,27 @@ export class LeaderboardService {
           createdAt: new Date().toISOString()
         });
       }
+    } else if (gameId.startsWith('pool') || gameId === 'pool_8ball' || gameId === 'pool_9ball' || gameId === 'pool_straight' || gameId === 'pool_speed') {
+      const poolStats = stats.pool || {};
+      const subKey = gameId === 'pool' ? 'pool_8ball' : gameId;
+      const p = poolStats[subKey] || { wins: 0, losses: 0, highScore: 0 };
+      const score = p.highScore || 0;
+      if (score > 0 || p.wins > 0) {
+        let detail = `${p.wins}W - ${p.losses}L`;
+        if (subKey === 'pool_straight' && p.highestBalls) {
+          detail = `${p.highestBalls} Balls Run`;
+        } else if (subKey === 'pool_speed' && p.bestTime) {
+          detail = `${p.bestTime.toFixed(1)}s Clear`;
+        }
+        fallbackResults.push({
+          rank: 1,
+          initials,
+          fullName,
+          score,
+          detail,
+          createdAt: new Date().toISOString()
+        });
+      }
     }
 
     return fallbackResults;

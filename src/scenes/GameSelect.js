@@ -128,6 +128,13 @@ export class GameSelectScene extends Phaser.Scene {
       ? `High Score: ${astStats.highScore.toLocaleString()} • Wave ${astStats.highestWave}`
       : 'Shatter Giant 70 Deep Space Rocks';
 
+    const poolStats = arcadeStats.pool || {};
+    const p8 = poolStats.pool_8ball || { wins: 0, losses: 0, highScore: 0 };
+    const poolPlayed = (p8.wins + p8.losses > 0) || (p8.highScore > 0);
+    const poolStatus = poolPlayed
+      ? `8-Ball Record: ${p8.wins}W - ${p8.losses}L • Best Score: ${p8.highScore.toLocaleString()}`
+      : '8-Ball, 9-Ball, Straight & Speed Pool';
+
     const cards = [
       {
         id: 'tanks',
@@ -190,12 +197,26 @@ export class GameSelectScene extends Phaser.Scene {
           audio.playShoot();
           this.scene.start('Asteroids');
         }
+      },
+      {
+        id: 'pool',
+        icon: '🎱',
+        title: 'BIRTHDAY POOL',
+        subtitle: 'Pocket Billiards • VS CPU & Multiplayer',
+        accentColor: 0x10b981,
+        borderColor: 0x34d399,
+        statusText: poolStatus,
+        onPlay: () => {
+          audio.playShoot();
+          this.scene.start('Pool');
+        }
       }
     ];
 
+    this.cards = cards;
     const cardStartX = width / 2;
-    const cardStartY = 160;
-    const cardSpacing = 160;
+    const cardStartY = 135;
+    const cardSpacing = 120;
 
     cards.forEach((item, index) => {
       const cy = cardStartY + (index * cardSpacing);
@@ -203,9 +224,9 @@ export class GameSelectScene extends Phaser.Scene {
     });
 
     // 3.5 Action Bar: Multiplayer & Global Leaderboard Buttons
-    const btnY = 765;
+    const btnY = 755;
     const btnW = 206;
-    const btnH = 38;
+    const btnH = 40;
 
     // A. Multiplayer Button (Left)
     const mpBtn = this.add.container(width / 2 - btnW / 2 - 6, btnY);
@@ -346,35 +367,35 @@ export class GameSelectScene extends Phaser.Scene {
 
   createGameCard(x, y, data) {
     const cardWidth = 430;
-    const cardHeight = 142;
+    const cardHeight = 110;
 
     const container = this.add.container(x, y);
 
     // Card background
     const bg = this.add.graphics();
     bg.fillStyle(0x1e293b, 0.95);
-    bg.fillRoundedRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 14);
+    bg.fillRoundedRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 12);
     bg.lineStyle(2, data.borderColor, 0.9);
-    bg.strokeRoundedRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 14);
+    bg.strokeRoundedRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 12);
     container.add(bg);
 
-    // Icon circle
+    // Icon circle (vertically centered on left)
     const iconCircle = this.add.graphics();
     iconCircle.fillStyle(data.accentColor, 0.2);
-    iconCircle.fillCircle(-cardWidth / 2 + 36, -cardHeight / 2 + 36, 24);
+    iconCircle.fillCircle(-cardWidth / 2 + 32, 0, 20);
     iconCircle.lineStyle(1.5, data.borderColor, 0.8);
-    iconCircle.strokeCircle(-cardWidth / 2 + 36, -cardHeight / 2 + 36, 24);
+    iconCircle.strokeCircle(-cardWidth / 2 + 32, 0, 20);
     container.add(iconCircle);
 
-    const icon = this.add.text(-cardWidth / 2 + 36, -cardHeight / 2 + 36, data.icon, {
-      fontSize: '24px'
+    const icon = this.add.text(-cardWidth / 2 + 32, 0, data.icon, {
+      fontSize: '20px'
     }).setOrigin(0.5);
     container.add(icon);
 
     // Title
-    const title = this.add.text(-cardWidth / 2 + 72, -cardHeight / 2 + 18, data.title, {
+    const title = this.add.text(-cardWidth / 2 + 62, -cardHeight / 2 + 15, data.title, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '17px',
+      fontSize: '15px',
       fontWeight: 'bold',
       color: '#ffffff',
       letterSpacing: 1
@@ -382,89 +403,86 @@ export class GameSelectScene extends Phaser.Scene {
     container.add(title);
 
     // Subtitle
-    const subtitle = this.add.text(-cardWidth / 2 + 72, -cardHeight / 2 + 42, data.subtitle, {
+    const subtitle = this.add.text(-cardWidth / 2 + 62, -cardHeight / 2 + 36, data.subtitle, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '12px',
+      fontSize: '11px',
       color: '#cbd5e1'
     });
     container.add(subtitle);
 
     // Status line
-    const status = this.add.text(-cardWidth / 2 + 20, cardHeight / 2 - 28, data.statusText, {
+    const status = this.add.text(-cardWidth / 2 + 62, cardHeight / 2 - 24, data.statusText, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '12px',
+      fontSize: '11px',
       fontWeight: '600',
       color: '#38bdf8'
     });
     container.add(status);
 
-    // Buttons
+    // Buttons (vertically centered on right)
     if (data.hasExtra) {
       // Secondary button (LEVELS)
-      const extraBtnX = cardWidth / 2 - 170;
-      const extraBtnY = cardHeight / 2 - 28;
+      const extraBtnX = cardWidth / 2 - 134;
       const extraBg = this.add.graphics();
       extraBg.fillStyle(0x0f172a, 1);
-      extraBg.fillRoundedRect(extraBtnX - 44, extraBtnY - 18, 88, 36, 8);
+      extraBg.fillRoundedRect(extraBtnX - 35, -15, 70, 30, 6);
       extraBg.lineStyle(1.5, 0x38bdf8, 1);
-      extraBg.strokeRoundedRect(extraBtnX - 44, extraBtnY - 18, 88, 36, 8);
+      extraBg.strokeRoundedRect(extraBtnX - 35, -15, 70, 30, 6);
       container.add(extraBg);
 
-      const extraText = this.add.text(extraBtnX, extraBtnY, data.extraText, {
+      const extraText = this.add.text(extraBtnX, 0, data.extraText, {
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '13px',
+        fontSize: '11px',
         fontWeight: 'bold',
         color: '#38bdf8'
       }).setOrigin(0.5);
       container.add(extraText);
 
-      const extraHit = this.add.zone(extraBtnX, extraBtnY, 88, 36)
+      const extraHit = this.add.zone(extraBtnX, 0, 70, 30)
         .setInteractive({ useHandCursor: true });
       container.add(extraHit);
       extraHit.on('pointerdown', data.onExtra);
 
       // Primary PLAY button
-      const playBtnX = cardWidth / 2 - 58;
-      const playBtnY = cardHeight / 2 - 28;
+      const playBtnX = cardWidth / 2 - 50;
       const playBg = this.add.graphics();
       playBg.fillStyle(0x22c55e, 1);
-      playBg.fillRoundedRect(playBtnX - 46, playBtnY - 18, 92, 36, 8);
+      playBg.fillRoundedRect(playBtnX - 40, -15, 80, 30, 6);
       playBg.lineStyle(1.5, 0x86efac, 1);
-      playBg.strokeRoundedRect(playBtnX - 46, playBtnY - 18, 92, 36, 8);
+      playBg.strokeRoundedRect(playBtnX - 40, -15, 80, 30, 6);
       container.add(playBg);
 
-      const playText = this.add.text(playBtnX, playBtnY, 'PLAY ▶', {
+      const playText = this.add.text(playBtnX, 0, 'PLAY ▶', {
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '14px',
+        fontSize: '12px',
         fontWeight: 'bold',
         color: '#ffffff'
       }).setOrigin(0.5);
       container.add(playText);
 
-      const playHit = this.add.zone(playBtnX, playBtnY, 92, 36)
+      const playHit = this.add.zone(playBtnX, 0, 80, 30)
         .setInteractive({ useHandCursor: true });
       container.add(playHit);
       playHit.on('pointerdown', data.onPlay);
     } else {
       // Single prominent PLAY button
-      const playBtnX = cardWidth / 2 - 68;
-      const playBtnY = cardHeight / 2 - 28;
+      const playBtnX = cardWidth / 2 - 56;
       const playBg = this.add.graphics();
       playBg.fillStyle(0x22c55e, 1);
-      playBg.fillRoundedRect(playBtnX - 56, playBtnY - 18, 112, 36, 8);
+      playBg.fillRoundedRect(playBtnX - 44, -16, 88, 32, 6);
       playBg.lineStyle(1.5, 0x86efac, 1);
-      playBg.strokeRoundedRect(playBtnX - 56, playBtnY - 18, 112, 36, 8);
+      playBg.strokeRoundedRect(playBtnX - 44, -16, 88, 32, 6);
       container.add(playBg);
 
-      const playText = this.add.text(playBtnX, playBtnY, 'PLAY ▶', {
+      const playText = this.add.text(playBtnX, 0, 'PLAY ▶', {
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '14px',
+        fontSize: '13px',
         fontWeight: 'bold',
         color: '#ffffff'
       }).setOrigin(0.5);
       container.add(playText);
 
-      const playHit = this.add.zone(playBtnX, playBtnY, 112, 36)
+      const playHit = this.add.zone(playBtnX, 0, 88, 32)
         .setInteractive({ useHandCursor: true });
       container.add(playHit);
       playHit.on('pointerdown', data.onPlay);

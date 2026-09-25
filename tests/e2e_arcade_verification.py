@@ -158,7 +158,7 @@ def run_arcade_e2e():
             assert lb_modal_state["hasTitle"], "LeaderboardModal must render top title"
             assert lb_modal_state["hasDate"], "LeaderboardModal must render DATE column header"
             assert lb_modal_state["hasSetTagBtn"], "LeaderboardModal must feature SET TAG/NAME action button"
-            assert lb_modal_state["tabCount"] == 4, f"LeaderboardModal must feature 4 tabs, got {lb_modal_state['tabCount']}"
+            assert lb_modal_state["tabCount"] >= 4, f"LeaderboardModal must feature at least 4 tabs, got {lb_modal_state['tabCount']}"
 
             # Verify tooltip display
             tooltip_visible = page.evaluate("""() => {

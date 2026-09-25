@@ -5,6 +5,16 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-09-25
+
+### Added
+- **Allan's 70th Birthday Retro Pool (Pocket Billiards)**: New arcade game featuring green felt, mahogany cushions, 6 brass drop pockets, 16 specular-highlighted balls, and realistic 4-substep 2D physics.
+- **4 Billiards Subtypes**: 8-Ball (open table rules, solid/stripe groups), 9-Ball (lowest-ball rotation, 9-ball on break / combo win), Straight Pool (14.1 Continuous with 14-ball continuous re-racks to 25 points), and Speed Pool (90s time attack countdown with +10s pot bonus).
+- **4-Tier VS CPU AI**: Calibrated AI shot calculation with cut angles and obstruction raycasting across Novice, Regular, Master, and Allan Legend difficulties, featuring Allan Legend victory celebration fanfare.
+- **Dedicated Cloudflare D1 Leaderboards**: 4 dedicated sub-tabs (`pool_8ball`, `pool_9ball`, `pool_straight`, `pool_speed`) in `LeaderboardModal` with streak multipliers (up to 4x) and trick shot bonuses (Break Pot, Bank Shot, Combo/Carom).
+- **Real-Time 2-Player WebRTC Multiplayer**: Host-authoritative physics simulation, turn handoffs, ball-in-hand placement, 25Hz snapshots, and instant rematching across 8-Ball, 9-Ball, and Straight Pool.
+- **Mobile Touch Controls**: Touch drag aiming, fine-angle stepper buttons (`◀`/`▶`), and spring-release vertical power meter slider.
+
 ## [1.6.0] - 2026-09-25
 
 ### Added

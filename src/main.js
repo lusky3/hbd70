@@ -20,6 +20,8 @@ import { RetroactiveImportModalScene } from './scenes/RetroactiveImportModal.js'
 import { MultiplayerLobbyScene } from './scenes/MultiplayerLobby.js';
 import { MultiplayerTanksScene } from './scenes/MultiplayerTanks.js';
 import { MultiplayerPongScene } from './scenes/MultiplayerPong.js';
+import { PoolScene } from './scenes/Pool.js';
+import { MultiplayerPoolScene } from './scenes/MultiplayerPool.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -45,6 +47,7 @@ const config = {
     PongScene,
     SpaceInvadersScene,
     AsteroidsScene,
+    PoolScene,
     LevelSelectScene,
     LevelCardScene,
     GameScene,
@@ -57,7 +60,8 @@ const config = {
     RetroactiveImportModalScene,
     MultiplayerLobbyScene,
     MultiplayerTanksScene,
-    MultiplayerPongScene
+    MultiplayerPongScene,
+    MultiplayerPoolScene
   ],
   input: {
     activePointers: 3

@@ -8,7 +8,15 @@ const GAMES = [
   { id: 'tanks', label: 'TANKS' },
   { id: 'pong', label: 'PONG' },
   { id: 'invaders', label: 'INVADERS' },
-  { id: 'asteroids', label: 'ASTEROIDS' }
+  { id: 'asteroids', label: 'ASTEROIDS' },
+  { id: 'pool', label: 'POOL' }
+];
+
+const POOL_SUBTYPES = [
+  { id: 'pool_8ball', label: '8-BALL' },
+  { id: 'pool_9ball', label: '9-BALL' },
+  { id: 'pool_straight', label: 'STRAIGHT' },
+  { id: 'pool_speed', label: 'SPEED' }
 ];
 
 const SceneBase = typeof Phaser !== 'undefined' ? Phaser.Scene : class {};
@@ -24,7 +32,9 @@ export class LeaderboardModalScene extends SceneBase {
   }
 
   init(data) {
-    this.activeGameId = data.gameId || 'tanks';
+    let initialGame = data.gameId || 'tanks';
+    if (initialGame === 'pool') initialGame = 'pool_8ball';
+    this.activeGameId = initialGame;
     this.returnScene = data.returnScene || 'GameSelect';
     this.isLoading = false;
     this.scores = [];
@@ -46,6 +56,7 @@ export class LeaderboardModalScene extends SceneBase {
     const modalH = Math.min(height - 60, 680);
     const modalX = (width - modalW) / 2;
     const modalY = (height - modalH) / 2;
+    this.modalBounds = { modalX, modalY, modalW, modalH };
 
     const modalGfx = this.add.graphics();
     modalGfx.fillStyle(0x0a0f1d, 0.98);
@@ -69,10 +80,10 @@ export class LeaderboardModalScene extends SceneBase {
       color: '#34d399'
     }).setOrigin(0.5);
 
-    // 4 Game Navigation Tabs
+    // 5 Game Navigation Tabs
     this.tabButtons = [];
-    const tabW = (modalW - 40) / 4;
-    const tabY = modalY + 92;
+    const tabW = (modalW - 40) / GAMES.length;
+    const tabY = modalY + 90;
 
     GAMES.forEach((g, i) => {
       const tx = modalX + 20 + i * tabW + tabW / 2;
@@ -83,18 +94,19 @@ export class LeaderboardModalScene extends SceneBase {
 
       const tText = this.add.text(0, 0, g.label, {
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '11px',
+        fontSize: '10px',
         fontWeight: 'bold',
         color: '#ffffff'
       }).setOrigin(0.5);
       tabContainer.add(tText);
 
-      const tabZone = this.add.zone(0, 0, tabW - 4, 32).setInteractive({ useHandCursor: true });
+      const tabZone = this.add.zone(0, 0, tabW - 4, 30).setInteractive({ useHandCursor: true });
       tabContainer.add(tabZone);
       const onTabSelect = () => {
-        if (this.activeGameId !== g.id) {
+        const nextId = g.id === 'pool' ? (this.activeGameId.startsWith('pool') ? this.activeGameId : 'pool_8ball') : g.id;
+        if (this.activeGameId !== nextId) {
           this.hideTooltip();
-          this.activeGameId = g.id;
+          this.activeGameId = nextId;
           audio.playMenuSelect?.();
           this.updateTabs();
           this.loadScores();
@@ -106,48 +118,93 @@ export class LeaderboardModalScene extends SceneBase {
       this.tabButtons.push({ id: g.id, container: tabContainer, zone: tabZone, bg: tBg, text: tText, w: tabW - 4 });
     });
 
-    this.updateTabs();
+    // Pool Sub-Tabs Container
+    this.poolSubTabsContainer = this.add.container(0, 0);
+    this.poolSubTabButtons = [];
+    const subW = (modalW - 40) / POOL_SUBTYPES.length;
+    const subY = modalY + 124;
 
-    // Table Header
+    POOL_SUBTYPES.forEach((st, i) => {
+      const sx = modalX + 20 + i * subW + subW / 2;
+      const subContainer = this.add.container(sx, subY);
+
+      const sBg = this.add.graphics();
+      subContainer.add(sBg);
+
+      const sText = this.add.text(0, 0, st.label, {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '10px',
+        fontWeight: 'bold',
+        color: '#ffffff'
+      }).setOrigin(0.5);
+      subContainer.add(sText);
+
+      const subZone = this.add.zone(0, 0, subW - 4, 24).setInteractive({ useHandCursor: true });
+      subContainer.add(subZone);
+
+      const onSubSelect = () => {
+        if (this.activeGameId !== st.id) {
+          this.hideTooltip();
+          this.activeGameId = st.id;
+          audio.playMenuSelect?.();
+          this.updateTabs();
+          this.loadScores();
+        }
+      };
+      subZone.on('pointerdown', onSubSelect);
+      this.poolSubTabsContainer.add(subContainer);
+      this.poolSubTabButtons.push({ id: st.id, bg: sBg, text: sText, w: subW - 4 });
+    });
+
+    // Table Header Container
+    this.tableHeaderContainer = this.add.container(0, 0);
     const tableHeaderY = modalY + 128;
     const headerBg = this.add.graphics();
     headerBg.fillStyle(0x1e293b, 0.8);
     headerBg.fillRect(modalX + 16, tableHeaderY - 12, modalW - 32, 24);
+    this.tableHeaderContainer.add(headerBg);
 
-    this.add.text(modalX + 24, tableHeaderY, 'RANK', {
+    const rankH = this.add.text(modalX + 24, tableHeaderY, 'RANK', {
       fontFamily: 'monospace',
       fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(0, 0.5);
+    this.tableHeaderContainer.add(rankH);
 
-    this.add.text(modalX + 72, tableHeaderY, 'NAME', {
+    const nameH = this.add.text(modalX + 72, tableHeaderY, 'NAME', {
       fontFamily: 'monospace',
       fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(0, 0.5);
+    this.tableHeaderContainer.add(nameH);
 
-    this.add.text(modalX + 130, tableHeaderY, 'SCORE', {
+    const scoreH = this.add.text(modalX + 130, tableHeaderY, 'SCORE', {
       fontFamily: 'monospace',
       fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(0, 0.5);
+    this.tableHeaderContainer.add(scoreH);
 
-    this.add.text(modalX + modalW - 74, tableHeaderY, 'DETAIL', {
+    const detailH = this.add.text(modalX + modalW - 74, tableHeaderY, 'DETAIL', {
       fontFamily: 'monospace',
       fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(1, 0.5);
+    this.tableHeaderContainer.add(detailH);
 
-    this.add.text(modalX + modalW - 24, tableHeaderY, 'DATE', {
+    const dateH = this.add.text(modalX + modalW - 24, tableHeaderY, 'DATE', {
       fontFamily: 'monospace',
       fontSize: '10px',
       fontWeight: 'bold',
       color: '#94a3b8'
     }).setOrigin(1, 0.5);
+    this.tableHeaderContainer.add(dateH);
+
+    this.updateTabs();
 
     // Dynamic Scores Container
     this.tableRowsContainer = this.add.container(0, 0);
@@ -296,24 +353,69 @@ export class LeaderboardModalScene extends SceneBase {
     this.activeTooltipRow = -1;
   }
 
+  switchGame(gameId) {
+    const nextId = gameId === 'pool' ? (this.activeGameId.startsWith('pool') ? this.activeGameId : 'pool_8ball') : gameId;
+    if (this.activeGameId !== nextId) {
+      this.hideTooltip();
+      this.activeGameId = nextId;
+      audio.playMenuSelect?.();
+      this.updateTabs();
+      this.loadScores();
+    }
+  }
+
+  selectGame(gameId) {
+    this.switchGame(gameId);
+  }
+
   updateTabs() {
+    const isPool = this.activeGameId.startsWith('pool');
+
+    // Toggle sub-tabs visibility and shift table header
+    if (this.poolSubTabsContainer) {
+      this.poolSubTabsContainer.setVisible(isPool);
+    }
+    if (this.tableHeaderContainer) {
+      this.tableHeaderContainer.setY(isPool ? 30 : 0);
+    }
+
     this.tabButtons.forEach((tab) => {
-      const isActive = tab.id === this.activeGameId;
+      const isActive = tab.id === this.activeGameId || (tab.id === 'pool' && isPool);
       tab.bg.clear();
       if (isActive) {
         tab.bg.fillStyle(0x0284c7, 1);
-        tab.bg.fillRoundedRect(-tab.w / 2, -16, tab.w, 32, 6);
+        tab.bg.fillRoundedRect(-tab.w / 2, -15, tab.w, 30, 6);
         tab.bg.lineStyle(1.5, 0x38bdf8, 1);
-        tab.bg.strokeRoundedRect(-tab.w / 2, -16, tab.w, 32, 6);
+        tab.bg.strokeRoundedRect(-tab.w / 2, -15, tab.w, 30, 6);
         tab.text.setColor('#ffffff');
       } else {
         tab.bg.fillStyle(0x1e293b, 0.7);
-        tab.bg.fillRoundedRect(-tab.w / 2, -16, tab.w, 32, 6);
+        tab.bg.fillRoundedRect(-tab.w / 2, -15, tab.w, 30, 6);
         tab.bg.lineStyle(1, 0x334155, 0.8);
-        tab.bg.strokeRoundedRect(-tab.w / 2, -16, tab.w, 32, 6);
+        tab.bg.strokeRoundedRect(-tab.w / 2, -15, tab.w, 30, 6);
         tab.text.setColor('#94a3b8');
       }
     });
+
+    if (this.poolSubTabButtons) {
+      this.poolSubTabButtons.forEach((subTab) => {
+        const isSubActive = subTab.id === this.activeGameId;
+        subTab.bg.clear();
+        if (isSubActive) {
+          subTab.bg.fillStyle(0x059669, 1);
+          subTab.bg.fillRoundedRect(-subTab.w / 2, -12, subTab.w, 24, 5);
+          subTab.bg.lineStyle(1.5, 0x34d399, 1);
+          subTab.bg.strokeRoundedRect(-subTab.w / 2, -12, subTab.w, 24, 5);
+          subTab.text.setColor('#ffffff');
+        } else {
+          subTab.bg.fillStyle(0x0f172a, 0.85);
+          subTab.bg.fillRoundedRect(-subTab.w / 2, -12, subTab.w, 24, 5);
+          subTab.bg.lineStyle(1, 0x334155, 0.8);
+          subTab.bg.strokeRoundedRect(-subTab.w / 2, -12, subTab.w, 24, 5);
+          subTab.text.setColor('#94a3b8');
+        }
+      });
+    }
   }
 
   async loadScores() {
@@ -366,8 +468,9 @@ export class LeaderboardModalScene extends SceneBase {
   renderScores() {
     this.tableRowsContainer.removeAll(true);
     const { modalX, modalY, modalW } = this.modalBounds;
-    const startY = modalY + 156;
-    const rowHeight = 36;
+    const isPool = this.activeGameId.startsWith('pool');
+    const startY = isPool ? modalY + 184 : modalY + 156;
+    const rowHeight = isPool ? 33 : 36;
 
     if (this.scores.length === 0) {
       const emptyText = this.add.text(

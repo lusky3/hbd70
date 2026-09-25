@@ -9,7 +9,13 @@ const PLAYER_NAME_KEY = 'hbd70_player_name';
 const DEFAULT_ARCADE_STATS = {
   pong: { wins: 0, losses: 0, longestRally: 0 },
   invaders: { highScore: 0, highestWave: 1 },
-  asteroids: { highScore: 0, highestWave: 1 }
+  asteroids: { highScore: 0, highestWave: 1 },
+  pool: {
+    pool_8ball: { wins: 0, losses: 0, highScore: 0 },
+    pool_9ball: { wins: 0, losses: 0, highScore: 0 },
+    pool_straight: { highScore: 0, highestBalls: 0 },
+    pool_speed: { highScore: 0, bestTime: 0 }
+  }
 };
 
 class StorageManager {
@@ -83,6 +89,26 @@ class StorageManager {
         asteroids: {
           highScore: Number(rawArcade.asteroids?.highScore) || 0,
           highestWave: Math.max(1, Number(rawArcade.asteroids?.highestWave) || 1)
+        },
+        pool: {
+          pool_8ball: {
+            wins: Number(rawArcade.pool?.pool_8ball?.wins) || 0,
+            losses: Number(rawArcade.pool?.pool_8ball?.losses) || 0,
+            highScore: Number(rawArcade.pool?.pool_8ball?.highScore) || 0
+          },
+          pool_9ball: {
+            wins: Number(rawArcade.pool?.pool_9ball?.wins) || 0,
+            losses: Number(rawArcade.pool?.pool_9ball?.losses) || 0,
+            highScore: Number(rawArcade.pool?.pool_9ball?.highScore) || 0
+          },
+          pool_straight: {
+            highScore: Number(rawArcade.pool?.pool_straight?.highScore) || 0,
+            highestBalls: Number(rawArcade.pool?.pool_straight?.highestBalls) || 0
+          },
+          pool_speed: {
+            highScore: Number(rawArcade.pool?.pool_speed?.highScore) || 0,
+            bestTime: Number(rawArcade.pool?.pool_speed?.bestTime) || 0
+          }
         }
       };
 
@@ -253,6 +279,46 @@ class StorageManager {
       arcadeStats: {
         ...current.arcadeStats,
         asteroids: updatedAsteroids
+      }
+    };
+
+    this.saveData(updated);
+    return updated.arcadeStats;
+  }
+
+  recordPoolScore({ subtype = 'pool_8ball', won = false, score = 0, detail = '' }) {
+    const current = this.getProgress();
+    const stats = current.arcadeStats.pool || {};
+    const subKey = subtype.startsWith('pool_') ? subtype : `pool_${subtype}`;
+    const prevSub = stats[subKey] || { wins: 0, losses: 0, highScore: 0 };
+
+    const updatedSub = {
+      ...prevSub,
+      wins: won ? (prevSub.wins || 0) + 1 : (prevSub.wins || 0),
+      losses: won ? (prevSub.losses || 0) : (prevSub.losses || 0) + 1,
+      highScore: Math.max(prevSub.highScore || 0, Number(score) || 0)
+    };
+
+    if (subtype.includes('straight')) {
+      const match = detail ? detail.match(/(\d+)\s*(?:balls|points)/i) : null;
+      const countVal = match ? parseInt(match[1], 10) : Number(score) || 0;
+      updatedSub.highestBalls = Math.max(prevSub.highestBalls || 0, countVal);
+    } else if (subtype.includes('speed') && detail) {
+      const match = detail.match(/([\d.]+)\s*s/i);
+      if (match) {
+        const timeVal = parseFloat(match[1]);
+        updatedSub.bestTime = prevSub.bestTime ? Math.min(prevSub.bestTime, timeVal) : timeVal;
+      }
+    }
+
+    const updated = {
+      ...current,
+      arcadeStats: {
+        ...current.arcadeStats,
+        pool: {
+          ...stats,
+          [subKey]: updatedSub
+        }
       }
     };
 

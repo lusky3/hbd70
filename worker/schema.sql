@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS leaderboards (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  game_id TEXT NOT NULL,                  -- 'tanks', 'pong', 'invaders', 'asteroids'
+  game_id TEXT NOT NULL,                  -- 'tanks', 'pong', 'invaders', 'asteroids', 'pool_8ball', 'pool_9ball', 'pool_straight', 'pool_speed'
   initials TEXT NOT NULL,                 -- 3-character uppercase arcade initials e.g. 'ALL', 'COD'
   score INTEGER NOT NULL,                 -- Score or highest metric
   detail TEXT,                            -- Additional milestone context e.g. 'Wave 7', 'Level 42', '9 Rally'

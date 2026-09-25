@@ -26,9 +26,10 @@ export class MultiplayerLobbyScene extends SceneBase {
     this.prefilledCode = data?.roomCode ? NetworkManager.sanitizeRoomCode(data.roomCode) : '';
     this.returnScene = data?.returnScene || 'GameSelect';
     this.currentMode = this.initialMode; // 'host' | 'join'
-    this.selectedGame = 'tanks'; // 'tanks' | 'pong'
+    this.selectedGame = 'tanks'; // 'tanks' | 'pong' | 'pool'
     this.tanksSubMode = network.gameOptions?.tanksSubMode || 'pvp'; // 'pvp' | 'pve'
     this.tanksPveType = network.gameOptions?.tanksPveType || 'decades'; // 'decades' | 'endless'
+    this.poolSubMode = network.gameOptions?.poolSubMode || '8ball'; // '8ball' | '9ball' | 'straight' | 'speed'
     this.joinCodeChars = (this.prefilledCode.padEnd(4, 'A').slice(0, 4)).split('');
     this.selectedJoinSlot = 0;
     this.joinStatus = '';
@@ -356,11 +357,13 @@ export class MultiplayerLobbyScene extends SceneBase {
 
   getRosterY() {
     if (this.selectedGame === 'pong') return 352;
+    if (this.selectedGame === 'pool') return 382;
     return this.tanksSubMode === 'pve' ? 414 : 382;
   }
 
   getChatY() {
     if (this.selectedGame === 'pong') return 560;
+    if (this.selectedGame === 'pool') return 592;
     return this.tanksSubMode === 'pve' ? 624 : 592;
   }
 
@@ -377,66 +380,96 @@ export class MultiplayerLobbyScene extends SceneBase {
     if (this.gameModeContainer) this.gameModeContainer.destroy();
     this.gameModeContainer = this.add.container(0, 0);
 
-    const btnW = 200;
+    const btnW = Math.floor((width - 48 - 12) / 3);
     const btnH = 28;
 
-    // Row 1: Primary Game Mode (Tanks Arena vs Pong Duel)
-    const tanksBtn = this.add.container(width / 2 - btnW / 2 - 4, y);
-    const pongBtn = this.add.container(width / 2 + btnW / 2 + 4, y);
+    // Row 1: Primary Game Mode (Tanks vs Pong vs Pool)
+    const games = [
+      { id: 'tanks', label: '🎮 TANKS (2-4P)' },
+      { id: 'pong', label: '🏓 PONG (2P)' },
+      { id: 'pool', label: '🎱 POOL (2P)' }
+    ];
 
-    const isTanks = this.selectedGame === 'tanks';
+    games.forEach((g, i) => {
+      const gx = width / 2 - btnW - 6 + i * (btnW + 6);
+      const gBtn = this.add.container(gx, y);
+      const isSel = this.selectedGame === g.id;
 
-    const tBg = this.add.graphics();
-    tBg.fillStyle(isTanks ? 0x0284c7 : 0x1e293b, 1);
-    tBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-    tBg.lineStyle(1.5, isTanks ? 0x38bdf8 : 0x475569, 1);
-    tBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-    tanksBtn.add(tBg);
+      const gBg = this.add.graphics();
+      gBg.fillStyle(isSel ? 0x0284c7 : 0x1e293b, 1);
+      gBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+      gBg.lineStyle(1.5, isSel ? 0x38bdf8 : 0x475569, 1);
+      gBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
+      gBtn.add(gBg);
 
-    const tLabel = this.add.text(0, 0, '🎮 TANKS ARENA (2-4P)', {
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '11px',
-      fontWeight: 'bold',
-      color: isTanks ? '#ffffff' : '#94a3b8'
-    }).setOrigin(0.5);
-    tanksBtn.add(tLabel);
+      const gLabel = this.add.text(0, 0, g.label, {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '10px',
+        fontWeight: 'bold',
+        color: isSel ? '#ffffff' : '#94a3b8'
+      }).setOrigin(0.5);
+      gBtn.add(gLabel);
 
-    const tZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
-    tanksBtn.add(tZone);
+      const gZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
+      gBtn.add(gZone);
+      gZone.on('pointerdown', () => {
+        audio.playShoot?.();
+        this.selectedGame = g.id;
+        network.setGameMode(g.id, {
+          tanksSubMode: this.tanksSubMode,
+          tanksPveType: this.tanksPveType,
+          poolSubMode: this.poolSubMode
+        });
+        this.refreshHostLayout();
+      });
 
-    const pBg = this.add.graphics();
-    pBg.fillStyle(!isTanks ? 0x0284c7 : 0x1e293b, 1);
-    pBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-    pBg.lineStyle(1.5, !isTanks ? 0x38bdf8 : 0x475569, 1);
-    pBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 8);
-    pongBtn.add(pBg);
-
-    const pLabel = this.add.text(0, 0, '🏓 PONG DUEL (2P)', {
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '11px',
-      fontWeight: 'bold',
-      color: !isTanks ? '#ffffff' : '#94a3b8'
-    }).setOrigin(0.5);
-    pongBtn.add(pLabel);
-
-    const pZone = this.add.zone(0, 0, btnW, btnH).setInteractive({ useHandCursor: true });
-    pongBtn.add(pZone);
-
-    tZone.on('pointerdown', () => {
-      audio.playShoot?.();
-      this.selectedGame = 'tanks';
-      network.setGameMode('tanks', { tanksSubMode: this.tanksSubMode, tanksPveType: this.tanksPveType });
-      this.refreshHostLayout();
+      this.gameModeContainer.add(gBtn);
     });
 
-    pZone.on('pointerdown', () => {
-      audio.playShoot?.();
-      this.selectedGame = 'pong';
-      network.setGameMode('pong');
-      this.refreshHostLayout();
-    });
+    // Row 2: Pool Sub-Modes
+    if (this.selectedGame === 'pool') {
+      const subY = y + 32;
+      const poolSubtypes = [
+        { id: '8ball', label: '8-BALL' },
+        { id: '9ball', label: '9-BALL' },
+        { id: 'straight', label: 'STRAIGHT' }
+      ];
+      if (this.poolSubMode === 'speed') this.poolSubMode = '8ball';
+      const pBtnW = Math.floor((width - 48 - 12) / 3);
+      const pBtnH = 26;
 
-    this.gameModeContainer.add([tanksBtn, pongBtn]);
+      poolSubtypes.forEach((st, i) => {
+        const px = width / 2 - (3 * (pBtnW + 6)) / 2 + pBtnW / 2 + i * (pBtnW + 6);
+        const pBtn = this.add.container(px, subY);
+        const isSel = this.poolSubMode === st.id;
+
+        const pBg = this.add.graphics();
+        pBg.fillStyle(isSel ? 0x059669 : 0x1e293b, 1);
+        pBg.fillRoundedRect(-pBtnW / 2, -pBtnH / 2, pBtnW, pBtnH, 6);
+        pBg.lineStyle(1.5, isSel ? 0x34d399 : 0x475569, 1);
+        pBg.strokeRoundedRect(-pBtnW / 2, -pBtnH / 2, pBtnW, pBtnH, 6);
+        pBtn.add(pBg);
+
+        const pLabel = this.add.text(0, 0, st.label, {
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontSize: '10px',
+          fontWeight: 'bold',
+          color: isSel ? '#ffffff' : '#94a3b8'
+        }).setOrigin(0.5);
+        pBtn.add(pLabel);
+
+        const pZone = this.add.zone(0, 0, pBtnW, pBtnH).setInteractive({ useHandCursor: true });
+        pBtn.add(pZone);
+        pZone.on('pointerdown', () => {
+          audio.playShoot?.();
+          this.poolSubMode = st.id;
+          network.setGameOptions({ poolSubMode: st.id });
+          this.refreshHostLayout();
+        });
+
+        this.gameModeContainer.add(pBtn);
+      });
+    }
 
     // Row 2: Tanks Sub-Mode (PvP Deathmatch vs PvE Co-op Squad)
     if (this.selectedGame === 'tanks') {
@@ -864,7 +897,8 @@ export class MultiplayerLobbyScene extends SceneBase {
         network.startGame({ 
           mode: this.selectedGame,
           tanksSubMode: this.tanksSubMode,
-          tanksPveType: this.tanksPveType
+          tanksPveType: this.tanksPveType,
+          poolSubMode: this.poolSubMode
         });
       } else {
         audio.playHit?.();
@@ -892,7 +926,7 @@ export class MultiplayerLobbyScene extends SceneBase {
 
     const modeLabel = this.selectedGame === 'tanks'
       ? (this.tanksSubMode === 'pve' ? `CO-OP ${this.tanksPveType.toUpperCase()}` : 'PVP ARENA')
-      : 'PONG DUEL';
+      : (this.selectedGame === 'pool' ? `POOL (${(this.poolSubMode || '8ball').toUpperCase()})` : 'PONG DUEL');
     const title = canStart
       ? `START ${modeLabel} (${count} PLAYERS) ▶`
       : 'WAITING FOR PLAYERS (MIN 2 NEEDED)...';
@@ -1144,6 +1178,7 @@ export class MultiplayerLobbyScene extends SceneBase {
       if (network.gameOptions) {
         if (network.gameOptions.tanksSubMode) this.tanksSubMode = network.gameOptions.tanksSubMode;
         if (network.gameOptions.tanksPveType) this.tanksPveType = network.gameOptions.tanksPveType;
+        if (network.gameOptions.poolSubMode) this.poolSubMode = network.gameOptions.poolSubMode;
       }
       if (network.gameMode) {
         this.selectedGame = network.gameMode;
@@ -1185,6 +1220,7 @@ export class MultiplayerLobbyScene extends SceneBase {
         if (data.gameOptions) {
           if (data.gameOptions.tanksSubMode) this.tanksSubMode = data.gameOptions.tanksSubMode;
           if (data.gameOptions.tanksPveType) this.tanksPveType = data.gameOptions.tanksPveType;
+          if (data.gameOptions.poolSubMode) this.poolSubMode = data.gameOptions.poolSubMode;
         }
         if (this.currentMode === 'host') {
           this.refreshHostLayout();
@@ -1198,6 +1234,11 @@ export class MultiplayerLobbyScene extends SceneBase {
         const mode = packet.gameMode || 'tanks';
         if (mode === 'pong') {
           this.scene.start('MultiplayerPong', { isHost: network.isHost });
+        } else if (mode === 'pool') {
+          this.scene.start('MultiplayerPool', {
+            isHost: network.isHost,
+            poolSubMode: packet.poolSubMode || this.poolSubMode || '8ball'
+          });
         } else {
           this.scene.start('MultiplayerTanks', { 
             isHost: network.isHost, 

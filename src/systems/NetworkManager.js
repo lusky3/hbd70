@@ -12,6 +12,10 @@ const TIMEOUT_INTERVAL = 8000;
 export const HOST_ONLY_EVENTS = new Set([
   'match-over',
   'pong-match-over',
+  'pool-match-over',
+  'pool-snapshot',
+  'pool-turn-handoff',
+  'pool-rematch',
   'squad-victory',
   'squad-defeated',
   'pve-wave-complete',
