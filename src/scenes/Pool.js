@@ -17,16 +17,17 @@ export class PoolScene extends SceneBase {
   }
 
   init(data) {
-    this.subtype = data?.subtype || POOL_SUBTYPES.EIGHT_BALL;
-    this.difficulty = data?.difficulty || AI_DIFFICULTIES.REGULAR;
+    this.resumeData = data?.resumeSession || null;
+    this.subtype = this.resumeData?.subtype || data?.subtype || POOL_SUBTYPES.EIGHT_BALL;
+    this.difficulty = this.resumeData?.difficulty || data?.difficulty || AI_DIFFICULTIES.REGULAR;
     this.returnScene = data?.returnScene || 'GameSelect';
 
     this.physicsEngine = new PoolPhysics();
     this.rules = new PoolRules(this.subtype);
     this.ai = new PoolAI(this.difficulty);
 
-    this.aimAngle = -Math.PI / 2;
-    this.power = 0.55;
+    this.aimAngle = this.resumeData?.aimAngle !== undefined ? this.resumeData.aimAngle : -Math.PI / 2;
+    this.power = this.resumeData?.power !== undefined ? this.resumeData.power : 0.55;
     this.isDraggingAim = false;
     this.isDraggingPower = false;
     this.isDraggingBallInHand = false;
@@ -65,8 +66,12 @@ export class PoolScene extends SceneBase {
     // 6. Setup Interactive Input (Aiming, Power, Stepper Buttons, Ball-In-Hand)
     this.setupControls(width, height);
 
-    // 7. Setup Game State & Rack
-    this.setupNewGame(this.subtype, this.difficulty);
+    // 7. Setup Game State & Rack (or restore saved session)
+    if (this.resumeData && this.resumeData.balls && this.resumeData.rules) {
+      this.restoreSavedGame(this.resumeData);
+    } else {
+      this.setupNewGame(this.subtype, this.difficulty);
+    }
 
     // 8. Mode & Difficulty Selector Dialog
     this.setupModeSelectorModal(width, height);
@@ -150,6 +155,7 @@ export class PoolScene extends SceneBase {
   setupNewGame(subtype = this.subtype, difficulty = this.difficulty) {
     this.subtype = subtype;
     this.difficulty = difficulty;
+    storage.clearGameSession('pool');
     this.physicsEngine.setupRack(subtype);
     this.rules = new PoolRules(subtype);
     this.ai.setDifficulty(difficulty);
@@ -162,6 +168,35 @@ export class PoolScene extends SceneBase {
 
     this.refreshBallSprites();
     this.updateHUDText();
+  }
+
+  restoreSavedGame(savedData) {
+    this.subtype = savedData.subtype || this.subtype;
+    this.difficulty = savedData.difficulty || this.difficulty;
+    this.physicsEngine.setupRack(this.subtype);
+    this.physicsEngine.loadSnapshot(savedData.balls);
+    this.rules = new PoolRules(this.subtype);
+    this.rules.loadSnapshot(savedData.rules);
+    this.ai.setDifficulty(this.difficulty);
+
+    this.aimAngle = savedData.aimAngle !== undefined ? savedData.aimAngle : -Math.PI / 2;
+    this.power = savedData.power !== undefined ? savedData.power : 0.55;
+    this.isWaitingForMotion = false;
+    this.bannerMessage = 'RESUMED SESSION';
+    this.bannerTimer = 2.0;
+
+    this.refreshBallSprites();
+    this.updateBallSprites();
+    this.updateHUDText();
+
+    if (this.rules.activePlayer === 2 && !this.rules.isGameOver) {
+      this.isAiTurn = true;
+      this.time.delayedCall(800, () => {
+        this.executeAiShot();
+      });
+    } else {
+      this.isAiTurn = false;
+    }
   }
 
   refreshBallSprites() {
@@ -221,6 +256,7 @@ export class PoolScene extends SceneBase {
         container.add(numText);
       }
 
+      container.setVisible(!b.inPocket);
       this.ballsContainer.add(container);
       this.ballSprites.set(b.id, container);
     }
@@ -423,6 +459,7 @@ export class PoolScene extends SceneBase {
     backBtn.add(backZone);
     backZone.on('pointerdown', () => {
       audio.playShoot?.();
+      this.captureSessionState();
       this.scene.start(this.returnScene);
     });
 
@@ -734,6 +771,8 @@ export class PoolScene extends SceneBase {
       return;
     }
 
+    this.captureSessionState();
+
     // Switch turns / AI execution
     if (this.rules.activePlayer === 2) {
       this.executeAiShot();
@@ -743,7 +782,42 @@ export class PoolScene extends SceneBase {
     }
   }
 
+  captureSessionState() {
+    if (this.rules.isGameOver) {
+      storage.clearGameSession('pool');
+      return;
+    }
+    const state = {
+      subtype: this.subtype,
+      difficulty: this.difficulty,
+      rules: this.rules.getSnapshot(),
+      balls: this.physicsEngine.getSnapshot(),
+      aimAngle: this.aimAngle,
+      power: this.power
+    };
+
+    let summaryDetail = '';
+    if (this.subtype === POOL_SUBTYPES.EIGHT_BALL || this.subtype === POOL_SUBTYPES.NINE_BALL) {
+      const p1Group = this.rules.groups[1] ? ` (${this.rules.groups[1]})` : '';
+      summaryDetail = `Turn: ${this.rules.activePlayer === 1 ? 'Allan' : 'CPU'}${p1Group}`;
+    } else if (this.subtype === POOL_SUBTYPES.STRAIGHT) {
+      summaryDetail = `Allan: ${this.rules.scores[1]} / ${this.rules.straightTargetScore}`;
+    } else if (this.subtype === POOL_SUBTYPES.SPEED) {
+      summaryDetail = `${Math.ceil(this.rules.speedTimer)}s left • ${this.rules.speedBallsPotted}/15 balls`;
+    }
+
+    const summary = {
+      subtype: this.subtype,
+      difficulty: this.difficulty,
+      score: this.rules.scores[1] || 0,
+      detail: summaryDetail
+    };
+
+    storage.saveGameSession('pool', state, summary);
+  }
+
   handleGameOver() {
+    storage.clearGameSession('pool');
     const { width, height } = this.scale;
     const isPlayerWin = this.rules.winner === 1;
     const finalScore = this.rules.scores[1] || 0;

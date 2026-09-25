@@ -5,6 +5,17 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-09-25
+
+### Added
+- **Per-Game Session Resume & Mid-Game Recovery**: Seamless recovery for all 5 single-player retro games (Birthday Tanks, Birthday Pong, Space Invaders, Birthday Asteroids, Birthday Pool) when closing the tab, switching apps, or returning to the hub.
+- **Unified Resume Session Prompt Modal (`ResumeSessionModal`)**: Authentic arcade dialog with relative timestamp ("Saved 2m ago"), game icon, tailored summary (level/decade, score, wave, remaining lives/shields, pool ball/table state), and high-contrast action buttons:
+  - `[ ▶ RESUME GAME ]`: Instantly returns player to their exact game situation.
+  - `[ 🔄 NEW GAME ]`: Discards saved progress and launches a fresh match.
+- **Arcade Hub Visual Badges**: `GameSelectScene` dynamically displays `⏸️ RESUME` indicator badges on game cards with active saved sessions and adapts button text to `RESUME ▶`.
+- **Dual Lifecycle & Checkpoint Auto-Save**: Seamless persistence across browser lifecycle events (`beforeunload`, `pagehide`, `visibilitychange`) and discrete in-game checkpoints (level/wave advance, points scored, life lost, shot settled, `< MENU`/`< BACK` buttons).
+- **Fail-Soft LocalStorage Resilience**: Isolated storage keys (`hbd70_session_<gameId>`) preventing cross-game state corruption, with automatic corruption purging and in-memory fallback.
+
 ## [1.7.0] - 2026-09-25
 
 ### Added

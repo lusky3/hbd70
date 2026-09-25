@@ -516,4 +516,8 @@ export class PoolPhysics {
       }
     }
   }
+
+  loadSnapshot(snapshot) {
+    this.applySnapshot(snapshot);
+  }
 }

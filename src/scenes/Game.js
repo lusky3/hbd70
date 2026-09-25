@@ -18,15 +18,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.levelNum = data.levelNum || 1;
-    this.lives = data.lives !== undefined ? data.lives : 3;
-    this.tanksDefeated = data.tanksDefeated || 0;
+    if (data && data.resumeSession) {
+      const s = data.resumeSession;
+      this.levelNum = s.levelNum || 1;
+      this.lives = s.lives !== undefined ? s.lives : 3;
+      this.tanksDefeated = s.tanksDefeated || 0;
+      this.isInvincibleCheat = s.isInvincibleCheat || false;
+      this.rapidFireCheat = s.rapidFireCheat || false;
+      this.cpuSpeedMultiplier = s.cpuSpeedMultiplier !== undefined ? s.cpuSpeedMultiplier : 1.0;
+    } else {
+      this.levelNum = data.levelNum || 1;
+      this.lives = data.lives !== undefined ? data.lives : 3;
+      this.tanksDefeated = data.tanksDefeated || 0;
+      this.isInvincibleCheat = data.isInvincibleCheat || false;
+      this.rapidFireCheat = data.rapidFireCheat || false;
+      this.cpuSpeedMultiplier = data.cpuSpeedMultiplier !== undefined ? data.cpuSpeedMultiplier : 1.0;
+    }
     this.isGameOver = false;
     this.isLevelClearing = false;
     this.isPlayerInvulnerable = false;
-    this.isInvincibleCheat = data.isInvincibleCheat || false;
-    this.rapidFireCheat = data.rapidFireCheat || false;
-    this.cpuSpeedMultiplier = data.cpuSpeedMultiplier !== undefined ? data.cpuSpeedMultiplier : 1.0;
     this.isPausedForControls = false;
   }
 
@@ -205,6 +215,9 @@ export class GameScene extends Phaser.Scene {
         this.onPlayerHit();
       }
     });
+
+    // Auto-save initial session state on level entry
+    this.captureSessionState();
   }
 
   update(time, delta) {
@@ -298,6 +311,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.lives <= 0) {
       this.isGameOver = true;
+      storage.clearGameSession('tanks');
       audio.stopBGM();
       audio.playGameOver();
       this.time.delayedCall(1500, () => {
@@ -311,10 +325,29 @@ export class GameScene extends Phaser.Scene {
         });
       });
     } else {
+      this.captureSessionState();
       this.time.delayedCall(1200, () => {
         this.respawnPlayer();
       });
     }
+  }
+
+  captureSessionState() {
+    if (this.isGameOver || this.isLevelClearing || this.lives <= 0) return;
+    const state = {
+      levelNum: this.levelNum,
+      lives: this.lives,
+      tanksDefeated: this.tanksDefeated,
+      isInvincibleCheat: this.isInvincibleCheat,
+      rapidFireCheat: this.rapidFireCheat,
+      cpuSpeedMultiplier: this.cpuSpeedMultiplier
+    };
+    const summary = {
+      levelNum: this.levelNum,
+      lives: this.lives,
+      tanksDefeated: this.tanksDefeated
+    };
+    storage.saveGameSession('tanks', state, summary);
   }
 
   respawnPlayer() {
@@ -417,10 +450,23 @@ export class GameScene extends Phaser.Scene {
         this.time.delayedCall(1600, () => {
           this.scene.stop('HUD');
           if (this.levelNum >= 70) {
+            storage.clearGameSession('tanks');
             this.scene.start('Victory', {
               tanksDefeated: this.tanksDefeated
             });
           } else {
+            storage.saveGameSession('tanks', {
+              levelNum: this.levelNum + 1,
+              lives: this.lives,
+              tanksDefeated: this.tanksDefeated,
+              isInvincibleCheat: this.isInvincibleCheat,
+              rapidFireCheat: this.rapidFireCheat,
+              cpuSpeedMultiplier: this.cpuSpeedMultiplier
+            }, {
+              levelNum: this.levelNum + 1,
+              lives: this.lives,
+              tanksDefeated: this.tanksDefeated
+            });
             this.scene.start('LevelCard', {
               levelNum: this.levelNum + 1,
               lives: this.lives,

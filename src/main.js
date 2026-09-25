@@ -22,6 +22,7 @@ import { MultiplayerTanksScene } from './scenes/MultiplayerTanks.js';
 import { MultiplayerPongScene } from './scenes/MultiplayerPong.js';
 import { PoolScene } from './scenes/Pool.js';
 import { MultiplayerPoolScene } from './scenes/MultiplayerPool.js';
+import { ResumeSessionModalScene } from './scenes/ResumeSessionModal.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -58,6 +59,7 @@ const config = {
     InitialsEntryOverlayScene,
     LeaderboardModalScene,
     RetroactiveImportModalScene,
+    ResumeSessionModalScene,
     MultiplayerLobbyScene,
     MultiplayerTanksScene,
     MultiplayerPongScene,
@@ -68,14 +70,43 @@ const config = {
   }
 };
 
+export function autoSaveCurrentSession() {
+  if (typeof window === 'undefined' || !window.game || !window.game.scene) return;
+  const activeScenes = window.game.scene.getScenes(true);
+  for (const scene of activeScenes) {
+    if (scene && typeof scene.captureSessionState === 'function') {
+      try {
+        scene.captureSessionState();
+      } catch (err) {
+        console.warn('[AutoSave] Failed to capture session state:', err);
+      }
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', autoSaveCurrentSession);
+  window.addEventListener('pagehide', autoSaveCurrentSession);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        autoSaveCurrentSession();
+      }
+    });
+  }
+}
+
 function initGame() {
   if (!window.game) {
     window.game = new Phaser.Game(config);
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initGame);
-} else {
-  initGame();
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGame);
+  } else {
+    initGame();
+  }
 }
+

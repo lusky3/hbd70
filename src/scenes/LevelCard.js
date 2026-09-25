@@ -10,12 +10,24 @@ export class LevelCardScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.levelNum = data.levelNum || 1;
-    this.lives = data.lives !== undefined ? data.lives : 3;
-    this.tanksDefeated = data.tanksDefeated || 0;
-    this.isInvincibleCheat = data.isInvincibleCheat || false;
-    this.rapidFireCheat = data.rapidFireCheat || false;
-    this.cpuSpeedMultiplier = data.cpuSpeedMultiplier || 1.0;
+    if (data && data.resumeSession) {
+      const s = data.resumeSession;
+      this.levelNum = s.levelNum || 1;
+      this.lives = s.lives !== undefined ? s.lives : 3;
+      this.tanksDefeated = s.tanksDefeated || 0;
+      this.isInvincibleCheat = s.isInvincibleCheat || false;
+      this.rapidFireCheat = s.rapidFireCheat || false;
+      this.cpuSpeedMultiplier = s.cpuSpeedMultiplier || 1.0;
+      this.resumeSession = s;
+    } else {
+      this.levelNum = data.levelNum || 1;
+      this.lives = data.lives !== undefined ? data.lives : 3;
+      this.tanksDefeated = data.tanksDefeated || 0;
+      this.isInvincibleCheat = data.isInvincibleCheat || false;
+      this.rapidFireCheat = data.rapidFireCheat || false;
+      this.cpuSpeedMultiplier = data.cpuSpeedMultiplier || 1.0;
+      this.resumeSession = null;
+    }
   }
 
   create() {
@@ -120,7 +132,8 @@ export class LevelCardScene extends Phaser.Scene {
           tanksDefeated: this.tanksDefeated,
           isInvincibleCheat: this.isInvincibleCheat,
           rapidFireCheat: this.rapidFireCheat,
-          cpuSpeedMultiplier: this.cpuSpeedMultiplier
+          cpuSpeedMultiplier: this.cpuSpeedMultiplier,
+          resumeSession: this.resumeSession
         });
       });
     };

@@ -10,13 +10,18 @@ export class SpaceInvadersScene extends Phaser.Scene {
     super({ key: 'SpaceInvaders' });
   }
 
+  init(data) {
+    this.resumeData = data?.resumeSession || null;
+    this.isMatchOver = false;
+  }
+
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    this.score = 0;
-    this.lives = 3;
-    this.wave = 1;
+    this.score = this.resumeData ? (this.resumeData.score || 0) : 0;
+    this.lives = this.resumeData ? (this.resumeData.lives !== undefined ? this.resumeData.lives : 3) : 3;
+    this.wave = this.resumeData ? (this.resumeData.wave || 1) : 1;
     this.gameActive = false;
     this.isInvulnerable = false;
 
@@ -65,6 +70,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
     backBtn.add(backZone);
     backZone.on('pointerdown', () => {
       audio.playShoot();
+      this.captureSessionState();
       this.scene.start('GameSelect');
     });
     backZone.on('pointerover', () => {
@@ -86,21 +92,22 @@ export class SpaceInvadersScene extends Phaser.Scene {
 
     this.highScore = storage.getArcadeStats().invaders.highScore || 0;
     const hiFormatted = String(this.highScore).padStart(4, '0');
-    this.scoreText = this.add.text(width / 2 - 30, 26, `SCORE: 0000  HI: ${hiFormatted}`, {
+    const scoreStr = String(this.score).padStart(4, '0');
+    this.scoreText = this.add.text(width / 2 - 30, 26, `SCORE: ${scoreStr}  HI: ${hiFormatted}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '13px',
       fontWeight: 'bold',
       color: '#ffd700'
     }).setOrigin(0.5);
 
-    this.livesText = this.add.text(width / 2 - 30, 48, 'LIVES: ❤️❤️❤️', {
+    this.livesText = this.add.text(width / 2 - 30, 48, `LIVES: ${'❤️'.repeat(Math.max(0, this.lives))}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '12px',
       fontWeight: 'bold',
       color: '#f43f5e'
     }).setOrigin(0.5);
 
-    this.waveText = this.add.text(width - 95, 34, 'WAVE 1', {
+    this.waveText = this.add.text(width - 95, 34, `WAVE ${this.wave}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '14px',
       fontWeight: 'bold',
@@ -179,10 +186,16 @@ export class SpaceInvadersScene extends Phaser.Scene {
     this.physics.add.overlap(this.invaderBullets, this.bunkers, this.onInvaderBulletHitBunker, null, this);
     this.physics.add.overlap(this.invaderBullets, this.player, this.onPlayerHit, null, this);
 
-    // Show Level 1 How to Play
-    ControlsOverlay.show(this, 'invaders', () => {
+    // Show Level 1 How to Play or activate resumed session
+    if (this.resumeData) {
       this.gameActive = true;
-    });
+      this.showToast(`RESUMED WAVE ${this.wave}`);
+      this.captureSessionState();
+    } else {
+      ControlsOverlay.show(this, 'invaders', () => {
+        this.gameActive = true;
+      });
+    }
   }
 
   createMilestoneBunkers() {
@@ -571,6 +584,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
       this.handleGameOver();
       return;
     }
+    this.captureSessionState();
 
     // Flash player with invulnerability cooldown (1500ms)
     this.isInvulnerable = true;
@@ -586,6 +600,24 @@ export class SpaceInvadersScene extends Phaser.Scene {
         this.isInvulnerable = false;
       }
     });
+  }
+
+  captureSessionState() {
+    if (this.isMatchOver || this.lives <= 0) {
+      storage.clearGameSession('invaders');
+      return;
+    }
+    const state = {
+      score: this.score,
+      lives: this.lives,
+      wave: this.wave
+    };
+    const summary = {
+      score: this.score,
+      lives: this.lives,
+      wave: this.wave
+    };
+    storage.saveGameSession('invaders', state, summary);
   }
 
   addScore(pts) {
@@ -608,6 +640,7 @@ export class SpaceInvadersScene extends Phaser.Scene {
 
     // Persist milestone wave/score (AC-8)
     storage.recordInvadersScore({ score: this.score, wave: this.wave });
+    this.captureSessionState();
 
     this.time.delayedCall(1600, () => {
       this.setupWave();
@@ -618,6 +651,8 @@ export class SpaceInvadersScene extends Phaser.Scene {
 
   handleGameOver() {
     this.gameActive = false;
+    this.isMatchOver = true;
+    storage.clearGameSession('invaders');
     audio.playGameOver();
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;

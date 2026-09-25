@@ -1,6 +1,8 @@
 // src/systems/Storage.js
 // LocalStorage session persistence manager for Allan's Birthday Tanks and Retro Arcade
 
+import { APP_VERSION } from '../version.js';
+
 const STORAGE_KEY = 'hbd70_progress';
 const MIGRATION_KEY = 'hbd70_scores_migrated';
 const PLAYER_TAG_KEY = 'hbd70_player_tag';
@@ -28,6 +30,7 @@ class StorageManager {
       arcadeStats: JSON.parse(JSON.stringify(DEFAULT_ARCADE_STATS)),
       playerProfile: { tag: 'ALL', name: '' }
     };
+    this.memorySessions = {};
     this.isStorageAvailable = this.checkStorageAvailability();
   }
 
@@ -499,6 +502,82 @@ class StorageManager {
     }
 
     return { tag: cleanTag, name: cleanName };
+  }
+
+  getSessionKey(gameId) {
+    return `hbd70_session_${gameId}`;
+  }
+
+  saveGameSession(gameId, state, summary = {}) {
+    if (!gameId || !state) return false;
+    const key = this.getSessionKey(gameId);
+    const payload = {
+      gameId,
+      timestamp: Date.now(),
+      summary: summary || {},
+      state,
+      version: APP_VERSION
+    };
+    this.memorySessions[gameId] = JSON.parse(JSON.stringify(payload));
+    if (this.isStorageAvailable) {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(payload));
+        return true;
+      } catch (err) {
+        console.warn(`[Storage] Failed to save session for ${gameId}:`, err);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  getGameSession(gameId) {
+    if (!gameId) return null;
+    const key = this.getSessionKey(gameId);
+    if (!this.isStorageAvailable) {
+      const mem = this.memorySessions[gameId];
+      if (!mem) return null;
+      if (typeof mem === 'string') {
+        try {
+          const parsed = JSON.parse(mem);
+          if (!parsed || !parsed.state) return null;
+          return parsed;
+        } catch (err) {
+          console.warn(`[Storage] Corrupt memory session for ${gameId}, clearing:`, err);
+          this.clearGameSession(gameId);
+          return null;
+        }
+      }
+      return mem.state ? JSON.parse(JSON.stringify(mem)) : null;
+    }
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !data.state) return null;
+      return data;
+    } catch (err) {
+      console.warn(`[Storage] Corrupt session data for ${gameId}, clearing:`, err);
+      this.clearGameSession(gameId);
+      return null;
+    }
+  }
+
+  hasGameSession(gameId) {
+    return this.getGameSession(gameId) !== null;
+  }
+
+  clearGameSession(gameId) {
+    if (!gameId) return;
+    delete this.memorySessions[gameId];
+    if (this.isStorageAvailable) {
+      try {
+        const key = this.getSessionKey(gameId);
+        window.localStorage.removeItem(key);
+      } catch (err) {
+        console.warn(`[Storage] Failed to clear session for ${gameId}:`, err);
+      }
+    }
   }
 }
 

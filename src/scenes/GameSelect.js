@@ -10,6 +10,21 @@ export class GameSelectScene extends Phaser.Scene {
     super({ key: 'GameSelect' });
   }
 
+  launchOrResumeGame(gameId, targetScene, launchData = {}) {
+    if (typeof audio.playShoot === 'function') {
+      audio.playShoot();
+    }
+    if (storage.hasGameSession(gameId)) {
+      this.scene.launch('ResumeSessionModal', {
+        gameId,
+        targetScene,
+        launchData
+      });
+    } else {
+      this.scene.start(targetScene, launchData);
+    }
+  }
+
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -145,8 +160,7 @@ export class GameSelectScene extends Phaser.Scene {
         borderColor: 0x86efac,
         statusText: `Progress: Level ${progress.unlockedLevel}/70 (${progress.beatenLevels.length} Beaten)`,
         onPlay: () => {
-          audio.playShoot();
-          this.scene.start('LevelCard', {
+          this.launchOrResumeGame('tanks', 'LevelCard', {
             levelNum: progress.unlockedLevel,
             lives: 3,
             tanksDefeated: 0
@@ -168,8 +182,7 @@ export class GameSelectScene extends Phaser.Scene {
         borderColor: 0x38bdf8,
         statusText: pongStatus,
         onPlay: () => {
-          audio.playShoot();
-          this.scene.start('Pong');
+          this.launchOrResumeGame('pong', 'Pong');
         }
       },
       {
@@ -181,8 +194,7 @@ export class GameSelectScene extends Phaser.Scene {
         borderColor: 0xc084fc,
         statusText: invStatus,
         onPlay: () => {
-          audio.playShoot();
-          this.scene.start('SpaceInvaders');
+          this.launchOrResumeGame('invaders', 'SpaceInvaders');
         }
       },
       {
@@ -194,8 +206,7 @@ export class GameSelectScene extends Phaser.Scene {
         borderColor: 0xfde047,
         statusText: astStatus,
         onPlay: () => {
-          audio.playShoot();
-          this.scene.start('Asteroids');
+          this.launchOrResumeGame('asteroids', 'Asteroids');
         }
       },
       {
@@ -207,8 +218,7 @@ export class GameSelectScene extends Phaser.Scene {
         borderColor: 0x34d399,
         statusText: poolStatus,
         onPlay: () => {
-          audio.playShoot();
-          this.scene.start('Pool');
+          this.launchOrResumeGame('pool', 'Pool');
         }
       }
     ];
@@ -402,6 +412,27 @@ export class GameSelectScene extends Phaser.Scene {
     });
     container.add(title);
 
+    // Resume Session Badge (if active session exists for this game)
+    const hasSession = storage.hasGameSession(data.id);
+    if (hasSession) {
+      const badgeX = -cardWidth / 2 + 62 + title.width + 10;
+      const badgeY = -cardHeight / 2 + 15;
+      const badgeBg = this.add.graphics();
+      badgeBg.fillStyle(0x059669, 0.95);
+      badgeBg.fillRoundedRect(badgeX, badgeY - 2, 74, 18, 4);
+      badgeBg.lineStyle(1, 0x34d399, 1);
+      badgeBg.strokeRoundedRect(badgeX, badgeY - 2, 74, 18, 4);
+      container.add(badgeBg);
+
+      const badgeText = this.add.text(badgeX + 37, badgeY + 7, '⏸️ RESUME', {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '9px',
+        fontWeight: 'bold',
+        color: '#ffffff'
+      }).setOrigin(0.5);
+      container.add(badgeText);
+    }
+
     // Subtitle
     const subtitle = this.add.text(-cardWidth / 2 + 62, -cardHeight / 2 + 36, data.subtitle, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -443,18 +474,18 @@ export class GameSelectScene extends Phaser.Scene {
       container.add(extraHit);
       extraHit.on('pointerdown', data.onExtra);
 
-      // Primary PLAY button
+      // Primary PLAY / RESUME button
       const playBtnX = cardWidth / 2 - 50;
       const playBg = this.add.graphics();
-      playBg.fillStyle(0x22c55e, 1);
+      playBg.fillStyle(hasSession ? 0x16a34a : 0x22c55e, 1);
       playBg.fillRoundedRect(playBtnX - 40, -15, 80, 30, 6);
-      playBg.lineStyle(1.5, 0x86efac, 1);
+      playBg.lineStyle(1.5, hasSession ? 0x86efac : 0x86efac, 1);
       playBg.strokeRoundedRect(playBtnX - 40, -15, 80, 30, 6);
       container.add(playBg);
 
-      const playText = this.add.text(playBtnX, 0, 'PLAY ▶', {
+      const playText = this.add.text(playBtnX, 0, hasSession ? 'RESUME ▶' : 'PLAY ▶', {
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '12px',
+        fontSize: hasSession ? '11px' : '12px',
         fontWeight: 'bold',
         color: '#ffffff'
       }).setOrigin(0.5);
@@ -465,18 +496,18 @@ export class GameSelectScene extends Phaser.Scene {
       container.add(playHit);
       playHit.on('pointerdown', data.onPlay);
     } else {
-      // Single prominent PLAY button
+      // Single prominent PLAY / RESUME button
       const playBtnX = cardWidth / 2 - 56;
       const playBg = this.add.graphics();
-      playBg.fillStyle(0x22c55e, 1);
+      playBg.fillStyle(hasSession ? 0x16a34a : 0x22c55e, 1);
       playBg.fillRoundedRect(playBtnX - 44, -16, 88, 32, 6);
       playBg.lineStyle(1.5, 0x86efac, 1);
       playBg.strokeRoundedRect(playBtnX - 44, -16, 88, 32, 6);
       container.add(playBg);
 
-      const playText = this.add.text(playBtnX, 0, 'PLAY ▶', {
+      const playText = this.add.text(playBtnX, 0, hasSession ? 'RESUME ▶' : 'PLAY ▶', {
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '13px',
+        fontSize: hasSession ? '12px' : '13px',
         fontWeight: 'bold',
         color: '#ffffff'
       }).setOrigin(0.5);

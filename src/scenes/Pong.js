@@ -10,14 +10,19 @@ export class PongScene extends Phaser.Scene {
     super({ key: 'Pong' });
   }
 
+  init(data) {
+    this.resumeData = data?.resumeSession || null;
+    this.isMatchOver = false;
+  }
+
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    this.playerScore = 0;
-    this.aiScore = 0;
+    this.playerScore = this.resumeData ? (this.resumeData.playerScore || 0) : 0;
+    this.aiScore = this.resumeData ? (this.resumeData.aiScore || 0) : 0;
     this.rallyCount = 0;
-    this.maxRally = 0;
+    this.maxRally = this.resumeData ? (this.resumeData.maxRally || 0) : 0;
     this.gameActive = false;
     this.ballBaseSpeed = 340;
     this.ballSpeed = this.ballBaseSpeed;
@@ -67,6 +72,7 @@ export class PongScene extends Phaser.Scene {
     backBtn.add(backZone);
     backZone.on('pointerdown', () => {
       audio.playShoot();
+      this.captureSessionState();
       this.scene.start('GameSelect');
     });
     backZone.on('pointerover', () => {
@@ -87,7 +93,7 @@ export class PongScene extends Phaser.Scene {
     });
 
     // Score Text
-    this.scoreText = this.add.text(width / 2, 26, 'ALLAN: 0  •  DECADES: 0', {
+    this.scoreText = this.add.text(width / 2, 26, `ALLAN: ${this.playerScore}  •  DECADES: ${this.aiScore}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '16px',
       fontWeight: 'bold',
@@ -310,11 +316,33 @@ export class PongScene extends Phaser.Scene {
     } else if (this.aiScore >= 7) {
       this.handleMatchEnd(false);
     } else {
+      this.captureSessionState();
       this.startServe(scorer === 'player' ? 'ai' : 'player');
     }
   }
 
+  captureSessionState() {
+    if (this.isMatchOver || this.playerScore >= 7 || this.aiScore >= 7) {
+      storage.clearGameSession('pong');
+      return;
+    }
+    if (this.playerScore === 0 && this.aiScore === 0 && this.maxRally === 0) return;
+    const state = {
+      playerScore: this.playerScore,
+      aiScore: this.aiScore,
+      maxRally: this.maxRally
+    };
+    const summary = {
+      playerScore: this.playerScore,
+      aiScore: this.aiScore,
+      maxRally: this.maxRally
+    };
+    storage.saveGameSession('pong', state, summary);
+  }
+
   handleMatchEnd(playerWon) {
+    this.isMatchOver = true;
+    storage.clearGameSession('pong');
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 

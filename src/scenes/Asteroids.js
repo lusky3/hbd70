@@ -10,13 +10,18 @@ export class AsteroidsScene extends Phaser.Scene {
     super({ key: 'Asteroids' });
   }
 
+  init(data) {
+    this.resumeData = data?.resumeSession || null;
+    this.isMatchOver = false;
+  }
+
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    this.score = 0;
-    this.lives = 3;
-    this.wave = 1;
+    this.score = this.resumeData ? (this.resumeData.score || 0) : 0;
+    this.lives = this.resumeData ? (this.resumeData.lives !== undefined ? this.resumeData.lives : 3) : 3;
+    this.wave = this.resumeData ? (this.resumeData.wave || 1) : 1;
     this.gameActive = false;
     this.isInvulnerable = false;
     this.lastFired = 0;
@@ -66,6 +71,7 @@ export class AsteroidsScene extends Phaser.Scene {
     backBtn.add(backZone);
     backZone.on('pointerdown', () => {
       audio.playShoot();
+      this.captureSessionState();
       this.scene.start('GameSelect');
     });
     backZone.on('pointerover', () => {
@@ -87,19 +93,20 @@ export class AsteroidsScene extends Phaser.Scene {
 
     this.highScore = storage.getArcadeStats().asteroids.highScore || 0;
     const hiFormatted = String(this.highScore).padStart(4, '0');
-    this.scoreText = this.add.text(width / 2 - 30, 26, `SCORE: 0000  HI: ${hiFormatted}`, {
+    const scoreStr = String(this.score).padStart(4, '0');
+    this.scoreText = this.add.text(width / 2 - 30, 26, `SCORE: ${scoreStr}  HI: ${hiFormatted}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '13px',
       fontWeight: 'bold',
       color: '#ffd700'
     });
 
-    this.livesText = this.add.text(width - 24, 26, '🚀🚀🚀', {
+    this.livesText = this.add.text(width - 24, 26, '🚀'.repeat(Math.max(0, this.lives)), {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '14px'
     }).setOrigin(1, 0);
 
-    this.waveText = this.add.text(width / 2 - 30, 46, 'WAVE: 1', {
+    this.waveText = this.add.text(width / 2 - 30, 46, `WAVE: ${this.wave}`, {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '12px',
       fontWeight: 'bold',
@@ -167,11 +174,17 @@ export class AsteroidsScene extends Phaser.Scene {
     // 9. Spawn First Wave
     this.spawnAsteroidWave();
 
-    // 9. Show Controls Overlay
-    ControlsOverlay.show(this, 'asteroids', () => {
+    // 9. Show Controls Overlay or activate resumed session
+    if (this.resumeData) {
       this.gameActive = true;
       this.setInvulnerable(2000);
-    });
+      this.captureSessionState();
+    } else {
+      ControlsOverlay.show(this, 'asteroids', () => {
+        this.gameActive = true;
+        this.setInvulnerable(2000);
+      });
+    }
   }
 
   createTouchControls(width, height) {
@@ -447,6 +460,7 @@ export class AsteroidsScene extends Phaser.Scene {
 
     // Persist milestone wave/score (AC-8)
     storage.recordAsteroidsScore({ score: this.score, wave: this.wave });
+    this.captureSessionState();
 
     audio.playPongScore();
 
@@ -488,12 +502,31 @@ export class AsteroidsScene extends Phaser.Scene {
       ship.body.stop();
       this.gameOver();
     } else {
+      this.captureSessionState();
       // Respawn in center
       ship.setPosition(this.cameras.main.width / 2, this.cameras.main.height / 2);
       ship.setVelocity(0, 0);
       ship.rotation = -Math.PI / 2;
       this.setInvulnerable(2500);
     }
+  }
+
+  captureSessionState() {
+    if (this.isMatchOver || this.lives <= 0) {
+      storage.clearGameSession('asteroids');
+      return;
+    }
+    const state = {
+      score: this.score,
+      lives: this.lives,
+      wave: this.wave
+    };
+    const summary = {
+      score: this.score,
+      lives: this.lives,
+      wave: this.wave
+    };
+    storage.saveGameSession('asteroids', state, summary);
   }
 
   setInvulnerable(duration) {
@@ -543,6 +576,8 @@ export class AsteroidsScene extends Phaser.Scene {
 
   gameOver() {
     this.gameActive = false;
+    this.isMatchOver = true;
+    storage.clearGameSession('asteroids');
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 

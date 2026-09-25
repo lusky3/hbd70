@@ -339,4 +339,48 @@ export class PoolRules {
 
     return this.lastShotResult;
   }
+
+  getSnapshot() {
+    return {
+      activePlayer: this.activePlayer,
+      scores: { ...this.scores },
+      streaks: { ...this.streaks },
+      groups: { ...this.groups },
+      isBreakShot: this.isBreakShot,
+      isGameOver: this.isGameOver,
+      winner: this.winner,
+      winReason: this.winReason,
+      ballInHand: this.ballInHand,
+      ballInHandPlayer: this.ballInHandPlayer,
+      innings: this.innings,
+      straightRackCount: this.straightRackCount,
+      straightTargetScore: this.straightTargetScore,
+      speedTimer: this.speedTimer,
+      speedBallsPotted: this.speedBallsPotted,
+      speedMaxBalls: this.speedMaxBalls,
+      isTimerRunning: this.isTimerRunning
+    };
+  }
+
+  loadSnapshot(s) {
+    if (!s) return;
+    this.activePlayer = s.activePlayer !== undefined ? s.activePlayer : 1;
+    if (s.scores) this.scores = { ...s.scores };
+    if (s.streaks) this.streaks = { ...s.streaks };
+    if (s.groups) this.groups = { ...s.groups };
+    this.isBreakShot = s.isBreakShot !== undefined ? s.isBreakShot : false;
+    this.isGameOver = s.isGameOver || false;
+    this.winner = s.winner || null;
+    this.winReason = s.winReason || '';
+    this.ballInHand = s.ballInHand || false;
+    this.ballInHandPlayer = s.ballInHandPlayer || null;
+    this.innings = s.innings || 1;
+    this.straightRackCount = s.straightRackCount || 0;
+    this.straightTargetScore = s.straightTargetScore || 25;
+    this.speedTimer = s.speedTimer !== undefined ? s.speedTimer : 90.0;
+    this.speedBallsPotted = s.speedBallsPotted || 0;
+    this.speedMaxBalls = s.speedMaxBalls || 15;
+    this.isTimerRunning = s.isTimerRunning || false;
+  }
 }
+

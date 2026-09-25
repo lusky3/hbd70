@@ -47,6 +47,9 @@ export class HUDScene extends Phaser.Scene {
       audio.playShoot();
       const g = this.scene.get('Game');
       if (g) {
+        if (typeof g.captureSessionState === 'function') {
+          g.captureSessionState();
+        }
         g.scene.stop();
       }
       this.scene.stop();
