@@ -236,16 +236,23 @@ test('AC-3: Client LeaderboardService Offline Fallback & Initials Persistence', 
   const fallback = leaderboardService.getLocalFallback('invaders');
   assert.ok(Array.isArray(fallback), 'Fallback should return array');
 
-  // Test fetchLeaderboard fail-soft behavior (with nonexistent endpoint)
-  const res = await leaderboardService.fetchLeaderboard('invaders');
-  assert.equal(res.online, false, 'Should report offline when network call fails');
-  assert.ok(Array.isArray(res.results), 'Should provide fallback results array');
+  // Test fetchLeaderboard fail-soft behavior (with unreachable offline endpoint)
+  const prevWindow = globalThis.window;
+  globalThis.window = { ...(prevWindow || {}), HBD70_LEADERBOARD_API: 'http://127.0.0.1:59999' };
 
-  // Test submitScore fail-soft behavior
-  const submitRes = await leaderboardService.submitScore('invaders', 'ALL', 4200, 'Wave 3');
-  assert.equal(submitRes.success, true, 'Submit score should succeed fail-soft locally');
-  assert.equal(submitRes.initials, 'ALL');
-  assert.equal(submitRes.score, 4200);
+  try {
+    const res = await leaderboardService.fetchLeaderboard('invaders');
+    assert.equal(res.online, false, 'Should report offline when network call fails');
+    assert.ok(Array.isArray(res.results), 'Should provide fallback results array');
+
+    // Test submitScore fail-soft behavior
+    const submitRes = await leaderboardService.submitScore('invaders', 'ALL', 4200, 'Wave 3');
+    assert.equal(submitRes.success, true, 'Submit score should succeed fail-soft locally');
+    assert.equal(submitRes.initials, 'ALL');
+    assert.equal(submitRes.score, 4200);
+  } finally {
+    globalThis.window = prevWindow;
+  }
 });
 
 test('AC-2: Rate Limiting & Per-Game Score Limits Enforced by Worker', async () => {

@@ -12,7 +12,7 @@ export function getApiBaseUrl() {
     return window.HBD70_LEADERBOARD_API.replace(/\/+$/, '');
   }
   // Production Cloudflare Worker endpoint
-  return 'https://api.al.lusk.win';
+  return 'https://hbd70-leaderboard.lusk.workers.dev';
 }
 
 export function sanitizeInitials(initials) {
