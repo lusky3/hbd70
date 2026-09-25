@@ -5,6 +5,15 @@ All notable changes to Allan's 70th Birthday Retro Arcade Collection will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-09-25
+
+### Added
+- **Tanks Multiplayer PvP vs PvE Modes**: Toggle in multiplayer lobby between competitive PvP (Deathmatch) and cooperative PvE (Co-op Squad).
+- **PvE Sub-Settings (Decades vs Endless)**: Squad can choose Decades Mode (co-op progression through the 70 classic campaign levels) or Endless Mode (procedurally generated infinite waves with scaling difficulty curves and boss waves every 5th wave).
+- **Friendly Fire Immunity**: Cooperative squad members in PvE cannot damage or destroy one another with ricochet bullets or mines.
+- **PvP Leaderboard Winner Badges**: PvP match winners can submit their scores directly to the global Cloudflare D1 leaderboards; high score table highlights PvP victories with a distinctive `⚔️` icon badge and dedicated tooltip.
+- **Host Authoritative PvE AI Simulation & Client Interpolation**: Host authoritative enemy tanks, AI targeting nearest squad member, boss health bars, and real-time state synchronization over WebRTC DataChannels.
+
 ## [1.5.0] - 2026-09-23
 
 ### Added

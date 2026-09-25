@@ -9,6 +9,16 @@ const PEER_PREFIX = 'hbd70-room-';
 const HEARTBEAT_INTERVAL = 2000;
 const TIMEOUT_INTERVAL = 8000;
 
+export const HOST_ONLY_EVENTS = new Set([
+  'match-over',
+  'pong-match-over',
+  'squad-victory',
+  'squad-defeated',
+  'pve-wave-complete',
+  'pve-level-start',
+  'return-to-lobby'
+]);
+
 export class NetworkManager {
   constructor() {
     this.peer = null;
@@ -19,6 +29,7 @@ export class NetworkManager {
     this.connections = new Map(); // connId / slot => DataConnection
     this.players = new Map(); // slot => { slot, id, tag, fullName, ping, ready }
     this.gameMode = 'tanks'; // 'tanks' | 'pong'
+    this.gameOptions = { tanksSubMode: 'pvp', tanksPveType: 'decades' };
     this.listeners = new Map();
     this.heartbeatTimer = null;
     this.lastReceivedTime = new Map(); // slot => timestamp
@@ -275,6 +286,7 @@ export class NetworkManager {
           slot: assignedSlot,
           roomCode: this.roomCode,
           gameMode: this.gameMode,
+          gameOptions: this.gameOptions,
           players: Array.from(this.players.values())
         });
 
@@ -342,9 +354,9 @@ export class NetworkManager {
         if (!verifiedSlot) return;
         packet.slot = verifiedSlot;
 
-        // Block untrusted client-originated match-over packets
-        if (packet.event === 'match-over' || packet.event === 'pong-match-over') {
-          console.warn(`[NetworkManager] Blocked untrusted match termination event from client slot ${verifiedSlot}`);
+        // Block untrusted client-originated host-only packets
+        if (HOST_ONLY_EVENTS.has(packet.event)) {
+          console.warn(`[NetworkManager] Blocked untrusted host-only event '${packet.event}' from client slot ${verifiedSlot}`);
           return;
         }
 
@@ -373,9 +385,10 @@ export class NetworkManager {
       this.mySlot = packet.slot;
       this.roomCode = packet.roomCode;
       this.gameMode = packet.gameMode || 'tanks';
+      if (packet.gameOptions) this.gameOptions = { ...this.gameOptions, ...packet.gameOptions };
       this.players.clear();
       packet.players.forEach(p => this.players.set(p.slot, p));
-      this.emit('joined-room', { slot: this.mySlot, roomCode: this.roomCode, players: packet.players });
+      this.emit('joined-room', { slot: this.mySlot, roomCode: this.roomCode, players: packet.players, gameOptions: this.gameOptions });
       if (resolveJoin) resolveJoin(packet);
       return;
     }
@@ -389,14 +402,22 @@ export class NetworkManager {
 
     if (packet.type === 'LOBBY_STATE') {
       this.gameMode = packet.gameMode;
+      if (packet.gameOptions) this.gameOptions = { ...this.gameOptions, ...packet.gameOptions };
       this.players.clear();
       packet.players.forEach(p => this.players.set(p.slot, p));
-      this.emit('lobby-updated', { gameMode: this.gameMode, players: packet.players });
+      this.emit('lobby-updated', { gameMode: this.gameMode, gameOptions: this.gameOptions, players: packet.players });
       return;
     }
 
     if (packet.type === 'GAME_START') {
       this.gameMode = packet.gameMode;
+      if (packet.tanksSubMode || packet.tanksPveType) {
+        this.gameOptions = {
+          ...this.gameOptions,
+          tanksSubMode: packet.tanksSubMode || this.gameOptions.tanksSubMode,
+          tanksPveType: packet.tanksPveType || this.gameOptions.tanksPveType
+        };
+      }
       this.emit('game-start', packet);
       return;
     }
@@ -445,15 +466,27 @@ export class NetworkManager {
     const packet = {
       type: 'LOBBY_STATE',
       gameMode: this.gameMode,
+      gameOptions: this.gameOptions,
       players: Array.from(this.players.values())
     };
     this.broadcast(packet);
-    this.emit('lobby-updated', { gameMode: this.gameMode, players: packet.players });
+    this.emit('lobby-updated', { gameMode: this.gameMode, gameOptions: this.gameOptions, players: packet.players });
   }
 
-  setGameMode(mode) {
+  setGameMode(mode, options = {}) {
     if (!this.isHost) return;
     this.gameMode = mode;
+    if (options && typeof options === 'object') {
+      this.gameOptions = { ...this.gameOptions, ...options };
+    }
+    this.broadcastLobbyState();
+  }
+
+  setGameOptions(options = {}) {
+    if (!this.isHost) return;
+    if (options && typeof options === 'object') {
+      this.gameOptions = { ...this.gameOptions, ...options };
+    }
     this.broadcastLobbyState();
   }
 
@@ -462,6 +495,7 @@ export class NetworkManager {
     const packet = {
       type: 'GAME_START',
       gameMode: this.gameMode,
+      ...this.gameOptions,
       seed: Math.floor(Math.random() * 100000),
       players: Array.from(this.players.values()),
       ...data
@@ -469,6 +503,7 @@ export class NetworkManager {
     this.broadcast(packet);
     this.emit('game-start', packet);
   }
+
 
   kickPlayer(slot, reason = 'Removed by host') {
     if (!this.isHost || slot <= 1) return;

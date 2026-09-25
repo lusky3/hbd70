@@ -14,6 +14,11 @@ const GAMES = [
 const SceneBase = typeof Phaser !== 'undefined' ? Phaser.Scene : class {};
 
 export class LeaderboardModalScene extends SceneBase {
+  static isMultiplayerEntry(detail) {
+    if (!detail) return false;
+    return String(detail).includes('⚔️') || String(detail).includes('MP PvP');
+  }
+
   constructor() {
     super('LeaderboardModal');
   }
@@ -123,7 +128,7 @@ export class LeaderboardModalScene extends SceneBase {
       color: '#94a3b8'
     }).setOrigin(0, 0.5);
 
-    this.add.text(modalX + 120, tableHeaderY, 'SCORE', {
+    this.add.text(modalX + 130, tableHeaderY, 'SCORE', {
       fontFamily: 'monospace',
       fontSize: '10px',
       fontWeight: 'bold',
@@ -413,20 +418,22 @@ export class LeaderboardModalScene extends SceneBase {
         color: rankColor
       }).setOrigin(0, 0.5);
 
+      const isMultiplayer = LeaderboardModalScene.isMultiplayerEntry(row.detail);
+      const mpPrefix = isMultiplayer ? '⚔️ ' : '';
       const rowFullName = row.fullName || row.full_name || '';
-      const displayName = rowFullName ? `${row.initials || '???'} •` : (row.initials || '???');
+      const displayName = `${mpPrefix}${rowFullName ? `${row.initials || '???'} •` : (row.initials || '???')}`;
 
-      const nameText = this.add.text(modalX + 72, ry, displayName, {
+      const nameText = this.add.text(modalX + 68, ry, displayName, {
         fontFamily: 'monospace',
-        fontSize: '12px',
+        fontSize: '11px',
         fontWeight: 'bold',
-        color: rowFullName ? '#38bdf8' : '#ffffff'
+        color: isMultiplayer ? '#f43f5e' : (rowFullName ? '#38bdf8' : '#ffffff')
       }).setOrigin(0, 0.5);
 
       if (rowFullName) {
-        const hitZone = this.add.zone(modalX + 85, ry, 64, 26).setInteractive({ useHandCursor: true });
+        const hitZone = this.add.zone(modalX + 90, ry, 68, 26).setInteractive({ useHandCursor: true });
         hitZone.on('pointerover', () => {
-          this.showTooltip(modalX + 115, ry - 20, row.initials, rowFullName);
+          this.showTooltip(modalX + 115, ry - 20, `${mpPrefix}${row.initials}`, isMultiplayer ? `${rowFullName} (Multiplayer PvP)` : rowFullName);
         });
         hitZone.on('pointerout', () => {
           this.hideTooltip();
@@ -436,14 +443,14 @@ export class LeaderboardModalScene extends SceneBase {
           if (this.activeTooltipRow === i) {
             this.hideTooltip();
           } else {
-            this.showTooltip(modalX + 115, ry - 20, row.initials, rowFullName);
+            this.showTooltip(modalX + 115, ry - 20, `${mpPrefix}${row.initials}`, isMultiplayer ? `${rowFullName} (Multiplayer PvP)` : rowFullName);
             this.activeTooltipRow = i;
           }
         });
         this.tableRowsContainer.add(hitZone);
       }
 
-      const scoreText = this.add.text(modalX + 120, ry, Number(row.score).toLocaleString(), {
+      const scoreText = this.add.text(modalX + 130, ry, Number(row.score).toLocaleString(), {
         fontFamily: 'monospace',
         fontSize: '12px',
         fontWeight: 'bold',

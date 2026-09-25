@@ -6,7 +6,9 @@ import { Mine } from './Mine.js';
 import { audio } from '../systems/AudioManager.js';
 import { EnemyAI } from '../systems/EnemyAI.js';
 
-export class EnemyTank extends Phaser.Physics.Arcade.Sprite {
+const SpriteBase = typeof Phaser !== 'undefined' && Phaser.Physics?.Arcade?.Sprite ? Phaser.Physics.Arcade.Sprite : class {};
+
+export class EnemyTank extends SpriteBase {
   constructor(scene, x, y, type = 'candle') {
     super(scene, x, y, type);
     scene.add.existing(this);
@@ -208,6 +210,7 @@ export class EnemyTank extends Phaser.Physics.Arcade.Sprite {
     const tipY = this.y + Math.sin(angle) * tipDistance;
 
     const bullet = new Bullet(this.scene, tipX, tipY);
+    if (this.bulletSpeed) bullet.speed = this.bulletSpeed;
     this.scene.enemyBullets.add(bullet);
     bullet.fire(tipX, tipY, Math.cos(angle), Math.sin(angle), 'enemy', this.bulletBounces);
   }
@@ -227,6 +230,7 @@ export class EnemyTank extends Phaser.Physics.Arcade.Sprite {
       const tipY = this.y + Math.sin(ang) * tipDist;
 
       const bullet = new Bullet(this.scene, tipX, tipY);
+      if (this.bulletSpeed) bullet.speed = this.bulletSpeed;
       this.scene.enemyBullets.add(bullet);
       bullet.fire(tipX, tipY, Math.cos(ang), Math.sin(ang), 'enemy', this.bulletBounces);
     }
@@ -246,6 +250,7 @@ export class EnemyTank extends Phaser.Physics.Arcade.Sprite {
       const tipY = this.y + Math.sin(angle) * tipDist + perpY * dir;
 
       const bullet = new Bullet(this.scene, tipX, tipY);
+      if (this.bulletSpeed) bullet.speed = this.bulletSpeed;
       this.scene.enemyBullets.add(bullet);
       bullet.fire(tipX, tipY, Math.cos(angle), Math.sin(angle), 'enemy', this.bulletBounces);
     });
@@ -261,6 +266,7 @@ export class EnemyTank extends Phaser.Physics.Arcade.Sprite {
       const tipY = this.y + Math.sin(ang) * 24;
 
       const bullet = new Bullet(this.scene, tipX, tipY);
+      if (this.bulletSpeed) bullet.speed = this.bulletSpeed;
       this.scene.enemyBullets.add(bullet);
       bullet.fire(tipX, tipY, Math.cos(ang), Math.sin(ang), 'enemy', this.bulletBounces);
     });

@@ -5,7 +5,12 @@ import { network } from '../systems/NetworkManager.js';
 import { TouchControls } from '../systems/TouchControls.js';
 import { Bullet } from '../entities/Bullet.js';
 import { Mine } from '../entities/Mine.js';
+import { EnemyTank } from '../entities/EnemyTank.js';
+import { TerrainBuilder } from '../systems/TerrainBuilder.js';
+import { LEVELS } from '../data/levels.js';
 import { audio } from '../systems/AudioManager.js';
+import { leaderboardService } from '../systems/LeaderboardService.js';
+import { storage } from '../systems/Storage.js';
 
 const SceneBase = typeof Phaser !== 'undefined' ? Phaser.Scene : class {};
 
@@ -27,6 +32,14 @@ const TARGET_FRAGS = 5;
 const MATCH_DURATION = 180; // seconds (3 mins)
 
 export class MultiplayerTanksScene extends SceneBase {
+  static getEndlessEnemyCount(wave) {
+    return Math.min(8, 2 + Math.max(1, wave || 1));
+  }
+
+  static getWaveClearBonus(type, levelOrWave) {
+    return type === 'decades' ? levelOrWave * 250 : levelOrWave * 1000;
+  }
+
   constructor() {
     super('MultiplayerTanks');
   }
@@ -42,6 +55,15 @@ export class MultiplayerTanksScene extends SceneBase {
     this.tick = 0;
     this.destroyedBlockIds = new Set();
     this.unsubscribers = [];
+
+    // Sub-mode and PvE configs
+    this.tanksSubMode = data?.tanksSubMode || network.gameOptions?.tanksSubMode || 'pvp';
+    this.tanksPveType = data?.tanksPveType || network.gameOptions?.tanksPveType || 'decades';
+    this.isPvP = this.tanksSubMode === 'pvp';
+    this.currentLevel = 1;
+    this.currentWave = 1;
+    this.teamScore = 0;
+    this.isWaveTransitioning = false;
   }
 
   create() {
@@ -69,10 +91,17 @@ export class MultiplayerTanksScene extends SceneBase {
     this.minesGroup = this.physics.add.group({ classType: Mine });
     this.tanksGroup = this.physics.add.group();
 
-    // 3. Build Arena Terrain
-    this.buildMultiplayerArena(width);
+    if (!this.isPvP) {
+      this.enemiesGroup = this.physics.add.group({ classType: EnemyTank });
+      this.enemies = this.enemiesGroup;
+      this.enemyBullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
+      this.enemyMines = this.physics.add.group({ classType: Mine });
+      this.terrain = new TerrainBuilder(this);
+      this.terrain.wallsGroup = this.wallsGroup;
+      this.terrain.blocksGroup = this.blocksGroup;
+    }
 
-    // 4. Confetti Emitter
+    // 3. Confetti Emitter
     this.confettiEmitter = this.add.particles(0, 0, 'confetti', {
       speed: { min: 60, max: 200 },
       scale: { start: 1, end: 0 },
@@ -82,9 +111,20 @@ export class MultiplayerTanksScene extends SceneBase {
     });
     this.confettiEmitter.setDepth(50);
 
-    // 5. Initialize Tanks for connected players
+    // 4. Initialize Tanks for connected players
     this.tanks = new Map(); // slot => tank entity wrapper
     this.initTanks();
+
+    // 5. Build Arena Terrain
+    if (this.isPvP) {
+      this.buildMultiplayerArena(width);
+    } else {
+      if (this.tanksPveType === 'decades') {
+        this.setupPvEDecadesLevel(this.currentLevel);
+      } else {
+        this.setupPvEEndlessWave(this.currentWave);
+      }
+    }
 
     // 6. Setup Local Touch & Keyboard Controls
     this.controls = new TouchControls(this);
@@ -108,10 +148,12 @@ export class MultiplayerTanksScene extends SceneBase {
       loop: true,
       callback: () => {
         if (!this.isMatchOver && this.matchTime > 0) {
-          this.matchTime--;
-          this.updateHUDTimer();
-          if (this.matchTime <= 0 && this.isHost) {
-            this.triggerMatchOver();
+          if (this.isPvP) {
+            this.matchTime--;
+            this.updateHUDTimer();
+            if (this.matchTime <= 0 && this.isHost) {
+              this.triggerMatchOver();
+            }
           }
         }
       }
@@ -125,7 +167,7 @@ export class MultiplayerTanksScene extends SceneBase {
       this.teardown();
     });
 
-    // Grant initial 2s spawn invulnerability
+    // Grant initial spawn invulnerability
     this.tanks.forEach(t => this.setSpawnShield(t, 2000));
   }
 
@@ -147,7 +189,9 @@ export class MultiplayerTanksScene extends SceneBase {
       wall.lineStyle(1.5, wallBorder, 1);
       wall.strokeRoundedRect(x, y, w, h, 4);
 
-      const zone = this.physics.add.staticBody(x + w / 2, y + h / 2, w, h);
+      const zone = this.add.zone(x + w / 2, y + h / 2, w, h);
+      this.physics.add.existing(zone, true);
+      this.wallsGroup.add(zone);
       return zone;
     };
 
@@ -176,12 +220,244 @@ export class MultiplayerTanksScene extends SceneBase {
     ];
 
     blockPositions.forEach((pos, idx) => {
-      const block = this.blocksGroup.create(pos.x, pos.y, 'giftbox');
+      const block = this.blocksGroup.create(pos.x, pos.y, 'block_destructible');
       block.setOrigin(0.5);
       block.setDepth(10);
       block.blockId = idx;
       block.refreshBody();
     });
+  }
+
+  setupPvEDecadesLevel(levelNum) {
+    this.currentLevel = Math.max(1, Math.min(levelNum || 1, 70));
+    const levelData = LEVELS[this.currentLevel - 1];
+    if (!levelData) return;
+
+    this.destroyedBlockIds.clear();
+
+    // Clear previous entities
+    if (this.enemiesGroup) {
+      this.enemiesGroup.getChildren().forEach(e => {
+        if (e.healthBar) e.healthBar.destroy();
+        e.destroy();
+      });
+      this.enemiesGroup.clear(true, true);
+    }
+    if (this.enemyBullets) this.enemyBullets.clear(true, true);
+    if (this.enemyMines) this.enemyMines.clear(true, true);
+    if (this.bulletsGroup) this.bulletsGroup.clear(true, true);
+    if (this.minesGroup) this.minesGroup.clear(true, true);
+    if (this.wallsGroup) this.wallsGroup.clear(true, true);
+    if (this.blocksGroup) this.blocksGroup.clear(true, true);
+    if (this.terrain && this.terrain.waterGroup) this.terrain.waterGroup.clear(true, true);
+
+    // Build terrain
+    if (!this.terrain) {
+      this.terrain = new TerrainBuilder(this);
+    }
+    this.terrain.wallsGroup = this.wallsGroup;
+    this.terrain.blocksGroup = this.blocksGroup;
+    this.terrain.build(levelData);
+
+    // Tag destructible blocks with blockId
+    let blockIdx = 0;
+    this.blocksGroup.getChildren().forEach(block => {
+      block.blockId = blockIdx++;
+    });
+
+    // Position squad members
+    const basePos = this.terrain.toWorld(levelData.playerStart.x, levelData.playerStart.y);
+    const offsets = [-48, -16, 16, 48];
+    const players = Array.from(this.tanks.values());
+    players.forEach((tank, idx) => {
+      const px = Math.max(48, Math.min(432, basePos.x + (offsets[idx] || 0)));
+      const py = basePos.y;
+      tank.sprite.setPosition(px, py);
+      tank.turret.setPosition(px, py);
+      tank.overhead.setPosition(px, py - 26);
+      tank.sprite.setVelocity(0, 0);
+      tank.sprite.setRotation(-Math.PI / 2);
+      tank.turret.setRotation(-Math.PI / 2);
+      tank.targetX = px;
+      tank.targetY = py;
+      tank.targetRot = -Math.PI / 2;
+      tank.targetTurretRot = -Math.PI / 2;
+      tank.hp = 3;
+      tank.isDead = false;
+      tank.sprite.setVisible(true);
+      tank.turret.setVisible(true);
+      tank.overhead.setVisible(true);
+      this.updateHPBar(tank);
+      this.setSpawnShield(tank, 2500);
+    });
+
+    // Spawn enemies on Host
+    if (this.isHost && this.enemiesGroup) {
+      levelData.enemies.forEach((enemyDef, idx) => {
+        const ePos = this.terrain.toWorld(enemyDef.x, enemyDef.y);
+        const enemy = new EnemyTank(this, ePos.x, ePos.y, enemyDef.type);
+        enemy.enemyId = `lvl${this.currentLevel}_${idx}_${enemyDef.type}`;
+        this.enemiesGroup.add(enemy);
+      });
+    }
+
+    this.updateHUDForPvE();
+  }
+
+  setupPvEEndlessWave(waveNum) {
+    this.currentWave = Math.max(1, waveNum || 1);
+    this.destroyedBlockIds.clear();
+
+    // Clear previous entities
+    if (this.enemiesGroup) {
+      this.enemiesGroup.getChildren().forEach(e => {
+        if (e.healthBar) e.healthBar.destroy();
+        e.destroy();
+      });
+      this.enemiesGroup.clear(true, true);
+    }
+    if (this.enemyBullets) this.enemyBullets.clear(true, true);
+    if (this.enemyMines) this.enemyMines.clear(true, true);
+    if (this.bulletsGroup) this.bulletsGroup.clear(true, true);
+    if (this.minesGroup) this.minesGroup.clear(true, true);
+    if (this.wallsGroup) this.wallsGroup.clear(true, true);
+    if (this.blocksGroup) this.blocksGroup.clear(true, true);
+    if (this.terrain && this.terrain.waterGroup) this.terrain.waterGroup.clear(true, true);
+
+    // Procedural 12x16 bordered grid
+    const grid = [];
+    for (let r = 0; r < 16; r++) {
+      const row = [];
+      for (let c = 0; c < 12; c++) {
+        if (r === 0 || r === 15 || c === 0 || c === 11) {
+          row.push(1); // Border stone wall
+        } else {
+          row.push(0);
+        }
+      }
+      grid.push(row);
+    }
+
+    // Procedural obstacles based on waveNum
+    grid[7][5] = 1; grid[7][6] = 1; grid[8][5] = 1; grid[8][6] = 1; // Center bunker
+    grid[4][3] = 2; grid[4][8] = 2; grid[11][3] = 2; grid[11][8] = 2; // Corner covers
+    if (this.currentWave % 2 === 1) {
+      grid[5][5] = 2; grid[5][6] = 2; grid[10][5] = 2; grid[10][6] = 2;
+    }
+    if (this.currentWave % 3 === 0) {
+      grid[4][5] = 1; grid[4][6] = 1; grid[11][5] = 1; grid[11][6] = 1;
+    }
+    // Water hazard tiles (tile 3) for tactical barriers
+    if (this.currentWave >= 2) {
+      grid[6][2] = 3; grid[6][9] = 3;
+      grid[9][2] = 3; grid[9][9] = 3;
+    }
+    if (this.currentWave % 4 === 0) {
+      grid[6][5] = 3; grid[6][6] = 3;
+      grid[9][5] = 3; grid[9][6] = 3;
+    }
+
+    // Clear player start zone (bottom center)
+    grid[13][4] = 0; grid[13][5] = 0; grid[13][6] = 0; grid[13][7] = 0;
+    grid[14][4] = 0; grid[14][5] = 0; grid[14][6] = 0; grid[14][7] = 0;
+
+    const waveData = {
+      levelNum: this.currentWave,
+      themeColor: '#7c3aed',
+      bgColor: '#0b0f19',
+      grid,
+      playerStart: { x: 6, y: 13 }
+    };
+
+    if (!this.terrain) {
+      this.terrain = new TerrainBuilder(this);
+    }
+    this.terrain.wallsGroup = this.wallsGroup;
+    this.terrain.blocksGroup = this.blocksGroup;
+    this.terrain.build(waveData);
+
+    // Tag destructible blocks
+    let blockIdx = 0;
+    this.blocksGroup.getChildren().forEach(block => {
+      block.blockId = blockIdx++;
+    });
+
+    // Position squad members
+    const basePos = this.terrain.toWorld(6, 13);
+    const offsets = [-48, -16, 16, 48];
+    const players = Array.from(this.tanks.values());
+    players.forEach((tank, idx) => {
+      const px = Math.max(48, Math.min(432, basePos.x + (offsets[idx] || 0)));
+      const py = basePos.y;
+      tank.sprite.setPosition(px, py);
+      tank.turret.setPosition(px, py);
+      tank.overhead.setPosition(px, py - 26);
+      tank.sprite.setVelocity(0, 0);
+      tank.sprite.setRotation(-Math.PI / 2);
+      tank.turret.setRotation(-Math.PI / 2);
+      tank.targetX = px;
+      tank.targetY = py;
+      tank.targetRot = -Math.PI / 2;
+      tank.targetTurretRot = -Math.PI / 2;
+      tank.hp = 3;
+      tank.isDead = false;
+      tank.sprite.setVisible(true);
+      tank.turret.setVisible(true);
+      tank.overhead.setVisible(true);
+      this.updateHPBar(tank);
+      this.setSpawnShield(tank, 2500);
+    });
+
+    // Spawn Enemies on Host
+    if (this.isHost && this.enemiesGroup) {
+      const enemyCount = MultiplayerTanksScene.getEndlessEnemyCount(this.currentWave);
+      const spawnCoords = [
+        { x: 3, y: 2 }, { x: 8, y: 2 }, { x: 5, y: 3 },
+        { x: 2, y: 4 }, { x: 9, y: 4 }, { x: 4, y: 5 },
+        { x: 7, y: 5 }, { x: 6, y: 2 }
+      ];
+
+      const isBossWave = (this.currentWave % 5 === 0);
+      const bossTypes = ['boss_candle', 'boss_golf', 'boss_puck', 'boss_boat', 'boss_snowmobile', 'boss_biker'];
+      let pool = ['candle'];
+      if (this.currentWave >= 2) pool = ['candle', 'golf'];
+      if (this.currentWave >= 4) pool = ['golf', 'puck'];
+      if (this.currentWave >= 6) pool = ['golf', 'puck', 'boat'];
+      if (this.currentWave >= 8) pool = ['puck', 'boat', 'snowmobile'];
+      if (this.currentWave >= 10) pool = ['boat', 'snowmobile', 'biker'];
+
+      for (let i = 0; i < enemyCount; i++) {
+        const pt = spawnCoords[i % spawnCoords.length];
+        const ePos = this.terrain.toWorld(pt.x, pt.y);
+        let type;
+        if (isBossWave && i === 0) {
+          type = bossTypes[Math.floor((this.currentWave / 5 - 1) % bossTypes.length)];
+        } else {
+          type = pool[i % pool.length];
+        }
+        const enemy = new EnemyTank(this, ePos.x, ePos.y, type);
+        enemy.enemyId = `wave${this.currentWave}_${i}_${type}`;
+        // Wave depth move and bullet speed scaling (AC-4)
+        const depthFactor = Math.min(1.5, 1 + (this.currentWave - 1) * 0.04);
+        enemy.speed = Math.round(enemy.speed * depthFactor);
+        enemy.bulletSpeed = Math.round(280 * depthFactor);
+        this.enemiesGroup.add(enemy);
+      }
+    }
+
+    this.updateHUDForPvE();
+  }
+
+  updateHUDForPvE() {
+    if (!this.timerText || this.isPvP) return;
+    this.timerText.setText(`SCORE: ${this.teamScore}`);
+    if (this.modeHintText) {
+      if (this.tanksPveType === 'decades') {
+        this.modeHintText.setText(`LEVEL ${this.currentLevel} / 70 - SQUAD CO-OP`);
+      } else {
+        this.modeHintText.setText(`WAVE ${this.currentWave} - ENDLESS SQUAD`);
+      }
+    }
   }
 
   initTanks() {
@@ -300,6 +576,18 @@ export class MultiplayerTanksScene extends SceneBase {
   // ==========================================
   // HOST-AUTHORITATIVE COLLIDERS & SIMULATION
   // ==========================================
+  canDamageTank(bulletOwnerSlot, victim) {
+    if (!victim || victim.isDead || victim.isShielded) return false;
+    if (this.tanksSubMode === 'pve') {
+      // In PvE squad mode, friendly fire is disabled
+      if (bulletOwnerSlot !== null && bulletOwnerSlot !== undefined && bulletOwnerSlot > 0) {
+        return false;
+      }
+    }
+    if (bulletOwnerSlot === victim.slot) return false; // Immune to own bullets
+    return true;
+  }
+
   setupHostColliders() {
     // Tanks vs Walls & Blocks
     this.physics.add.collider(this.tanksGroup, this.wallsGroup);
@@ -322,8 +610,7 @@ export class MultiplayerTanksScene extends SceneBase {
     // Bullets vs Tanks
     this.physics.add.overlap(this.bulletsGroup, this.tanksGroup, (bullet, tankSprite) => {
       const victim = this.getTankBySprite(tankSprite);
-      if (!victim || victim.isDead || victim.isShielded) return;
-      if (bullet.ownerSlot === victim.slot) return; // Immune to own bullets
+      if (!this.canDamageTank(bullet.ownerSlot, victim)) return;
 
       bullet.destroy();
       this.damageTank(victim, 1, bullet.ownerSlot);
@@ -333,6 +620,10 @@ export class MultiplayerTanksScene extends SceneBase {
     this.physics.add.overlap(this.minesGroup, this.tanksGroup, (mine, tankSprite) => {
       const victim = this.getTankBySprite(tankSprite);
       if (!victim || victim.isDead || victim.isShielded) return;
+      if (this.tanksSubMode === 'pve') {
+        // Squad mates do not trigger each other's mines
+        return;
+      }
 
       this.explodeMine(mine);
     });
@@ -342,6 +633,84 @@ export class MultiplayerTanksScene extends SceneBase {
       b1.destroy();
       b2.destroy();
     });
+
+    // PvE Colliders
+    if (!this.isPvP && this.enemiesGroup) {
+      // Bullets vs Enemy Tanks
+      this.physics.add.overlap(this.bulletsGroup, this.enemiesGroup, (bullet, enemy) => {
+        bullet.destroy();
+        const killed = enemy.takeHit();
+        if (killed) {
+          const killer = this.tanks.get(bullet.ownerSlot);
+          if (killer) {
+            killer.frags = (killer.frags || 0) + 1;
+          }
+          this.teamScore += (enemy.isBoss ? 500 : 100);
+          this.updateScoreboard();
+          this.checkPvEAllEnemiesDefeated();
+        }
+      });
+
+      // Enemy Bullets vs Human Tanks
+      this.physics.add.overlap(this.enemyBullets, this.tanksGroup, (bullet, tankSprite) => {
+        const victim = this.getTankBySprite(tankSprite);
+        if (!victim || victim.isDead || victim.isShielded) return;
+        bullet.destroy();
+        this.damageTank(victim, 1, null);
+      });
+
+      // Human Tanks vs Enemy Mines
+      if (this.enemyMines) {
+        this.physics.add.overlap(this.enemyMines, this.tanksGroup, (mine, tankSprite) => {
+          const victim = this.getTankBySprite(tankSprite);
+          if (!victim || victim.isDead || victim.isShielded) return;
+          this.explodeMine(mine);
+        });
+
+        // Player Bullets vs Enemy Mines
+        this.physics.add.overlap(this.bulletsGroup, this.enemyMines, (bullet, mine) => {
+          bullet.destroy();
+          this.explodeMine(mine);
+        });
+
+        // Enemy Bullets vs Player Mines
+        this.physics.add.overlap(this.enemyBullets, this.minesGroup, (bullet, mine) => {
+          bullet.destroy();
+          this.explodeMine(mine);
+        });
+      }
+
+      // Tanks & Enemies vs Water Hazards
+      if (this.terrain && this.terrain.waterGroup) {
+        this.physics.add.collider(this.tanksGroup, this.terrain.waterGroup);
+        this.physics.add.collider(this.enemiesGroup, this.terrain.waterGroup, null, (enemy) => enemy.type !== 'boat' && enemy.type !== 'boss_boat');
+      }
+
+      // Enemy Bullets vs Walls
+      this.physics.add.collider(this.enemyBullets, this.wallsGroup, (bullet) => {
+        if (bullet.onWallBounce) bullet.onWallBounce();
+        else bullet.destroy();
+      });
+
+      // Enemy Bullets vs Destructible Blocks
+      this.physics.add.collider(this.enemyBullets, this.blocksGroup, (bullet, block) => {
+        this.destroyBlock(block);
+        bullet.destroy();
+        audio.playExplosion?.();
+      });
+
+      // Player Bullets vs Enemy Bullets
+      this.physics.add.overlap(this.bulletsGroup, this.enemyBullets, (b1, b2) => {
+        b1.destroy();
+        b2.destroy();
+      });
+
+      // Enemy Tanks vs Obstacles & Each Other
+      this.physics.add.collider(this.enemiesGroup, this.wallsGroup);
+      this.physics.add.collider(this.enemiesGroup, this.blocksGroup);
+      this.physics.add.collider(this.enemiesGroup, this.tanksGroup);
+      this.physics.add.collider(this.enemiesGroup, this.enemiesGroup);
+    }
   }
 
   destroyBlock(block) {
@@ -374,31 +743,51 @@ export class MultiplayerTanksScene extends SceneBase {
     victim.overhead.setVisible(false);
     victim.sprite.setVelocity(0, 0);
 
-    this.confettiEmitter.emitParticleAt(victim.sprite.x, victim.sprite.y, 35);
+    this.confettiEmitter?.emitParticleAt(victim.sprite.x, victim.sprite.y, 35);
     audio.playExplosion?.();
 
-    // Reward frag to killer
-    if (killerSlot && this.tanks.has(killerSlot)) {
-      const killer = this.tanks.get(killerSlot);
-      killer.frags++;
-      this.updateScoreboard();
+    if (this.isPvP) {
+      // Reward frag to killer
+      if (killerSlot && this.tanks.has(killerSlot)) {
+        const killer = this.tanks.get(killerSlot);
+        killer.frags++;
+        this.updateScoreboard();
 
-      if (killer.frags >= TARGET_FRAGS) {
-        this.triggerMatchOver(killer.slot);
-        return;
+        if (killer.frags >= TARGET_FRAGS) {
+          this.triggerMatchOver(killer.slot);
+          return;
+        }
+      }
+
+      // Schedule Respawn after 2 seconds
+      this.time.delayedCall(2000, () => {
+        if (!this.isMatchOver) {
+          this.respawnTank(victim);
+        }
+      });
+    } else {
+      // PvE Squad Mode
+      this.updateScoreboard();
+      const allDead = Array.from(this.tanks.values()).every(t => t.isDead);
+      if (allDead) {
+        this.triggerSquadDefeated();
+      } else {
+        // Respawn after 4 seconds if squad is still alive
+        this.time.delayedCall(4000, () => {
+          if (!this.isMatchOver && !this.isWaveTransitioning) {
+            this.respawnTank(victim);
+          }
+        });
       }
     }
-
-    // Schedule Respawn after 2 seconds
-    this.time.delayedCall(2000, () => {
-      if (!this.isMatchOver) {
-        this.respawnTank(victim);
-      }
-    });
   }
 
   respawnTank(tank) {
-    const spawn = SPAWN_POINTS[tank.slot] || { x: 240, y: 340 };
+    let spawn = SPAWN_POINTS[tank.slot] || { x: 240, y: 340 };
+    if (!this.isPvP && this.terrain) {
+      const basePos = this.terrain.toWorld(6, 13);
+      spawn = { x: Math.max(48, Math.min(432, basePos.x + (tank.slot - 1) * 32 - 48)), y: basePos.y };
+    }
     tank.sprite.setPosition(spawn.x, spawn.y);
     tank.turret.setPosition(spawn.x, spawn.y);
     tank.overhead.setPosition(spawn.x, spawn.y - 26);
@@ -424,14 +813,46 @@ export class MultiplayerTanksScene extends SceneBase {
     audio.playExplosion?.();
 
     // Deal damage to tanks in 48px radius
-    this.tanks.forEach(tank => {
-      if (!tank.isDead && !tank.isShielded) {
-        const d = Phaser.Math.Distance.Between(blastX, blastY, tank.sprite.x, tank.sprite.y);
-        if (d < 48) {
-          this.damageTank(tank, 3, ownerSlot);
+    if (this.isPvP) {
+      this.tanks.forEach(tank => {
+        if (!tank.isDead && !tank.isShielded) {
+          const d = Phaser.Math.Distance.Between(blastX, blastY, tank.sprite.x, tank.sprite.y);
+          if (d < 48) {
+            this.damageTank(tank, 3, ownerSlot);
+          }
         }
+      });
+    } else {
+      // In PvE: if enemy mine, damage human tanks
+      if (ownerSlot === 'enemy') {
+        this.tanks.forEach(tank => {
+          if (!tank.isDead && !tank.isShielded) {
+            const d = Phaser.Math.Distance.Between(blastX, blastY, tank.sprite.x, tank.sprite.y);
+            if (d < 48) {
+              this.damageTank(tank, 3, null);
+            }
+          }
+        });
       }
-    });
+      // If player mine, damage enemies in radius
+      if (this.enemiesGroup && ownerSlot !== 'enemy') {
+        this.enemiesGroup.getChildren().forEach(enemy => {
+          if (enemy.active) {
+            const d = Phaser.Math.Distance.Between(blastX, blastY, enemy.x, enemy.y);
+            if (d < 48) {
+              const killed = enemy.takeHit();
+              if (killed) {
+                const killer = this.tanks.get(ownerSlot);
+                if (killer) killer.frags = (killer.frags || 0) + 1;
+                this.teamScore += (enemy.isBoss ? 500 : 100);
+                this.updateScoreboard();
+                this.checkPvEAllEnemiesDefeated();
+              }
+            }
+          }
+        });
+      }
+    }
 
     // Destroy blocks in 48px radius
     this.blocksGroup.getChildren().forEach(block => {
@@ -537,6 +958,33 @@ export class MultiplayerTanksScene extends SceneBase {
           this.hostPlaceMine(tank);
         }
       });
+
+      // PvE Enemy AI Simulation on Host
+      if (!this.isPvP && this.enemiesGroup) {
+        const alivePlayers = [];
+        this.tanks.forEach(t => {
+          if (!t.isDead && t.sprite && t.sprite.active) {
+            alivePlayers.push(t.sprite);
+          }
+        });
+
+        if (alivePlayers.length > 0) {
+          this.enemiesGroup.getChildren().forEach(enemy => {
+            if (enemy.active) {
+              let nearest = alivePlayers[0];
+              let minDist = Phaser.Math.Distance.Between(enemy.x, enemy.y, nearest.x, nearest.y);
+              for (let i = 1; i < alivePlayers.length; i++) {
+                const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, alivePlayers[i].x, alivePlayers[i].y);
+                if (d < minDist) {
+                  minDist = d;
+                  nearest = alivePlayers[i];
+                }
+              }
+              enemy.update(nearest, time, delta);
+            }
+          });
+        }
+      }
 
       // Broadcast Snapshot @ 25 Hz (every 40ms)
       if (time > this.lastSnapshotTime + 40) {
@@ -655,13 +1103,62 @@ export class MultiplayerTanksScene extends SceneBase {
         });
       }
     });
+    if (!this.isPvP && this.enemyMines) {
+      this.enemyMines.getChildren().forEach(m => {
+        if (m.active) {
+          minesData.push({
+            x: Math.round(m.x),
+            y: Math.round(m.y),
+            ownerSlot: 'enemy'
+          });
+        }
+      });
+    }
+
+    const enemiesData = [];
+    if (!this.isPvP && this.enemiesGroup) {
+      this.enemiesGroup.getChildren().forEach(e => {
+        if (e.active) {
+          enemiesData.push({
+            id: e.enemyId || `${e.x}_${e.y}`,
+            type: e.type,
+            x: Math.round(e.x),
+            y: Math.round(e.y),
+            rot: Number(e.rotation.toFixed(2)),
+            hp: e.hp,
+            maxHp: e.maxHp,
+            isBoss: !!e.isBoss
+          });
+        }
+      });
+    }
+
+    const enemyBulletsData = [];
+    if (!this.isPvP && this.enemyBullets) {
+      this.enemyBullets.getChildren().forEach(b => {
+        if (b.active) {
+          enemyBulletsData.push({
+            x: Math.round(b.x),
+            y: Math.round(b.y)
+          });
+        }
+      });
+    }
 
     network.broadcastSnapshot({
       tick: this.tick++,
       matchTime: this.matchTime,
+      tanksSubMode: this.tanksSubMode,
+      tanksPveType: this.tanksPveType,
+      currentLevel: this.currentLevel,
+      currentWave: this.currentWave,
+      teamScore: this.teamScore,
+      isWaveTransitioning: this.isWaveTransitioning,
       players: playersData,
       bullets: bulletsData,
       mines: minesData,
+      enemies: enemiesData,
+      enemyBullets: enemyBulletsData,
       destroyedBlocks: Array.from(this.destroyedBlockIds || [])
     });
   }
@@ -671,6 +1168,21 @@ export class MultiplayerTanksScene extends SceneBase {
     if (snapshot.matchTime !== undefined) {
       this.matchTime = snapshot.matchTime;
       this.updateHUDTimer();
+    }
+    if (snapshot.teamScore !== undefined) {
+      this.teamScore = snapshot.teamScore;
+    }
+    if (snapshot.currentLevel !== undefined) {
+      this.currentLevel = snapshot.currentLevel;
+    }
+    if (snapshot.currentWave !== undefined) {
+      this.currentWave = snapshot.currentWave;
+    }
+    if (snapshot.isWaveTransitioning !== undefined) {
+      this.isWaveTransitioning = snapshot.isWaveTransitioning;
+    }
+    if (!this.isPvP) {
+      this.updateHUDForPvE();
     }
 
     snapshot.players.forEach(pData => {
@@ -713,6 +1225,16 @@ export class MultiplayerTanksScene extends SceneBase {
     if (snapshot.mines && !this.isHost) {
       this.renderClientMines(snapshot.mines);
     }
+
+    // Reconcile remote enemies on client
+    if (!this.isHost && snapshot.enemies) {
+      this.renderClientEnemies(snapshot.enemies);
+    }
+
+    // Reconcile remote enemy bullets on client
+    if (!this.isHost && snapshot.enemyBullets) {
+      this.renderClientEnemyBullets(snapshot.enemyBullets);
+    }
   }
 
   renderClientBullets(bulletsData) {
@@ -754,6 +1276,86 @@ export class MultiplayerTanksScene extends SceneBase {
     for (let i = minesData.length; i < this.clientMineSprites.length; i++) {
       this.clientMineSprites[i].setActive(false);
       this.clientMineSprites[i].setVisible(false);
+    }
+  }
+
+  renderClientEnemies(enemiesData) {
+    if (!this.clientEnemyMap) {
+      this.clientEnemyMap = new Map();
+    }
+    const activeIds = new Set();
+    enemiesData.forEach(eData => {
+      activeIds.add(eData.id);
+      let enemySprite = this.clientEnemyMap.get(eData.id);
+      if (!enemySprite) {
+        enemySprite = this.add.sprite(eData.x, eData.y, eData.type || 'candle');
+        enemySprite.setDepth(18);
+        if (eData.isBoss) {
+          enemySprite.healthBar = this.add.graphics();
+          enemySprite.healthBar.setDepth(26);
+        }
+        this.clientEnemyMap.set(eData.id, enemySprite);
+      }
+      enemySprite.setPosition(
+        Phaser.Math.Linear(enemySprite.x, eData.x, 0.4),
+        Phaser.Math.Linear(enemySprite.y, eData.y, 0.4)
+      );
+      enemySprite.setRotation(eData.rot || 0);
+      enemySprite.setActive(true);
+      enemySprite.setVisible(true);
+
+      // Render boss health bar for client
+      if (enemySprite.healthBar) {
+        enemySprite.healthBar.clear();
+        const barWidth = 36;
+        const barHeight = 5;
+        const halfWidth = barWidth / 2;
+        const topOffset = (eData.type === 'boss' || eData.type === 'boss_70') ? 34 : 28;
+        const barX = enemySprite.x - halfWidth;
+        const barY = enemySprite.y - topOffset;
+
+        enemySprite.healthBar.fillStyle(0x0f172a, 0.85);
+        enemySprite.healthBar.fillRect(barX, barY, barWidth, barHeight);
+        enemySprite.healthBar.lineStyle(1, 0x475569, 1);
+        enemySprite.healthBar.strokeRect(barX, barY, barWidth, barHeight);
+
+        const ratio = Math.max(0, (eData.hp || 1) / (eData.maxHp || 1));
+        const color = ratio > 0.5 ? 0x22c55e : (ratio > 0.25 ? 0xf59e0b : 0xef4444);
+        enemySprite.healthBar.fillStyle(color, 0.95);
+        enemySprite.healthBar.fillRect(barX + 1, barY + 1, Math.round((barWidth - 2) * ratio), barHeight - 2);
+      }
+    });
+
+    for (const [id, sprite] of this.clientEnemyMap.entries()) {
+      if (!activeIds.has(id)) {
+        this.confettiEmitter?.emitParticleAt(sprite.x, sprite.y, 25);
+        if (sprite.healthBar) sprite.healthBar.destroy();
+        sprite.destroy();
+        this.clientEnemyMap.delete(id);
+      }
+    }
+  }
+
+  renderClientEnemyBullets(bulletsData) {
+    if (!this.clientEnemyBullets) {
+      this.clientEnemyBullets = [];
+    }
+    bulletsData.forEach((bData, idx) => {
+      let b = this.clientEnemyBullets[idx];
+      if (!b) {
+        b = this.add.sprite(bData.x, bData.y, 'bullet');
+        b.setTint(0xef4444);
+        b.setDepth(20);
+        this.clientEnemyBullets.push(b);
+      }
+      b.setPosition(bData.x, bData.y);
+      b.setActive(true);
+      b.setVisible(true);
+    });
+
+    for (let i = bulletsData.length; i < this.clientEnemyBullets.length; i++) {
+      this.clientEnemyBullets[i].setActive(false);
+      this.clientEnemyBullets[i].setVisible(false);
     }
   }
 
@@ -968,6 +1570,54 @@ export class MultiplayerTanksScene extends SceneBase {
     // Buttons: Play Again (Host) + Return to Lobby (All)
     const btnY = cardY + cardH - 50;
 
+    // PvP Leaderboard Submission Button
+    if (this.isPvP && winner) {
+      const isMe = (winner.slot === this.mySlot);
+      const submitBtn = this.add.container(width / 2, btnY - 48);
+
+      const subBg = this.add.graphics();
+      subBg.fillStyle(0x7c3aed, 1);
+      subBg.fillRoundedRect(-115, -18, 230, 36, 8);
+      subBg.lineStyle(1.5, 0xa78bfa, 1);
+      subBg.strokeRoundedRect(-115, -18, 230, 36, 8);
+      submitBtn.add(subBg);
+
+      const subLabel = this.add.text(0, 0, isMe ? '🏆 SUBMIT HIGH SCORE ⚔️' : `⚔️ ${winner.tag} WINS PVP ⚔️`, {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        color: '#ffffff'
+      }).setOrigin(0.5);
+      submitBtn.add(subLabel);
+
+      if (isMe) {
+        const subZone = this.add.zone(0, 0, 230, 36).setInteractive({ useHandCursor: true });
+        submitBtn.add(subZone);
+
+        let submitted = false;
+        subZone.on('pointerdown', async () => {
+          if (submitted) return;
+          submitted = true;
+          audio.playVictory?.();
+          subLabel.setText('SAVING SCORE...');
+          const score = Math.max(1000, (winner.frags || 1) * 1000);
+          const detail = `⚔️ MP PvP (${winner.frags || 0} Frags)`;
+          try {
+            await leaderboardService.submitScore('tanks', winner.tag, score, detail, winner.fullName);
+            subLabel.setText('✅ SCORE RECORDED ⚔️');
+            subBg.clear();
+            subBg.fillStyle(0x059669, 1);
+            subBg.fillRoundedRect(-115, -18, 230, 36, 8);
+            subBg.lineStyle(1.5, 0x34d399, 1);
+            subBg.strokeRoundedRect(-115, -18, 230, 36, 8);
+          } catch (e) {
+            subLabel.setText('⚠️ FAILED TO SUBMIT');
+          }
+        });
+      }
+      overlay.add(submitBtn);
+    }
+
     if (this.isHost) {
       // Play Again
       const playAgainBtn = this.add.container(width / 2 - 80, btnY);
@@ -989,7 +1639,11 @@ export class MultiplayerTanksScene extends SceneBase {
       playAgainBtn.add(paZone);
       paZone.on('pointerdown', () => {
         audio.playVictory?.();
-        network.startGame({ mode: 'tanks' });
+        network.startGame({
+          mode: 'tanks',
+          tanksSubMode: this.tanksSubMode,
+          tanksPveType: this.tanksPveType
+        });
       });
       overlay.add(playAgainBtn);
 
@@ -1041,6 +1695,328 @@ export class MultiplayerTanksScene extends SceneBase {
       });
       overlay.add(lobbyBtn);
     }
+  }
+
+  checkPvEAllEnemiesDefeated() {
+    if (this.isWaveTransitioning || this.isMatchOver || !this.isHost) return;
+    if (!this.enemiesGroup) return;
+
+    const remaining = this.enemiesGroup.countActive(true);
+    if (remaining === 0) {
+      this.isWaveTransitioning = true;
+      audio.playVictory?.();
+      this.confettiEmitter?.emitParticleAt(this.scale.width / 2, 280, 50);
+
+      const waveBonus = MultiplayerTanksScene.getWaveClearBonus(this.tanksPveType, this.tanksPveType === 'decades' ? this.currentLevel : this.currentWave);
+      this.teamScore += waveBonus;
+      this.updateHUDTimer();
+
+      network.sendEvent('pve-wave-complete', {
+        level: this.currentLevel,
+        wave: this.currentWave,
+        teamScore: this.teamScore
+      });
+
+      this.showWaveClearBanner();
+
+      this.time.delayedCall(2500, () => {
+        if (this.isMatchOver) return;
+        this.isWaveTransitioning = false;
+
+        if (this.tanksPveType === 'decades') {
+          this.currentLevel++;
+          if (this.currentLevel > 70) {
+            this.triggerSquadVictory();
+            return;
+          }
+          network.sendEvent('pve-level-start', {
+            currentLevel: this.currentLevel,
+            currentWave: this.currentWave,
+            tanksPveType: this.tanksPveType
+          });
+          this.setupPvEDecadesLevel(this.currentLevel);
+        } else {
+          this.currentWave++;
+          network.sendEvent('pve-level-start', {
+            currentLevel: this.currentLevel,
+            currentWave: this.currentWave,
+            tanksPveType: this.tanksPveType
+          });
+          this.setupPvEEndlessWave(this.currentWave);
+        }
+      });
+    }
+  }
+
+  showWaveClearBanner() {
+    const text = this.tanksPveType === 'decades'
+      ? `LEVEL ${this.currentLevel} CLEARED!`
+      : `WAVE ${this.currentWave} CLEARED!`;
+    const banner = this.add.text(this.scale.width / 2, 250, text, {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '22px',
+      fontWeight: '900',
+      color: '#facc15',
+      stroke: '#0f172a',
+      strokeThickness: 5
+    }).setOrigin(0.5).setDepth(150);
+
+    this.tweens.add({
+      targets: banner,
+      scale: { from: 0.6, to: 1.1 },
+      alpha: { from: 1, to: 0 },
+      duration: 2200,
+      ease: 'Power2',
+      onComplete: () => banner.destroy()
+    });
+  }
+
+  triggerSquadDefeated() {
+    if (this.isMatchOver) return;
+    this.isMatchOver = true;
+    audio.playExplosion?.();
+
+    if (this.isHost) {
+      network.sendEvent('squad-defeated', {
+        currentLevel: this.currentLevel,
+        currentWave: this.currentWave,
+        teamScore: this.teamScore
+      });
+    }
+
+    this.showSquadDefeatedModal();
+  }
+
+  showSquadDefeatedModal() {
+    audio.playExplosion?.();
+    const { width, height } = this.scale;
+
+    const overlay = this.add.container(0, 0);
+    overlay.setDepth(200);
+
+    const backdrop = this.add.graphics();
+    backdrop.fillStyle(0x000000, 0.88);
+    backdrop.fillRect(0, 0, width, height);
+    overlay.add(backdrop);
+
+    const cardW = width - 48;
+    const cardH = 360;
+    const cardY = height / 2 - cardH / 2;
+
+    const cardBg = this.add.graphics();
+    cardBg.fillStyle(0x0a0f1d, 0.98);
+    cardBg.fillRoundedRect(24, cardY, cardW, cardH, 14);
+    cardBg.lineStyle(2, 0xef4444, 1);
+    cardBg.strokeRoundedRect(24, cardY, cardW, cardH, 14);
+    overlay.add(cardBg);
+
+    overlay.add(this.add.text(width / 2, cardY + 36, '💀 SQUAD DEFEATED 💀', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '18px',
+      fontWeight: '900',
+      color: '#ef4444',
+      letterSpacing: 2
+    }).setOrigin(0.5));
+
+    const progressSummary = this.tanksPveType === 'decades'
+      ? `Fell at Level ${this.currentLevel} of 70`
+      : `Survived ${this.currentWave} Endless Waves`;
+
+    overlay.add(this.add.text(width / 2, cardY + 70, progressSummary, {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '14px',
+      fontWeight: 'bold',
+      color: '#94a3b8'
+    }).setOrigin(0.5));
+
+    overlay.add(this.add.text(width / 2, cardY + 98, `FINAL TEAM SCORE: ${this.teamScore}`, {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#facc15'
+    }).setOrigin(0.5));
+
+    // Squad Roster Stats
+    const sortedPlayers = Array.from(this.tanks.values()).sort((a, b) => b.frags - a.frags);
+    let tableY = cardY + 135;
+    sortedPlayers.forEach((p, rank) => {
+      const c = SLOT_COLORS[p.slot] || SLOT_COLORS[1];
+      const rankText = `${rank + 1}. [${p.tag}] ${p.fullName || 'Guest'}`;
+      overlay.add(this.add.text(48, tableY, rankText, {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '13px',
+        fontWeight: 'bold',
+        color: c.str
+      }));
+
+      overlay.add(this.add.text(width - 48, tableY, `${p.frags} KILLS  (${p.deaths} D)`, {
+        fontFamily: 'Courier New, monospace',
+        fontSize: '13px',
+        color: '#ffffff'
+      }).setOrigin(1, 0));
+
+      tableY += 30;
+    });
+
+    const btnY = cardY + cardH - 50;
+    if (this.isHost) {
+      const playAgainBtn = this.add.container(width / 2 - 80, btnY);
+      const paBg = this.add.graphics();
+      paBg.fillStyle(0x16a34a, 1);
+      paBg.fillRoundedRect(-70, -20, 140, 40, 8);
+      paBg.lineStyle(1.5, 0x4ade80, 1);
+      paBg.strokeRoundedRect(-70, -20, 140, 40, 8);
+      playAgainBtn.add(paBg);
+
+      playAgainBtn.add(this.add.text(0, 0, '🔄 RETRY', {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        color: '#ffffff'
+      }).setOrigin(0.5));
+
+      const paZone = this.add.zone(0, 0, 140, 40).setInteractive({ useHandCursor: true });
+      playAgainBtn.add(paZone);
+      paZone.on('pointerdown', () => {
+        audio.playShoot?.();
+        network.startGame({
+          mode: 'tanks',
+          tanksSubMode: this.tanksSubMode,
+          tanksPveType: this.tanksPveType
+        });
+      });
+      overlay.add(playAgainBtn);
+
+      const lobbyBtn = this.add.container(width / 2 + 80, btnY);
+      const lBg = this.add.graphics();
+      lBg.fillStyle(0x1e293b, 1);
+      lBg.fillRoundedRect(-70, -20, 140, 40, 8);
+      lBg.lineStyle(1.5, 0x64748b, 1);
+      lBg.strokeRoundedRect(-70, -20, 140, 40, 8);
+      lobbyBtn.add(lBg);
+
+      lobbyBtn.add(this.add.text(0, 0, '🚪 LOBBY', {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        color: '#94a3b8'
+      }).setOrigin(0.5));
+
+      const lZone = this.add.zone(0, 0, 140, 40).setInteractive({ useHandCursor: true });
+      lobbyBtn.add(lZone);
+      lZone.on('pointerdown', () => {
+        audio.playShoot?.();
+        this.returnToLobby();
+      });
+      overlay.add(lobbyBtn);
+    } else {
+      const lobbyBtn = this.add.container(width / 2, btnY);
+      const lBg = this.add.graphics();
+      lBg.fillStyle(0x0284c7, 1);
+      lBg.fillRoundedRect(-100, -20, 200, 40, 8);
+      lBg.lineStyle(1.5, 0x38bdf8, 1);
+      lBg.strokeRoundedRect(-100, -20, 200, 40, 8);
+      lobbyBtn.add(lBg);
+
+      lobbyBtn.add(this.add.text(0, 0, 'RETURN TO LOBBY ▶', {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '13px',
+        fontWeight: 'bold',
+        color: '#ffffff'
+      }).setOrigin(0.5));
+
+      const lZone = this.add.zone(0, 0, 200, 40).setInteractive({ useHandCursor: true });
+      lobbyBtn.add(lZone);
+      lZone.on('pointerdown', () => {
+        audio.playShoot?.();
+        this.returnToLobby();
+      });
+      overlay.add(lobbyBtn);
+    }
+  }
+
+  triggerSquadVictory() {
+    if (this.isMatchOver) return;
+    this.isMatchOver = true;
+    audio.playVictory?.();
+
+    if (this.isHost) {
+      network.sendEvent('squad-victory', {
+        teamScore: this.teamScore
+      });
+    }
+
+    this.showSquadVictoryModal();
+  }
+
+  showSquadVictoryModal() {
+    audio.playVictory?.();
+    const { width, height } = this.scale;
+
+    const overlay = this.add.container(0, 0);
+    overlay.setDepth(200);
+
+    const backdrop = this.add.graphics();
+    backdrop.fillStyle(0x000000, 0.9);
+    backdrop.fillRect(0, 0, width, height);
+    overlay.add(backdrop);
+
+    const cardW = width - 48;
+    const cardH = 340;
+    const cardY = height / 2 - cardH / 2;
+
+    const cardBg = this.add.graphics();
+    cardBg.fillStyle(0x0a0f1d, 0.98);
+    cardBg.fillRoundedRect(24, cardY, cardW, cardH, 14);
+    cardBg.lineStyle(2, 0xfacc15, 1);
+    cardBg.strokeRoundedRect(24, cardY, cardW, cardH, 14);
+    overlay.add(cardBg);
+
+    overlay.add(this.add.text(width / 2, cardY + 40, '🏆 DECADES CONQUERED! 🏆', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '18px',
+      fontWeight: '900',
+      color: '#facc15',
+      letterSpacing: 2
+    }).setOrigin(0.5));
+
+    overlay.add(this.add.text(width / 2, cardY + 75, "Allan's 70th Milestone Campaign Complete!", {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '13px',
+      fontWeight: 'bold',
+      color: '#4ade80'
+    }).setOrigin(0.5));
+
+    overlay.add(this.add.text(width / 2, cardY + 110, `FINAL SQUAD SCORE: ${this.teamScore}`, {
+      fontFamily: 'Courier New, monospace',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#ffffff'
+    }).setOrigin(0.5));
+
+    const btnY = cardY + cardH - 50;
+    const lobbyBtn = this.add.container(width / 2, btnY);
+    const lBg = this.add.graphics();
+    lBg.fillStyle(0x16a34a, 1);
+    lBg.fillRoundedRect(-100, -20, 200, 40, 8);
+    lBg.lineStyle(1.5, 0x4ade80, 1);
+    lBg.strokeRoundedRect(-100, -20, 200, 40, 8);
+    lobbyBtn.add(lBg);
+
+    lobbyBtn.add(this.add.text(0, 0, 'CELEBRATE & RETURN ▶', {
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      color: '#ffffff'
+    }).setOrigin(0.5));
+
+    const lZone = this.add.zone(0, 0, 200, 40).setInteractive({ useHandCursor: true });
+    lobbyBtn.add(lZone);
+    lZone.on('pointerdown', () => {
+      audio.playVictory?.();
+      this.returnToLobby();
+    });
+    overlay.add(lobbyBtn);
   }
 
   returnToLobby(broadcast = true) {
@@ -1125,17 +2101,45 @@ export class MultiplayerTanksScene extends SceneBase {
         this.applyClientSnapshot(snapshot);
       }),
       network.on('network-event', (packet) => {
+        if (this.isHost) return; // Host drives simulation locally and is authoritative
         if (packet.event === 'return-to-lobby') {
           this.returnToLobby(false);
         } else if (packet.event === 'match-over') {
           const winner = this.tanks.get(packet.data.winnerSlot) || this.tanks.get(1);
           this.isMatchOver = true;
           this.showMatchOverModal(winner);
+        } else if (packet.event === 'squad-defeated') {
+          this.currentLevel = packet.data.currentLevel || this.currentLevel;
+          this.currentWave = packet.data.currentWave || this.currentWave;
+          this.teamScore = packet.data.teamScore || this.teamScore;
+          this.triggerSquadDefeated();
+        } else if (packet.event === 'squad-victory') {
+          this.teamScore = packet.data.teamScore || this.teamScore;
+          this.triggerSquadVictory();
+        } else if (packet.event === 'pve-wave-complete') {
+          this.currentLevel = packet.data.level;
+          this.currentWave = packet.data.wave;
+          this.teamScore = packet.data.teamScore;
+          this.showWaveClearBanner();
+        } else if (packet.event === 'pve-level-start') {
+          this.currentLevel = packet.data.currentLevel;
+          this.currentWave = packet.data.currentWave;
+          this.tanksPveType = packet.data.tanksPveType;
+          if (this.tanksPveType === 'decades') {
+            this.setupPvEDecadesLevel(this.currentLevel);
+          } else {
+            this.setupPvEEndlessWave(this.currentWave);
+          }
         }
       }),
       network.on('game-start', (packet) => {
         // Rematch triggered
-        this.scene.restart({ isHost: this.isHost, seed: packet.seed });
+        this.scene.restart({
+          isHost: this.isHost,
+          seed: packet.seed,
+          tanksSubMode: packet.tanksSubMode || packet.options?.tanksSubMode || this.tanksSubMode,
+          tanksPveType: packet.tanksPveType || packet.options?.tanksPveType || this.tanksPveType
+        });
       }),
       network.on('player-left', ({ slot }) => {
         const tank = this.tanks.get(slot);
@@ -1157,6 +2161,17 @@ export class MultiplayerTanksScene extends SceneBase {
     if (this.clientMineSprites) {
       this.clientMineSprites.forEach(s => s.destroy());
       this.clientMineSprites = [];
+    }
+    if (this.clientEnemyMap) {
+      this.clientEnemyMap.forEach(s => {
+        if (s.healthBar) s.healthBar.destroy();
+        s.destroy();
+      });
+      this.clientEnemyMap.clear();
+    }
+    if (this.clientEnemyBullets) {
+      this.clientEnemyBullets.forEach(s => s.destroy());
+      this.clientEnemyBullets = [];
     }
     this.unsubscribers.forEach(unsub => unsub());
     this.unsubscribers = [];

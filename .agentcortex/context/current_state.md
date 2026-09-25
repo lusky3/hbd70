@@ -15,9 +15,9 @@
   - Task Isolation: `.agentcortex/context/work/<worklog-key>.md`
   - Active Work Log Path: derive <worklog-key> from the raw branch name using filesystem-safe normalization before any gate checks.
   - Workflows & Policies: `.agent/workflows/*.md`, `.agent/rules/*.md`
-- **Last Updated**: 2026-09-23
-- **Last Verified**: 2026-09-23
-- **Update Sequence**: 13
+- **Last Updated**: 2026-09-25
+- **Last Verified**: 2026-09-25
+- **Update Sequence**: 14
 - **ADR Index**:
   - docs/adr/ADR-001-project-architecture.md: Project Architecture · applies_to: **
 - **Active Backlog**: (none yet)
@@ -33,6 +33,7 @@
   - docs/specs/arcade-player-name-and-profanity-filter.md: Allan's 70th Birthday Arcade: Player Full Name, Tag Setting & Profanity Filter [status: shipped] [Updated: 2026-09-22]
   - docs/specs/multi-device-multiplayer.md: Allan's 70th Birthday Arcade: Multi-Device Real-Time Multiplayer [status: shipped] [Updated: 2026-09-22]
   - docs/specs/multiplayer-lobby-polish-and-pwa.md: Allan's 70th Birthday Arcade: Multiplayer Lobby Polish, Host Controls & PWA [status: shipped] [Updated: 2026-09-23]
+  - docs/specs/tanks-multiplayer-pve-and-modes.md: Allan's 70th Birthday Arcade: Tanks Multiplayer PvP/PvE Modes, Endless Waves & Leaderboard Badges [status: shipped] [Updated: 2026-09-25]
 - **Canonical Commands**:
   - `/spec-intake`: Import external specs (from other LLMs, documents, or natural language). Handles large product specs via decomposition. Runs before `/bootstrap`.
   - `/bootstrap`: Task initialization & classification freeze.
@@ -77,6 +78,10 @@
 (none yet)
 
 ## Ship History
+
+### Ship-main-2026-09-25-tanks-multiplayer-pve-and-modes
+- Feature shipped: Allan's 70th Birthday Arcade: Tanks Multiplayer PvP/PvE Modes, Endless Waves & Leaderboard Badges (v1.6.0) — Mode toggle between competitive PvP and cooperative PvE squad play; PvE sub-mode toggle between Decades Campaign (levels 1-70) and Endless Waves; procedural 12x16 arena generation with destructible blocks and water hazard barriers; host-authoritative enemy AI simulation with live snapshot streaming at 25 Hz; friendly fire immunity in PvE squad mode; wave depth move and projectile velocity scaling; real-time client boss health bars; PvP high score submission to Cloudflare D1 with verified ⚔️ MP PvP detail string and leaderboard badge formatting; version bump to v1.6.0 in package.json, version.js, and CHANGELOG.md.
+- Tests: Pass (102/102 node unit tests + dual-browser WebRTC E2E suite + single-player arcade E2E regression suite + 9-gap verification suite + headless PvE browser test suite passing with 0 console errors)
 
 ### Ship-main-2026-09-23-multiplayer-polish-pwa
 - Feature shipped: Allan's 70th Birthday Arcade: Multiplayer Lobby Polish, Host Controls & PWA (v1.5.0) — Alphanumeric keyboard input and mouse wheel slot scrolling for 4-character join code; local vendored QRCode library (vendor/qrcode.min.js) with Canvas rendering and URL query auto-join; title unified to "Classic Arcade"; mobile PWA web app manifest with standalone display, service worker caching (sw.js), and beforeinstallprompt install button in SplashScene; fixed Create Room vs Join Room mode switch loopback; decoupled Start Match interactive zone in MultiplayerLobbyScene; derived host profile from High Score storage (tag + name); live lobby chat box with timestamps, quick-chat chips, and profanity filtering; host kick controls with non-occluded hitbox, right-click, and long-press; version bump to v1.5.0 in package.json, version.js, and CHANGELOG.md.

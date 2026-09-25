@@ -136,7 +136,7 @@ test('AC-5: MultiplayerPong perspective inversion formula computes inverted coor
   assert.ok(clientInvertedNearBottom > 600, 'Ball near top on Host should appear near bottom on Client');
 });
 
-test('AC-6: Version 1.5.0 consistency across package.json, src/version.js, and CHANGELOG.md', async () => {
+test('AC-6: Version 1.6.0 consistency across package.json, src/version.js, and CHANGELOG.md', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -149,7 +149,7 @@ test('AC-6: Version 1.5.0 consistency across package.json, src/version.js, and C
   const pkgPath = path.join(rootDir, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   assert.equal(APP_VERSION, pkg.version);
-  assert.equal(pkg.version, '1.5.0');
+  assert.equal(pkg.version, '1.6.0');
 
   const changelogPath = path.join(rootDir, 'CHANGELOG.md');
   const changelog = fs.readFileSync(changelogPath, 'utf8');
